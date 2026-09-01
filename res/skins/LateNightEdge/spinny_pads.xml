@@ -1,0 +1,61 @@
+<!-- Performance pads for spinny mode: 2x4 hotcue grid, touch-sized.
+     Variable: Group ([ChannelN]) -->
+<Template>
+  <WidgetGroup>
+    <Layout>vertical</Layout>
+    <SizePolicy>me,min</SizePolicy>
+    <Children>
+
+      <WidgetGroup>
+        <Layout>horizontal</Layout>
+        <SizePolicy>me,min</SizePolicy>
+        <Children>
+          <WidgetGroup><Size>0me,1min</Size></WidgetGroup>
+          <Template src="skins:LateNightEdge/controls/button_hotcue_pad.xml">
+            <SetVariable name="number">1</SetVariable>
+          </Template>
+          <WidgetGroup><Size>8f,1min</Size></WidgetGroup>
+          <Template src="skins:LateNightEdge/controls/button_hotcue_pad.xml">
+            <SetVariable name="number">2</SetVariable>
+          </Template>
+          <WidgetGroup><Size>8f,1min</Size></WidgetGroup>
+          <Template src="skins:LateNightEdge/controls/button_hotcue_pad.xml">
+            <SetVariable name="number">3</SetVariable>
+          </Template>
+          <WidgetGroup><Size>8f,1min</Size></WidgetGroup>
+          <Template src="skins:LateNightEdge/controls/button_hotcue_pad.xml">
+            <SetVariable name="number">4</SetVariable>
+          </Template>
+          <WidgetGroup><Size>0me,1min</Size></WidgetGroup>
+        </Children>
+      </WidgetGroup>
+
+      <WidgetGroup><Size>1min,8f</Size></WidgetGroup>
+
+      <WidgetGroup>
+        <Layout>horizontal</Layout>
+        <SizePolicy>me,min</SizePolicy>
+        <Children>
+          <WidgetGroup><Size>0me,1min</Size></WidgetGroup>
+          <Template src="skins:LateNightEdge/controls/button_hotcue_pad.xml">
+            <SetVariable name="number">5</SetVariable>
+          </Template>
+          <WidgetGroup><Size>8f,1min</Size></WidgetGroup>
+          <Template src="skins:LateNightEdge/controls/button_hotcue_pad.xml">
+            <SetVariable name="number">6</SetVariable>
+          </Template>
+          <WidgetGroup><Size>8f,1min</Size></WidgetGroup>
+          <Template src="skins:LateNightEdge/controls/button_hotcue_pad.xml">
+            <SetVariable name="number">7</SetVariable>
+          </Template>
+          <WidgetGroup><Size>8f,1min</Size></WidgetGroup>
+          <Template src="skins:LateNightEdge/controls/button_hotcue_pad.xml">
+            <SetVariable name="number">8</SetVariable>
+          </Template>
+          <WidgetGroup><Size>0me,1min</Size></WidgetGroup>
+        </Children>
+      </WidgetGroup>
+
+    </Children>
+  </WidgetGroup>
+</Template>

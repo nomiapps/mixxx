@@ -1,0 +1,32 @@
+<!-- A big touch hotcue pad for spinny mode: same 3-state hotcue button as
+     button_hotcue.xml but sized for fingers instead of pointers.
+     Variables: Group, number -->
+<Template>
+  <HotcueButton>
+    <TooltipId>hotcue</TooltipId>
+    <ObjectName>HotcueButton</ObjectName>
+    <MinimumSize>104,52</MinimumSize>
+    <MaximumSize>104,52</MaximumSize>
+    <SizePolicy>f,f</SizePolicy>
+    <Group><Variable name="Group"/></Group>
+    <Hotcue><Variable name="number"/></Hotcue>
+    <NumberStates>3</NumberStates>
+    <DimBrightThreshold><Variable name="DimBrightThresholdHotcueBtn"/></DimBrightThreshold>
+    <DndRectMargin><Variable name="DndRectMarginHotcueBtn"/></DndRectMargin>
+    <State>
+      <Number>0</Number>
+      <Unpressed scalemode="STRETCH">skins:LateNightEdge/<Variable name="BtnScheme"/>/buttons/btn_<Variable name="BtnType"/>_square.svg</Unpressed>
+      <Pressed scalemode="STRETCH">skins:LateNightEdge/<Variable name="BtnScheme"/>/buttons/btn_<Variable name="BtnType"/>_square_active.svg</Pressed>
+    </State>
+    <State>
+      <Number>1</Number>
+      <Unpressed scalemode="STRETCH">skins:LateNightEdge/<Variable name="BtnScheme"/>/buttons/btn_<Variable name="BtnType"/>_square_set.svg</Unpressed>
+      <Pressed scalemode="STRETCH">skins:LateNightEdge/<Variable name="BtnScheme"/>/buttons/btn_<Variable name="BtnType"/>_square_active.svg</Pressed>
+    </State>
+    <State>
+      <Number>2</Number>
+      <Unpressed scalemode="STRETCH">skins:LateNightEdge/<Variable name="BtnScheme"/>/buttons/btn_<Variable name="BtnType"/>_square_set.svg</Unpressed>
+      <Pressed scalemode="STRETCH">skins:LateNightEdge/<Variable name="BtnScheme"/>/buttons/btn_<Variable name="BtnType"/>_square_active.svg</Pressed>
+    </State>
+  </HotcueButton>
+</Template>

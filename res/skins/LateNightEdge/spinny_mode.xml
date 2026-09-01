@@ -32,6 +32,11 @@
             <PathGhost>skins:LateNightEdge/<Variable name="StyleScheme"/>/style/spinny_indicator_ghost.svg</PathGhost>
             <ShowCoverControl>[SkinEdge],show_coverart</ShowCoverControl>
           </Spinny>
+          <WidgetGroup><Size>1min,6f</Size></WidgetGroup>
+          <Template src="skins:LateNightEdge/spinny_pads.xml">
+            <SetVariable name="Group">[Channel1]</SetVariable>
+          </Template>
+          <WidgetGroup><Size>1min,6f</Size></WidgetGroup>
           <WidgetGroup>
             <Layout>horizontal</Layout>
             <SizePolicy>me,f</SizePolicy>
@@ -59,7 +64,8 @@
         </Children>
       </WidgetGroup>
 
-      <!-- Center: exit button + spacer -->
+      <!-- Center: exit button above the mixer (channel strips + crossfader are
+           Singletons, so they reparent here from the hidden normal view) -->
       <WidgetGroup>
         <Layout>vertical</Layout>
         <SizePolicy>min,me</SizePolicy>
@@ -72,7 +78,13 @@
             <SetVariable name="state_1_text">SPINNY</SetVariable>
             <SetVariable name="ConfigKey">[SkinEdge],show_big_spinnies</SetVariable>
           </Template>
-          <WidgetGroup><Size>1min,0me</Size></WidgetGroup>
+          <WidgetGroup>
+            <Layout>horizontal</Layout>
+            <SizePolicy>min,me</SizePolicy>
+            <Children>
+              <Template src="skins:LateNightEdge/mixer.xml"/>
+            </Children>
+          </WidgetGroup>
         </Children>
       </WidgetGroup>
 
@@ -99,6 +111,11 @@
             <PathGhost>skins:LateNightEdge/<Variable name="StyleScheme"/>/style/spinny_indicator_ghost.svg</PathGhost>
             <ShowCoverControl>[SkinEdge],show_coverart</ShowCoverControl>
           </Spinny>
+          <WidgetGroup><Size>1min,6f</Size></WidgetGroup>
+          <Template src="skins:LateNightEdge/spinny_pads.xml">
+            <SetVariable name="Group">[Channel2]</SetVariable>
+          </Template>
+          <WidgetGroup><Size>1min,6f</Size></WidgetGroup>
           <WidgetGroup>
             <Layout>horizontal</Layout>
             <SizePolicy>me,f</SizePolicy>
