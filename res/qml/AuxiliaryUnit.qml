@@ -1,4 +1,5 @@
 import "." as Skin
+import Mixxx 1.0 as Mixxx
 import QtQuick 2.12
 import "Theme"
 
@@ -9,6 +10,16 @@ Row {
     property string group: "[Auxiliary" + unitNumber + "]"
 
     spacing: 5
+    // Only show units with a configured input, like the legacy skins do --
+    // four permanent aux strips overflow the window on smaller layouts.
+    visible: configuredControl.value != 0
+
+    Mixxx.ControlProxy {
+        id: configuredControl
+
+        group: root.group
+        key: "input_configured"
+    }
 
     Skin.VuMeter {
         id: vuMeter
