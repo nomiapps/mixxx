@@ -178,27 +178,31 @@ allshader::WaveformRenderMark::WaveformRenderMark(
         appendChildNode(std::move(pNode));
     }
 
+    // The factory singleton only exists in the QWidget UI; in the QML UI it is
+    // null and these connects only produced warning spam at startup.
     auto* pWaveformWidgetFactory = WaveformWidgetFactory::instance();
-    connect(pWaveformWidgetFactory,
-            &WaveformWidgetFactory::untilMarkShowBeatsChanged,
-            this,
-            &WaveformRenderMark::setUntilMarkShowBeats);
-    connect(pWaveformWidgetFactory,
-            &WaveformWidgetFactory::untilMarkShowTimeChanged,
-            this,
-            &WaveformRenderMark::setUntilMarkShowTime);
-    connect(pWaveformWidgetFactory,
-            &WaveformWidgetFactory::untilMarkAlignChanged,
-            this,
-            &WaveformRenderMark::setUntilMarkAlign);
-    connect(pWaveformWidgetFactory,
-            &WaveformWidgetFactory::untilMarkTextPointSizeChanged,
-            this,
-            &WaveformRenderMark::setUntilMarkTextSize);
-    connect(pWaveformWidgetFactory,
-            &WaveformWidgetFactory::untilMarkTextHeightLimitChanged,
-            this,
-            &WaveformRenderMark::setUntilMarkTextHeightLimit);
+    if (pWaveformWidgetFactory) {
+        connect(pWaveformWidgetFactory,
+                &WaveformWidgetFactory::untilMarkShowBeatsChanged,
+                this,
+                &WaveformRenderMark::setUntilMarkShowBeats);
+        connect(pWaveformWidgetFactory,
+                &WaveformWidgetFactory::untilMarkShowTimeChanged,
+                this,
+                &WaveformRenderMark::setUntilMarkShowTime);
+        connect(pWaveformWidgetFactory,
+                &WaveformWidgetFactory::untilMarkAlignChanged,
+                this,
+                &WaveformRenderMark::setUntilMarkAlign);
+        connect(pWaveformWidgetFactory,
+                &WaveformWidgetFactory::untilMarkTextPointSizeChanged,
+                this,
+                &WaveformRenderMark::setUntilMarkTextSize);
+        connect(pWaveformWidgetFactory,
+                &WaveformWidgetFactory::untilMarkTextHeightLimitChanged,
+                this,
+                &WaveformRenderMark::setUntilMarkTextHeightLimit);
+    }
 }
 
 void allshader::WaveformRenderMark::draw(QPainter*, QPaintEvent*) {
@@ -208,17 +212,18 @@ void allshader::WaveformRenderMark::draw(QPainter*, QPaintEvent*) {
 void allshader::WaveformRenderMark::setup(const QDomNode& node, const SkinContext& context) {
     ::WaveformRenderMarkBase::setup(node, context);
     auto* pWaveformWidgetFactory = WaveformWidgetFactory::instance();
+    if (pWaveformWidgetFactory) {
+        m_untilMarkShowBeats = pWaveformWidgetFactory->getUntilMarkShowBeats();
+        m_untilMarkShowTime = pWaveformWidgetFactory->getUntilMarkShowTime();
+        m_untilMarkAlign = pWaveformWidgetFactory->getUntilMarkAlign();
 
-    m_untilMarkShowBeats = pWaveformWidgetFactory->getUntilMarkShowBeats();
-    m_untilMarkShowTime = pWaveformWidgetFactory->getUntilMarkShowTime();
-    m_untilMarkAlign = pWaveformWidgetFactory->getUntilMarkAlign();
-
-    m_untilMarkTextSize =
-            pWaveformWidgetFactory->getUntilMarkTextPointSize();
-    m_untilMarkTextHeightLimit =
-            pWaveformWidgetFactory
-                    ->getUntilMarkTextHeightLimit(); // proportion of waveform
-                                                     // height
+        m_untilMarkTextSize =
+                pWaveformWidgetFactory->getUntilMarkTextPointSize();
+        m_untilMarkTextHeightLimit =
+                pWaveformWidgetFactory
+                        ->getUntilMarkTextHeightLimit(); // proportion of
+                                                         // waveform height
+    }
 
     m_playMarkerForegroundColor = m_waveformRenderer->getWaveformSignalColors()->getPlayPosColor();
     m_playMarkerBackgroundColor = m_waveformRenderer->getWaveformSignalColors()->getBgColor();
