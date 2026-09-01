@@ -17,6 +17,33 @@ ApplicationWindow {
     color: Theme.backgroundColor
     visible: true
 
+    // Qt sometimes places the window with its title bar beyond the screen
+    // edge. Clamp into the screen's available area so it always opens
+    // reachable -- but only AFTER the window manager has assigned the real
+    // position; at Component.onCompleted the coordinates are not final yet,
+    // so the clamp must run deferred.
+    function clampOntoScreen() {
+        const s = root.screen;
+        if (!s)
+            return ;
+
+        root.width = Math.min(root.width, s.desktopAvailableWidth);
+        root.height = Math.min(root.height, s.desktopAvailableHeight);
+        root.x = Math.min(Math.max(root.x, s.virtualX),
+                s.virtualX + s.desktopAvailableWidth - root.width);
+        root.y = Math.min(Math.max(root.y, s.virtualY),
+                s.virtualY + s.desktopAvailableHeight - root.height);
+    }
+
+    Component.onCompleted: clampTimer.start()
+
+    Timer {
+        id: clampTimer
+
+        interval: 250
+        onTriggered: root.clampOntoScreen()
+    }
+
     Column {
         anchors.fill: parent
 
