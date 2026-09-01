@@ -35,6 +35,8 @@ Window {
             return "EdgeElementButton.qml";
         case "text":
             return "EdgeElementText.qml";
+        case "label":
+            return "EdgeElementLabel.qml";
         default:
             console.warn("edge-layout: unknown element type", type);
             return "";
