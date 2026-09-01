@@ -171,13 +171,13 @@
             "type": "button",
             "group": "[Channel1]",
             "key": "pfl",
-            "label": "CUE",
+            "label": "CUE 1",
             "toggle": true,
             "rect": [
-                1085,
-                622,
-                70,
-                30
+                1075,
+                616,
+                100,
+                36
             ]
         },
         {
@@ -258,13 +258,13 @@
             "type": "button",
             "group": "[Channel2]",
             "key": "pfl",
-            "label": "CUE",
+            "label": "CUE 2",
             "toggle": true,
             "rect": [
-                1405,
-                622,
-                70,
-                30
+                1385,
+                616,
+                100,
+                36
             ]
         },
         {
@@ -398,7 +398,7 @@
                 1246,
                 395,
                 14,
-                215
+                130
             ]
         },
         {
@@ -409,7 +409,46 @@
                 1300,
                 395,
                 14,
-                215
+                130
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "PH MIX",
+            "color": "#e8e8e8",
+            "group": "[Master]",
+            "key": "headMix",
+            "rect": [
+                1206,
+                535,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "PH VOL",
+            "color": "#e8e8e8",
+            "group": "[Master]",
+            "key": "headGain",
+            "rect": [
+                1302,
+                535,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "button",
+            "label": "SPLIT",
+            "group": "[Master]",
+            "key": "headSplit",
+            "toggle": true,
+            "rect": [
+                1235,
+                616,
+                90,
+                36
             ]
         }
     ]
