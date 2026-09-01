@@ -3,6 +3,7 @@
 #include <QAbstractItemModel>
 
 #include "library/library.h"
+#include "library/librarytablemodel.h"
 #include "moc_qmllibraryproxy.cpp"
 
 namespace mixxx {
@@ -12,6 +13,10 @@ QmlLibraryProxy::QmlLibraryProxy(std::shared_ptr<Library> pLibrary, QObject* par
         : QObject(parent),
           m_pLibrary(pLibrary),
           m_pModelProperty(new QmlLibraryTrackListModel(m_pLibrary->trackTableModel(), this)) {
+}
+
+void QmlLibraryProxy::search(const QString& searchText) {
+    m_pLibrary->trackTableModel()->search(searchText);
 }
 
 // static

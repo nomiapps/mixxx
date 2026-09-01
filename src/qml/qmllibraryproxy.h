@@ -22,6 +22,10 @@ class QmlLibraryProxy : public QObject {
   public:
     explicit QmlLibraryProxy(std::shared_ptr<Library> pLibrary, QObject* parent = nullptr);
 
+    /// Filter the track table with the library's native search (same query
+    /// syntax as the legacy search box, e.g. artist:foo bpm:>120).
+    Q_INVOKABLE void search(const QString& searchText);
+
     static QmlLibraryProxy* create(QQmlEngine* pQmlEngine, QJSEngine* pJsEngine);
     static void registerLibrary(std::shared_ptr<Library> pLibrary) {
         s_pLibrary = std::move(pLibrary);

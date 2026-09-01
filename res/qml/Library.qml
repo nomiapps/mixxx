@@ -1,11 +1,58 @@
 import Mixxx 1.0 as Mixxx
 import QtQuick 2.12
+import QtQuick.Controls 2.12
 import "Theme"
 
 Item {
     Rectangle {
         color: Theme.deckBackgroundColor
         anchors.fill: parent
+
+        TextField {
+            id: searchField
+
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.margins: 10
+            height: 28
+            placeholderText: "Search..."
+            color: Theme.deckTextColor
+            placeholderTextColor: Theme.deckTextColor
+            font.pixelSize: 13
+            // debounced: the library search runs a real SQL query
+            onTextChanged: searchDebounce.restart()
+
+            background: Rectangle {
+                color: Theme.knobBackgroundColor
+                radius: 4
+                border.color: searchField.activeFocus ? Theme.deckActiveColor : "transparent"
+                border.width: 1
+            }
+
+            Keys.onPressed: (event) => {
+                switch (event.key) {
+                case Qt.Key_Escape:
+                    searchField.text = "";
+                    listView.forceActiveFocus();
+                    event.accepted = true;
+                    break;
+                case Qt.Key_Down:
+                case Qt.Key_Enter:
+                case Qt.Key_Return:
+                    listView.forceActiveFocus();
+                    event.accepted = true;
+                    break;
+                }
+            }
+
+            Timer {
+                id: searchDebounce
+
+                interval: 300
+                onTriggered: Mixxx.Library.search(searchField.text)
+            }
+        }
 
         LibraryControl {
             id: libraryControl
@@ -62,7 +109,10 @@ Item {
                 player.loadTrackFromLocationUrl(url, play);
             }
 
-            anchors.fill: parent
+            anchors.top: searchField.bottom
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
             anchors.margins: 10
             clip: true
             keyNavigationWraps: true
