@@ -51,6 +51,7 @@
       <attribute persist="true" config_key="[SkinEdge],show_loop_controls">1</attribute>
       <attribute persist="true" config_key="[SkinEdge],show_beatjump_controls">1</attribute>
       <attribute persist="true" config_key="[SkinEdge],show_spinnies">1</attribute>
+      <attribute persist="true" config_key="[SkinEdge],show_big_spinnies">0</attribute>
       <attribute persist="true" config_key="[SkinEdge],show_coverart">1</attribute>
       <attribute persist="true" config_key="[SkinEdge],select_big_spinny_or_cover">0</attribute>
       <!-- ToDo: deck-independent vinyl controls? -->
@@ -435,6 +436,13 @@
       <SizePolicy>me,me</SizePolicy>
       <Children>
 
+        <Template src="skins:LateNightEdge/spinny_mode.xml"/>
+
+        <WidgetGroup><!-- normal view; hidden while spinny mode is active -->
+          <Layout>vertical</Layout>
+          <SizePolicy>me,me</SizePolicy>
+          <Children>
+
         <Template src="skins:LateNightEdge/toolbar.xml"/>
 
         <!-- regular/maximized library  |  skin settings menu -->
@@ -540,6 +548,14 @@
 
           </Children>
         </WidgetGroup><!-- regular/maximized library + skin settings menu -->
+
+          </Children>
+          <Connection>
+            <ConfigKey persist="true">[SkinEdge],show_big_spinnies</ConfigKey>
+            <Transform><Not/></Transform>
+            <BindProperty>visible</BindProperty>
+          </Connection>
+        </WidgetGroup><!-- normal view -->
 
       </Children>
     </WidgetGroup>

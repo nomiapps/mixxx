@@ -1,0 +1,135 @@
+<!-- Spinny mode: the whole window becomes two giant touch spinnies.
+     Made for the Xeneon Edge (2560x720): drag the platter to scratch, big
+     CUE/PLAY underneath. Toggled by [SkinEdge],show_big_spinnies (SPINNY in
+     the toolbar; the small SPINNY button in the middle leaves the mode). -->
+<Template>
+  <WidgetGroup>
+    <ObjectName>SpinnyModeView</ObjectName>
+    <Layout>horizontal</Layout>
+    <SizePolicy>me,me</SizePolicy>
+    <Children>
+
+      <!-- Deck 1 -->
+      <WidgetGroup>
+        <Layout>vertical</Layout>
+        <SizePolicy>me,me</SizePolicy>
+        <Children>
+          <TrackProperty>
+            <TooltipId>track_title</TooltipId>
+            <ObjectName>TitleText</ObjectName>
+            <Size>100me,28f</Size>
+            <Property>title</Property>
+            <Group>[Channel1]</Group>
+          </TrackProperty>
+          <Spinny>
+            <TooltipId>spinny</TooltipId>
+            <SizePolicy>me,me</SizePolicy>
+            <MinimumSize>200,200</MinimumSize>
+            <Group>[Channel1]</Group>
+            <PathBackground scalemode="STRETCH_ASPECT">skins:LateNightEdge/<Variable name="StyleScheme"/>/style/spinny_bg.svg</PathBackground>
+            <PathMask scalemode="STRETCH_ASPECT">skins:LateNightEdge/<Variable name="StyleScheme"/>/style/spinny_mask_12.svg</PathMask>
+            <PathForeground>skins:LateNightEdge/<Variable name="StyleScheme"/>/style/spinny_indicator.svg</PathForeground>
+            <PathGhost>skins:LateNightEdge/<Variable name="StyleScheme"/>/style/spinny_indicator_ghost.svg</PathGhost>
+            <ShowCoverControl>[SkinEdge],show_coverart</ShowCoverControl>
+          </Spinny>
+          <WidgetGroup>
+            <Layout>horizontal</Layout>
+            <SizePolicy>me,f</SizePolicy>
+            <Children>
+              <WidgetGroup><Size>0me,1min</Size></WidgetGroup>
+              <Template src="skins:LateNightEdge/controls/button_1state.xml">
+                <SetVariable name="TooltipId">cue_default_cue_gotoandstop</SetVariable>
+                <SetVariable name="ObjectName">GuiToggleButton</SetVariable>
+                <SetVariable name="Size">160f,48f</SetVariable>
+                <SetVariable name="state_0_text">CUE</SetVariable>
+                <SetVariable name="ConfigKey">[Channel1],cue_default</SetVariable>
+              </Template>
+              <WidgetGroup><Size>24f,1min</Size></WidgetGroup>
+              <Template src="skins:LateNightEdge/controls/button_2state.xml">
+                <SetVariable name="TooltipId">play_cue_set</SetVariable>
+                <SetVariable name="ObjectName">GuiToggleButton</SetVariable>
+                <SetVariable name="Size">160f,48f</SetVariable>
+                <SetVariable name="state_0_text">PLAY</SetVariable>
+                <SetVariable name="state_1_text">PAUSE</SetVariable>
+                <SetVariable name="ConfigKey">[Channel1],play</SetVariable>
+              </Template>
+              <WidgetGroup><Size>0me,1min</Size></WidgetGroup>
+            </Children>
+          </WidgetGroup>
+        </Children>
+      </WidgetGroup>
+
+      <!-- Center: exit button + spacer -->
+      <WidgetGroup>
+        <Layout>vertical</Layout>
+        <SizePolicy>min,me</SizePolicy>
+        <Children>
+          <Template src="skins:LateNightEdge/controls/button_2state_persist.xml">
+            <SetVariable name="TooltipId">show_spinnies</SetVariable>
+            <SetVariable name="ObjectName">GuiToggleButton</SetVariable>
+            <SetVariable name="Size">64f,20f</SetVariable>
+            <SetVariable name="state_0_text">SPINNY</SetVariable>
+            <SetVariable name="state_1_text">SPINNY</SetVariable>
+            <SetVariable name="ConfigKey">[SkinEdge],show_big_spinnies</SetVariable>
+          </Template>
+          <WidgetGroup><Size>1min,0me</Size></WidgetGroup>
+        </Children>
+      </WidgetGroup>
+
+      <!-- Deck 2 -->
+      <WidgetGroup>
+        <Layout>vertical</Layout>
+        <SizePolicy>me,me</SizePolicy>
+        <Children>
+          <TrackProperty>
+            <TooltipId>track_title</TooltipId>
+            <ObjectName>TitleText</ObjectName>
+            <Size>100me,28f</Size>
+            <Property>title</Property>
+            <Group>[Channel2]</Group>
+          </TrackProperty>
+          <Spinny>
+            <TooltipId>spinny</TooltipId>
+            <SizePolicy>me,me</SizePolicy>
+            <MinimumSize>200,200</MinimumSize>
+            <Group>[Channel2]</Group>
+            <PathBackground scalemode="STRETCH_ASPECT">skins:LateNightEdge/<Variable name="StyleScheme"/>/style/spinny_bg.svg</PathBackground>
+            <PathMask scalemode="STRETCH_ASPECT">skins:LateNightEdge/<Variable name="StyleScheme"/>/style/spinny_mask_12.svg</PathMask>
+            <PathForeground>skins:LateNightEdge/<Variable name="StyleScheme"/>/style/spinny_indicator.svg</PathForeground>
+            <PathGhost>skins:LateNightEdge/<Variable name="StyleScheme"/>/style/spinny_indicator_ghost.svg</PathGhost>
+            <ShowCoverControl>[SkinEdge],show_coverart</ShowCoverControl>
+          </Spinny>
+          <WidgetGroup>
+            <Layout>horizontal</Layout>
+            <SizePolicy>me,f</SizePolicy>
+            <Children>
+              <WidgetGroup><Size>0me,1min</Size></WidgetGroup>
+              <Template src="skins:LateNightEdge/controls/button_1state.xml">
+                <SetVariable name="TooltipId">cue_default_cue_gotoandstop</SetVariable>
+                <SetVariable name="ObjectName">GuiToggleButton</SetVariable>
+                <SetVariable name="Size">160f,48f</SetVariable>
+                <SetVariable name="state_0_text">CUE</SetVariable>
+                <SetVariable name="ConfigKey">[Channel2],cue_default</SetVariable>
+              </Template>
+              <WidgetGroup><Size>24f,1min</Size></WidgetGroup>
+              <Template src="skins:LateNightEdge/controls/button_2state.xml">
+                <SetVariable name="TooltipId">play_cue_set</SetVariable>
+                <SetVariable name="ObjectName">GuiToggleButton</SetVariable>
+                <SetVariable name="Size">160f,48f</SetVariable>
+                <SetVariable name="state_0_text">PLAY</SetVariable>
+                <SetVariable name="state_1_text">PAUSE</SetVariable>
+                <SetVariable name="ConfigKey">[Channel2],play</SetVariable>
+              </Template>
+              <WidgetGroup><Size>0me,1min</Size></WidgetGroup>
+            </Children>
+          </WidgetGroup>
+        </Children>
+      </WidgetGroup>
+
+    </Children>
+    <Connection>
+      <ConfigKey persist="true">[SkinEdge],show_big_spinnies</ConfigKey>
+      <BindProperty>visible</BindProperty>
+    </Connection>
+  </WidgetGroup>
+</Template>

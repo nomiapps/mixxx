@@ -14,6 +14,15 @@
         <SetVariable name="ConfigKey">[SkinEdge],show_maximized_library</SetVariable>
       </Template>
 
+      <Template src="skins:LateNightEdge/controls/button_2state_persist.xml">
+        <SetVariable name="TooltipId">show_spinnies</SetVariable>
+        <SetVariable name="ObjectName">GuiToggleButton</SetVariable>
+        <SetVariable name="Size">64f,20f</SetVariable>
+        <SetVariable name="state_0_text">SPINNY</SetVariable>
+        <SetVariable name="state_1_text">SPINNY</SetVariable>
+        <SetVariable name="ConfigKey">[SkinEdge],show_big_spinnies</SetVariable>
+      </Template>
+
       <WidgetGroup>
         <ObjectName>ToolbarSeparator</ObjectName>
         <Size>12f,9min</Size>
