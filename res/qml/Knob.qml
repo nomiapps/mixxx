@@ -1,5 +1,6 @@
 import Mixxx.Controls 1.0 as MixxxControls
 import QtQuick 2.12
+import QtQuick.Window 2.12
 import "Theme"
 
 MixxxControls.Knob {
@@ -27,6 +28,10 @@ MixxxControls.Knob {
         height: width * 7 / 6
         fillMode: Image.PreserveAspectFit
         source: root.shadowSource
+        // rasterize the SVG at device resolution; without this it is drawn at
+        // logical size and upscaled on HiDPI screens, which looks blurry
+        sourceSize.width: width * Screen.devicePixelRatio
+        sourceSize.height: height * Screen.devicePixelRatio
     }
 
     background: Image {
@@ -37,6 +42,8 @@ MixxxControls.Knob {
         anchors.right: parent.right
         height: width
         source: root.backgroundSource
+        sourceSize.width: width * Screen.devicePixelRatio
+        sourceSize.height: height * Screen.devicePixelRatio
     }
 
     foreground: Item {

@@ -2,6 +2,7 @@
 
 #include <QQmlEngineExtensionPlugin>
 #include <QQuickStyle>
+#include <QSurfaceFormat>
 
 #include "controllers/controllermanager.h"
 #include "mixer/playermanager.h"
@@ -40,6 +41,13 @@ QmlApplication::QmlApplication(
           m_pAppEngine(nullptr),
           m_autoReload() {
     QQuickStyle::setStyle("Basic");
+
+    // 4x MSAA so QtQuick.Shapes strokes (knob value arcs, waveform markers)
+    // are antialiased; the Shape "antialiasing" property is a no-op without a
+    // multisampled surface. Must be set before any QQuickWindow is created.
+    QSurfaceFormat format = QSurfaceFormat::defaultFormat();
+    format.setSamples(4);
+    QSurfaceFormat::setDefaultFormat(format);
 
     m_pCoreServices->initialize(app);
     SoundDeviceStatus result = m_pCoreServices->getSoundManager()->setupDevices();
