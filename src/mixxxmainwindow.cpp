@@ -371,8 +371,28 @@ void MixxxMainWindow::initialize() {
     if (qEnvironmentVariableIsSet("MIXXX_SECOND_WINDOW")) {
         m_pSecondWindow = new QMainWindow();
         m_pSecondWindow->setWindowTitle(QStringLiteral("Mixxx — Second Window"));
-        QWidget* pSecondSkin = m_pSkinLoader->loadConfiguredSkin(
-                m_pSecondWindow, &m_skinCreatedControls, m_pCoreServices.get());
+        // The variable's value may name a skin for this window (e.g. LateNightEdge,
+        // whose visibility toggles read [SkinEdge] keys so the two windows are
+        // configured independently). "1" or empty means: same skin as the main window.
+        const QString secondSkinName =
+                QString::fromLocal8Bit(qgetenv("MIXXX_SECOND_WINDOW")).trimmed();
+        QWidget* pSecondSkin = nullptr;
+        if (!secondSkinName.isEmpty() && secondSkinName != QStringLiteral("1")) {
+            mixxx::skin::SkinPointer pSkin = m_pSkinLoader->getSkin(secondSkinName);
+            if (pSkin != nullptr && pSkin->isValid()) {
+                pSecondSkin = pSkin->loadSkin(m_pSecondWindow,
+                        m_pCoreServices->getSettings(),
+                        &m_skinCreatedControls,
+                        m_pCoreServices.get());
+            } else {
+                qWarning() << "Second window: skin" << secondSkinName
+                           << "not found, falling back to the configured skin.";
+            }
+        }
+        if (pSecondSkin == nullptr) {
+            pSecondSkin = m_pSkinLoader->loadConfiguredSkin(
+                    m_pSecondWindow, &m_skinCreatedControls, m_pCoreServices.get());
+        }
         if (pSecondSkin) {
             m_pSecondWindow->setCentralWidget(pSecondSkin);
             m_pSecondWindow->setStyleSheet(pSecondSkin->styleSheet());
