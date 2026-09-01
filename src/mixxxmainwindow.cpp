@@ -396,6 +396,15 @@ void MixxxMainWindow::initialize() {
         if (pSecondSkin) {
             m_pSecondWindow->setCentralWidget(pSecondSkin);
             m_pSecondWindow->setStyleSheet(pSecondSkin->styleSheet());
+            // Restore where the user last put it -- without this it opens at a
+            // default spot on the primary screen every launch and has to be dragged
+            // to the second display by hand each time.
+            const QString geom = m_pCoreServices->getSettings()->getValueString(
+                    ConfigKey("[MainWindow]", "second_window_geometry"));
+            if (!geom.isEmpty()) {
+                m_pSecondWindow->restoreGeometry(
+                        QByteArray::fromBase64(geom.toUtf8()));
+            }
             m_pSecondWindow->show();
         } else {
             qWarning() << "Second window: skin failed to load, disabling.";
@@ -513,6 +522,9 @@ MixxxMainWindow::~MixxxMainWindow() {
     // The second window's skin widgets reference engine-side objects; destroy them
     // before any of that tears down, not after.
     if (m_pSecondWindow) {
+        m_pCoreServices->getSettings()->setValue(
+                ConfigKey("[MainWindow]", "second_window_geometry"),
+                QString::fromUtf8(m_pSecondWindow->saveGeometry().toBase64()));
         delete m_pSecondWindow;
         m_pSecondWindow = nullptr;
     }
