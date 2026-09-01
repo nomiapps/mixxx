@@ -75,6 +75,25 @@ ApplicationWindow {
                 }
 
                 Skin.Button {
+                    id: showEdgeSurfaceButton
+
+                    text: "Edge"
+                    activeColor: Theme.white
+                    checkable: true
+                    checked: edgeSurfaceWindow.visible
+                    onClicked: {
+                        if (edgeSurfaceWindow.visible)
+                            edgeSurfaceWindow.close();
+                        else
+                            edgeSurfaceWindow.show();
+                    }
+
+                    Skin.EdgeSurface {
+                        id: edgeSurfaceWindow
+                    }
+                }
+
+                Skin.Button {
                     id: showDevToolsButton
 
                     text: "Develop"
