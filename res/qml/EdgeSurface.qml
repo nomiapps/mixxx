@@ -21,6 +21,23 @@ Window {
 
     property var layoutDef: null
 
+    // Same clamp as main.qml: never open with the title bar offscreen.
+    onVisibleChanged: {
+        if (!visible)
+            return ;
+
+        const s = root.screen;
+        if (!s)
+            return ;
+
+        root.width = Math.min(root.width, s.desktopAvailableWidth);
+        root.height = Math.min(root.height, s.desktopAvailableHeight);
+        root.x = Math.min(Math.max(root.x, s.virtualX),
+                s.virtualX + s.desktopAvailableWidth - root.width);
+        root.y = Math.min(Math.max(root.y, s.virtualY),
+                s.virtualY + s.desktopAvailableHeight - root.height);
+    }
+
     function elementFile(type) {
         switch (type) {
         case "platter":

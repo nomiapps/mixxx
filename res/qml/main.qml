@@ -17,6 +17,22 @@ ApplicationWindow {
     color: Theme.backgroundColor
     visible: true
 
+    // Qt sometimes places the window with its title bar beyond the screen
+    // edge; clamp into the screen's available area so it always opens
+    // reachable (also shrinks a window larger than its screen).
+    Component.onCompleted: {
+        const s = root.screen;
+        if (!s)
+            return ;
+
+        root.width = Math.min(root.width, s.desktopAvailableWidth);
+        root.height = Math.min(root.height, s.desktopAvailableHeight);
+        root.x = Math.min(Math.max(root.x, s.virtualX),
+                s.virtualX + s.desktopAvailableWidth - root.width);
+        root.y = Math.min(Math.max(root.y, s.virtualY),
+                s.virtualY + s.desktopAvailableHeight - root.height);
+    }
+
     Column {
         anchors.fill: parent
 
