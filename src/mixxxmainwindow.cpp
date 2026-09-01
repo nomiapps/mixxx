@@ -362,6 +362,28 @@ void MixxxMainWindow::initialize() {
         m_pMenuBar->setStyleSheet(m_pCentralWidget->styleSheet());
     }
 
+    // Experimental: a second top-level window carrying another instance of the
+    // configured skin. Safe to call loadConfiguredSkin() again: its control-creating
+    // helpers are guarded (m_spinnyCoverControlsCreated etc.), and the skin's widgets
+    // bind to the process-global ControlObjects -- so this window controls the same
+    // decks, library and mixer as the main one. Opt-in via environment variable while
+    // this is being proven.
+    if (qEnvironmentVariableIsSet("MIXXX_SECOND_WINDOW")) {
+        m_pSecondWindow = new QMainWindow();
+        m_pSecondWindow->setWindowTitle(QStringLiteral("Mixxx — Second Window"));
+        QWidget* pSecondSkin = m_pSkinLoader->loadConfiguredSkin(
+                m_pSecondWindow, &m_skinCreatedControls, m_pCoreServices.get());
+        if (pSecondSkin) {
+            m_pSecondWindow->setCentralWidget(pSecondSkin);
+            m_pSecondWindow->setStyleSheet(pSecondSkin->styleSheet());
+            m_pSecondWindow->show();
+        } else {
+            qWarning() << "Second window: skin failed to load, disabling.";
+            delete m_pSecondWindow;
+            m_pSecondWindow = nullptr;
+        }
+    }
+
     // Check direct rendering and warn user if they don't have it
     if (!CmdlineArgs::Instance().getSafeMode()) {
         checkDirectRendering();
@@ -467,6 +489,13 @@ void MixxxMainWindow::initialize() {
 MixxxMainWindow::~MixxxMainWindow() {
     Timer t("~MixxxMainWindow");
     t.start();
+
+    // The second window's skin widgets reference engine-side objects; destroy them
+    // before any of that tears down, not after.
+    if (m_pSecondWindow) {
+        delete m_pSecondWindow;
+        m_pSecondWindow = nullptr;
+    }
 
     // Save the current window state (position, maximized, etc)
     // Note(ronso0): Unfortunately saveGeometry() also stores the fullscreen state.

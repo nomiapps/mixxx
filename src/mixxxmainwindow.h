@@ -162,4 +162,8 @@ class MixxxMainWindow : public QMainWindow {
     mixxx::preferences::ScreenSaver m_inhibitScreensaver;
 
     QSet<ControlObject*> m_skinCreatedControls;
+    // Experimental second skin window (MIXXX_SECOND_WINDOW=1). Owns a second copy of
+    // the configured skin whose widgets bind to the same ControlObjects as the main
+    // window, so both windows drive one engine.
+    QMainWindow* m_pSecondWindow{nullptr};
 };
