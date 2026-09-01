@@ -367,6 +367,50 @@
                 "sampler"
             ],
             "samplerOffset": 4
+        },
+        {
+            "type": "vumeter",
+            "group": "[Channel1]",
+            "key": "vu_meter",
+            "rect": [
+                1156,
+                395,
+                14,
+                215
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Channel2]",
+            "key": "vu_meter",
+            "rect": [
+                1390,
+                395,
+                14,
+                215
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Master]",
+            "key": "vu_meter_left",
+            "rect": [
+                1246,
+                395,
+                14,
+                215
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Master]",
+            "key": "vu_meter_right",
+            "rect": [
+                1300,
+                395,
+                14,
+                215
+            ]
         }
     ]
 }
