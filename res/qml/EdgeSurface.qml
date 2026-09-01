@@ -126,10 +126,8 @@ Window {
             orientation: Qt.Vertical
             group: "[Channel1]"
             key: "volume"
-            barColor: Theme.crossfaderBarColor
-            barStart: 0
-            fg: Theme.imgCrossfaderHandle
-            bg: Theme.imgCrossfaderBackground
+            barColor: Theme.volumeSliderBarColor
+            bg: Theme.imgVolumeSliderBackground
         }
 
         Skin.ControlSlider {
@@ -142,10 +140,8 @@ Window {
             orientation: Qt.Vertical
             group: "[Channel2]"
             key: "volume"
-            barColor: Theme.crossfaderBarColor
-            barStart: 0
-            fg: Theme.imgCrossfaderHandle
-            bg: Theme.imgCrossfaderBackground
+            barColor: Theme.volumeSliderBarColor
+            bg: Theme.imgVolumeSliderBackground
         }
 
         Skin.ControlSlider {
