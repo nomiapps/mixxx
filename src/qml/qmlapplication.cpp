@@ -40,6 +40,10 @@ QmlApplication::QmlApplication(
           m_mainFilePath(m_pCoreServices->getSettings()->getResourcePath() + kMainQmlFileName),
           m_pAppEngine(nullptr),
           m_autoReload() {
+    // The Edge surface layout engine reads its JSON controller layouts with
+    // XMLHttpRequest, which Qt6 blocks for local files unless this is set.
+    qputenv("QML_XHR_ALLOW_FILE_READ", "1");
+
     QQuickStyle::setStyle("Basic");
 
     // 4x MSAA so QtQuick.Shapes strokes (knob value arcs, waveform markers)

@@ -1,0 +1,7 @@
+{
+    "_comment": "Register controller layouts here: add your .json to this folder and list it below. See ddj-flx4.json for the element format.",
+    "layouts": [
+        "ddj-flx4.json",
+        "mixtrack-platinum-fx.json"
+    ]
+}

@@ -1,14 +1,16 @@
 import "." as Skin
-import Mixxx 1.0 as Mixxx
 import QtQuick 2.12
+import QtQuick.Controls 2.12
 import QtQuick.Window 2.12
 import "Theme"
 
-// The Edge performance surface, laid out like a DDJ-FLX4: jog with PLAY/CUE
-// stacked bottom-left, tempo fader + BEAT SYNC on the deck's right edge,
-// performance pads below the jog, and a 2-channel club mixer in the center
-// (TRIM / HI / MID / LOW / CFX, channel faders with headphone cue, crossfader).
-// Sized against a 2560x720 canvas; everything scales as one locked unit.
+// The Edge performance surface: a layout ENGINE. Controller layouts are JSON
+// files in res/qml/edge-layouts/ describing a design canvas plus elements
+// (platter, pads, knob, slider, button, text) with rects and Mixxx
+// group/key bindings. Add a .json there, list it in edge-layouts/index.json,
+// and pick it from the LAYOUT menu; the canvas scales as one locked unit at
+// any window size. (index.json exists because Qt.labs.folderlistmodel is not
+// in the build; a C++ directory scan can replace it later.)
 Window {
     id: root
 
@@ -17,304 +19,139 @@ Window {
     color: Theme.backgroundColor
     title: "Mixxx - Edge Surface"
 
-    readonly property real ui: Math.min(width / 2560, height / 720)
+    property var layoutDef: null
 
-    component KnobCell: Column {
-        id: knobCell
-
-        required property string knobGroup
-        required property string knobKey
-        required property string label
-        property color knobColor: Theme.deckActiveColor
-
-        spacing: 2 * root.ui
-
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: knobCell.label
-            color: Theme.deckTextColor
-            font.pixelSize: Math.max(9, 13 * root.ui)
-        }
-
-        Skin.ControlKnob {
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: 52 * root.ui
-            height: 52 * root.ui
-            group: knobCell.knobGroup
-            key: knobCell.knobKey
-            color: knobCell.knobColor
+    function elementFile(type) {
+        switch (type) {
+        case "platter":
+            return "EdgeElementPlatter.qml";
+        case "pads":
+            return "EdgeElementPads.qml";
+        case "knob":
+            return "EdgeElementKnob.qml";
+        case "slider":
+            return "EdgeElementSlider.qml";
+        case "button":
+            return "EdgeElementButton.qml";
+        case "text":
+            return "EdgeElementText.qml";
+        default:
+            console.warn("edge-layout: unknown element type", type);
+            return "";
         }
     }
 
-    component DeckSide: Item {
-        id: side
+    function loadLayout(url) {
+        const xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState !== XMLHttpRequest.DONE)
+                return ;
 
-        required property string group
-        property var player: Mixxx.PlayerManager.getPlayer(group)
-
-        Text {
-            id: trackText
-
-            anchors.top: parent.top
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: side.player ? (side.player.artist + " - " + side.player.title) : ""
-            color: Theme.deckTextColor
-            font.pixelSize: Math.max(12, 20 * root.ui)
-            elide: Text.ElideRight
-            width: parent.width * 0.9
-            horizontalAlignment: Text.AlignHCenter
-        }
-
-        // transport column, FLX4-style bottom-left: CUE above PLAY
-        Column {
-            id: transportColumn
-
-            anchors.left: parent.left
-            anchors.bottom: padsGrid.top
-            anchors.bottomMargin: 14 * root.ui
-            spacing: 8 * root.ui
-
-            Skin.ControlButton {
-                width: 120 * root.ui
-                height: 64 * root.ui
-                group: side.group
-                key: "cue_default"
-                text: "CUE"
-                activeColor: Theme.deckActiveColor
+            try {
+                root.layoutDef = JSON.parse(xhr.responseText);
+            } catch (e) {
+                console.warn("edge-layout: failed to parse", url, e);
             }
+        };
+        xhr.open("GET", url);
+        xhr.send();
+    }
 
-            Skin.ControlButton {
-                width: 120 * root.ui
-                height: 84 * root.ui
-                group: side.group
-                key: "play"
-                text: "PLAY"
-                toggleable: true
-                activeColor: Theme.deckActiveColor
+    ListModel {
+        id: layoutList
+    }
+
+    Component.onCompleted: {
+        const xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState !== XMLHttpRequest.DONE)
+                return ;
+
+            try {
+                const index = JSON.parse(xhr.responseText);
+                for (const file of index.layouts) {
+                    layoutList.append({
+                        "name": file.replace(/\.json$/, ""),
+                        "url": Qt.resolvedUrl("edge-layouts/" + file).toString()
+                    });
+                }
+                if (layoutList.count > 0) {
+                    layoutPicker.currentIndex = 0;
+                    root.loadLayout(layoutList.get(0).url);
+                }
+            } catch (e) {
+                console.warn("edge-layout: failed to read index.json", e);
             }
-        }
+        };
+        xhr.open("GET", Qt.resolvedUrl("edge-layouts/index.json"));
+        xhr.send();
+    }
 
-        // tempo fader + beat sync on the deck's right edge
-        Column {
-            id: tempoColumn
+    Rectangle {
+        id: header
 
-            anchors.right: parent.right
-            anchors.top: trackText.bottom
-            anchors.topMargin: 10 * root.ui
-            spacing: 10 * root.ui
+        width: parent.width
+        height: 32
+        color: Theme.toolbarBackgroundColor
+
+        Row {
+            anchors.verticalCenter: parent.verticalCenter
+            x: 8
+            spacing: 10
 
             Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "TEMPO"
+                anchors.verticalCenter: parent.verticalCenter
+                text: "LAYOUT"
                 color: Theme.deckTextColor
-                font.pixelSize: Math.max(9, 13 * root.ui)
+                font.pixelSize: 12
             }
 
-            Skin.ControlSlider {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: 70 * root.ui
-                height: 320 * root.ui
-                orientation: Qt.Vertical
-                group: side.group
-                key: "rate"
-                barColor: Theme.bpmSliderBarColor
-                barStart: 0.5
-                bg: Theme.imgBpmSliderBackground
-            }
+            ComboBox {
+                id: layoutPicker
 
-            Skin.ControlButton {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: 100 * root.ui
-                height: 44 * root.ui
-                group: side.group
-                key: "sync_enabled"
-                text: "BEAT SYNC"
-                toggleable: true
-                activeColor: Theme.deckActiveColor
-            }
-        }
-
-        Skin.EdgeDeckPlatter {
-            id: platter
-
-            group: side.group
-            anchors.top: trackText.bottom
-            anchors.bottom: padsGrid.top
-            anchors.left: transportColumn.right
-            anchors.right: tempoColumn.left
-            anchors.margins: 6 * root.ui
-        }
-
-        Grid {
-            id: padsGrid
-
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 6 * root.ui
-            anchors.horizontalCenter: parent.horizontalCenter
-            columns: 4
-            spacing: 6 * root.ui
-
-            Repeater {
-                model: 8
-
-                Skin.HotcueButton {
-                    required property int index
-
-                    width: 110 * root.ui
-                    height: 54 * root.ui
-                    hotcueNumber: index + 1
-                    group: side.group
+                width: 280
+                height: 26
+                model: layoutList
+                textRole: "name"
+                onActivated: (index) => {
+                    root.loadLayout(layoutList.get(index).url);
                 }
             }
         }
     }
 
-    component MixerChannel: Item {
-        id: channel
+    Item {
+        id: canvasArea
 
-        required property string group
-
-        Column {
-            id: knobStack
-
-            anchors.top: parent.top
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 6 * root.ui
-
-            KnobCell {
-                label: "TRIM"
-                knobGroup: channel.group
-                knobKey: "pregain"
-                knobColor: Theme.white
-            }
-
-            KnobCell {
-                label: "HI"
-                knobGroup: "[EqualizerRack1_" + channel.group + "_Effect1]"
-                knobKey: "parameter3"
-            }
-
-            KnobCell {
-                label: "MID"
-                knobGroup: "[EqualizerRack1_" + channel.group + "_Effect1]"
-                knobKey: "parameter2"
-            }
-
-            KnobCell {
-                label: "LOW"
-                knobGroup: "[EqualizerRack1_" + channel.group + "_Effect1]"
-                knobKey: "parameter1"
-            }
-
-            KnobCell {
-                label: "CFX"
-                knobGroup: "[QuickEffectRack1_" + channel.group + "]"
-                knobKey: "super1"
-                knobColor: Theme.crossfaderBarColor
-            }
-        }
-
-        Skin.ControlSlider {
-            id: volumeSlider
-
-            anchors.top: knobStack.bottom
-            anchors.topMargin: 8 * root.ui
-            anchors.bottom: pflButton.top
-            anchors.bottomMargin: 6 * root.ui
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: 60 * root.ui
-            orientation: Qt.Vertical
-            group: channel.group
-            key: "volume"
-            barColor: Theme.volumeSliderBarColor
-            bg: Theme.imgVolumeSliderBackground
-        }
-
-        Skin.ControlButton {
-            id: pflButton
-
-            anchors.bottom: parent.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: 70 * root.ui
-            height: 30 * root.ui
-            group: channel.group
-            key: "pfl"
-            text: "CUE"
-            toggleable: true
-            activeColor: Theme.deckActiveColor
-        }
-    }
-
-    DeckSide {
-        id: leftDeck
-
-        group: "[Channel1]"
-        anchors.top: parent.top
+        anchors.top: header.bottom
         anchors.bottom: parent.bottom
         anchors.left: parent.left
-        anchors.right: mixer.left
-        anchors.margins: 8 * root.ui
-    }
-
-    Item {
-        id: mixer
-
-        width: 460 * root.ui
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: 8 * root.ui
-        anchors.bottomMargin: 8 * root.ui
-
-        MixerChannel {
-            id: mixerChannel1
-
-            group: "[Channel1]"
-            width: 180 * root.ui
-            anchors.top: parent.top
-            anchors.bottom: crossfader.top
-            anchors.bottomMargin: 10 * root.ui
-            anchors.left: parent.left
-            anchors.leftMargin: 20 * root.ui
-        }
-
-        MixerChannel {
-            id: mixerChannel2
-
-            group: "[Channel2]"
-            width: 180 * root.ui
-            anchors.top: parent.top
-            anchors.bottom: crossfader.top
-            anchors.bottomMargin: 10 * root.ui
-            anchors.right: parent.right
-            anchors.rightMargin: 20 * root.ui
-        }
-
-        Skin.ControlSlider {
-            id: crossfader
-
-            anchors.bottom: parent.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: parent.width * 0.9
-            height: 44 * root.ui
-            orientation: Qt.Horizontal
-            group: "[Master]"
-            key: "crossfader"
-            barColor: Theme.crossfaderBarColor
-            barStart: 0.5
-            fg: Theme.imgCrossfaderHandle
-            bg: Theme.imgCrossfaderBackground
-        }
-    }
-
-    DeckSide {
-        id: rightDeck
-
-        group: "[Channel2]"
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        anchors.left: mixer.right
         anchors.right: parent.right
-        anchors.margins: 8 * root.ui
+
+        readonly property real canvasW: root.layoutDef ? root.layoutDef.canvas[0] : 2560
+        readonly property real canvasH: root.layoutDef ? root.layoutDef.canvas[1] : 720
+        readonly property real ui: Math.min(width / canvasW, height / canvasH)
+        readonly property real xOff: (width - canvasW * ui) / 2
+        readonly property real yOff: (height - canvasH * ui) / 2
+
+        Repeater {
+            model: root.layoutDef ? root.layoutDef.elements : []
+
+            Loader {
+                required property var modelData
+
+                x: canvasArea.xOff + modelData.rect[0] * canvasArea.ui
+                y: canvasArea.yOff + modelData.rect[1] * canvasArea.ui
+                width: modelData.rect[2] * canvasArea.ui
+                height: modelData.rect[3] * canvasArea.ui
+                Component.onCompleted: {
+                    const file = root.elementFile(modelData.type);
+                    if (file)
+                        setSource(file, {
+                            "spec": modelData
+                        });
+                }
+            }
+        }
     }
 }
