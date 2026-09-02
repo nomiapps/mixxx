@@ -19,6 +19,11 @@ MixxxControls.Knob {
     arcWidth: 2
     angle: 116
 
+    // Request smooth (antialiased) rendering so the thin arc isn't
+    // stair-stepped, especially on fractional display scaling.
+    antialiasing: true
+    smooth: true
+
     Image {
         id: shadow
 
