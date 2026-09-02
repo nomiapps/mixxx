@@ -67,6 +67,8 @@ Window {
             return "EdgeElementLabel.qml";
         case "vumeter":
             return "EdgeElementVuMeter.qml";
+        case "waveform":
+            return "EdgeElementWaveform.qml";
         default:
             console.warn("edge-layout: unknown element type", type);
             return "";

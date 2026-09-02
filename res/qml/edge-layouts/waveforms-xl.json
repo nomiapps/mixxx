@@ -1,0 +1,159 @@
+{
+    "name": "Waveforms XL",
+    "canvas": [
+        2560,
+        720
+    ],
+    "elements": [
+        {
+            "type": "text",
+            "group": "[Channel1]",
+            "rect": [
+                150,
+                6,
+                1000,
+                30
+            ]
+        },
+        {
+            "type": "text",
+            "group": "[Channel2]",
+            "rect": [
+                1410,
+                6,
+                1000,
+                30
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "[Channel1]",
+            "rect": [
+                150,
+                44,
+                2400,
+                300
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "[Channel2]",
+            "rect": [
+                150,
+                372,
+                2400,
+                300
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "play",
+            "label": "PLAY 1",
+            "toggle": true,
+            "rect": [
+                10,
+                44,
+                130,
+                140
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "cue_default",
+            "label": "CUE",
+            "rect": [
+                10,
+                194,
+                130,
+                70
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "sync_enabled",
+            "label": "SYNC",
+            "toggle": true,
+            "rect": [
+                10,
+                274,
+                130,
+                70
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "play",
+            "label": "PLAY 2",
+            "toggle": true,
+            "rect": [
+                10,
+                372,
+                130,
+                140
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "cue_default",
+            "label": "CUE",
+            "rect": [
+                10,
+                522,
+                130,
+                70
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "sync_enabled",
+            "label": "SYNC",
+            "toggle": true,
+            "rect": [
+                10,
+                602,
+                130,
+                70
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "crossfader",
+            "group": "[Master]",
+            "key": "crossfader",
+            "rect": [
+                1030,
+                684,
+                500,
+                32
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Master]",
+            "key": "vu_meter_left",
+            "rect": [
+                980,
+                686,
+                12,
+                28
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Master]",
+            "key": "vu_meter_right",
+            "rect": [
+                1550,
+                686,
+                12,
+                28
+            ]
+        }
+    ]
+}
