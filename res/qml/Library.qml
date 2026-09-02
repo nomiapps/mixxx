@@ -289,6 +289,16 @@ Item {
             property string sortRole: ""
             property bool sortDescending: false
 
+            // Shared per-column pixel widths (header + rows bind to these);
+            // draggable splitters below adjust them. GENRE takes the rest.
+            property real colArtist: 300
+            property real colTitle: 340
+            property real colBpm: 90
+            property real colKey: 70
+            property real colTime: 80
+            readonly property real colGenre: Math.max(60,
+                    width - colArtist - colTitle - colBpm - colKey - colTime - 5 * 6)
+
             function toggleSort(role) {
                 if (sortRole === role)
                     sortDescending = !sortDescending;
@@ -310,9 +320,9 @@ Item {
             component HeaderCell: Item {
                 required property string role
                 required property string title
-                required property real widthFraction
+                required property real cellWidth
 
-                width: (columnHeader.width - 4) * widthFraction
+                width: cellWidth
                 height: columnHeader.height
 
                 Text {
@@ -332,12 +342,50 @@ Item {
                 }
             }
 
-            HeaderCell { role: "artist"; title: "ARTIST"; widthFraction: 0.30 }
-            HeaderCell { role: "title"; title: "TITLE"; widthFraction: 0.34 }
-            HeaderCell { role: "bpm"; title: "BPM"; widthFraction: 0.09 }
-            HeaderCell { role: "key"; title: "KEY"; widthFraction: 0.07 }
-            HeaderCell { role: "duration"; title: "TIME"; widthFraction: 0.08 }
-            HeaderCell { role: "genre"; title: "GENRE"; widthFraction: 0.12 }
+            // A draggable divider; emits horizontal delta in columnHeader coords.
+            component Splitter: Item {
+                signal dragged(real dx)
+
+                width: 6
+                height: columnHeader.height
+
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 1
+                    height: parent.height
+                    color: Theme.deckTextColor
+                    opacity: splitMouse.pressed ? 0.8 : 0.25
+                }
+
+                MouseArea {
+                    id: splitMouse
+
+                    anchors.fill: parent
+                    anchors.margins: -2
+                    cursorShape: Qt.SplitHCursor
+                    property real lastX: 0
+                    onPressed: (mouse) => {
+                        lastX = mapToItem(columnHeader, mouse.x, 0).x;
+                    }
+                    onPositionChanged: (mouse) => {
+                        const cx = mapToItem(columnHeader, mouse.x, 0).x;
+                        parent.dragged(cx - lastX);
+                        lastX = cx;
+                    }
+                }
+            }
+
+            HeaderCell { role: "artist"; title: "ARTIST"; cellWidth: columnHeader.colArtist }
+            Splitter { onDragged: (dx) => columnHeader.colArtist = Math.max(40, columnHeader.colArtist + dx) }
+            HeaderCell { role: "title"; title: "TITLE"; cellWidth: columnHeader.colTitle }
+            Splitter { onDragged: (dx) => columnHeader.colTitle = Math.max(40, columnHeader.colTitle + dx) }
+            HeaderCell { role: "bpm"; title: "BPM"; cellWidth: columnHeader.colBpm }
+            Splitter { onDragged: (dx) => columnHeader.colBpm = Math.max(30, columnHeader.colBpm + dx) }
+            HeaderCell { role: "key"; title: "KEY"; cellWidth: columnHeader.colKey }
+            Splitter { onDragged: (dx) => columnHeader.colKey = Math.max(30, columnHeader.colKey + dx) }
+            HeaderCell { role: "duration"; title: "TIME"; cellWidth: columnHeader.colTime }
+            Splitter { onDragged: (dx) => columnHeader.colTime = Math.max(30, columnHeader.colTime + dx) }
+            HeaderCell { role: "genre"; title: "GENRE"; cellWidth: columnHeader.colGenre }
         }
 
         ListView {
@@ -429,54 +477,21 @@ Item {
                     anchors.fill: parent
                     anchors.leftMargin: 4
 
-                    Text {
-                        width: parent.width * 0.30
+                    component Cell: Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: itemDlgt.artist
                         color: itemDlgt.rowColor
                         font.pixelSize: 12
                         elide: Text.ElideRight
                     }
-                    Text {
-                        width: parent.width * 0.34
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: itemDlgt.title
-                        color: itemDlgt.rowColor
-                        font.pixelSize: 12
-                        elide: Text.ElideRight
-                    }
-                    Text {
-                        width: parent.width * 0.09
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: itemDlgt.bpm
-                        color: itemDlgt.rowColor
-                        font.pixelSize: 12
-                        elide: Text.ElideRight
-                    }
-                    Text {
-                        width: parent.width * 0.07
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: itemDlgt.key
-                        color: itemDlgt.rowColor
-                        font.pixelSize: 12
-                        elide: Text.ElideRight
-                    }
-                    Text {
-                        width: parent.width * 0.08
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: itemDlgt.duration
-                        color: itemDlgt.rowColor
-                        font.pixelSize: 12
-                        elide: Text.ElideRight
-                    }
-                    Text {
-                        width: parent.width * 0.12
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: itemDlgt.genre
-                        color: itemDlgt.rowColor
-                        font.pixelSize: 12
-                        elide: Text.ElideRight
-                    }
+
+                    // Widths mirror the header columns; +6 absorbs each header
+                    // splitter gap so cells stay aligned with their labels.
+                    Cell { width: columnHeader.colArtist + 6; text: itemDlgt.artist }
+                    Cell { width: columnHeader.colTitle + 6; text: itemDlgt.title }
+                    Cell { width: columnHeader.colBpm + 6; text: itemDlgt.bpm }
+                    Cell { width: columnHeader.colKey + 6; text: itemDlgt.key }
+                    Cell { width: columnHeader.colTime + 6; text: itemDlgt.duration }
+                    Cell { width: columnHeader.colGenre; text: itemDlgt.genre }
                 }
 
                 Image {
