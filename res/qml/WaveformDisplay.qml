@@ -251,4 +251,46 @@ Item {
             }
         }
     }
+
+    // Analysis overlay: a track loads instantly but its waveform is generated
+    // on first play (nothing cached yet), which can take several seconds for
+    // long or stem tracks. Show a centered, self-explaining notice meanwhile.
+    property var analysisPlayer: Mixxx.PlayerManager.getPlayer(root.group)
+
+    Rectangle {
+        id: analysisOverlay
+
+        anchors.fill: parent
+        color: "#66000000"
+        visible: root.analysisPlayer
+                && root.analysisPlayer.isLoaded
+                && root.analysisPlayer.waveformLength === 0
+
+        Column {
+            anchors.centerIn: parent
+            spacing: 4
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "ANALYZING WAVEFORM…"
+                color: Theme.white
+                font.pixelSize: 14
+                font.bold: true
+
+                SequentialAnimation on opacity {
+                    running: analysisOverlay.visible
+                    loops: Animation.Infinite
+                    NumberAnimation { from: 1.0; to: 0.4; duration: 600 }
+                    NumberAnimation { from: 0.4; to: 1.0; duration: 600 }
+                }
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Generating on first load — cached after this"
+                color: Theme.deckTextColor
+                font.pixelSize: 11
+            }
+        }
+    }
 }
