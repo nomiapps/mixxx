@@ -27,9 +27,13 @@ Column {
             id: stem
             spacing: 4
             width: visible ? 10 : 0
-            visible: stemCountControl.value > 0
+            // Stem-specific mixer controls are disabled: the deck keeps the
+            // standard EQ + filter even for stem tracks (user preference).
+            // Gate the model too so StemKnobs (and their control proxies)
+            // are never instantiated.
+            visible: false
             Repeater {
-                model: root.player.stemsModel
+                model: stem.visible ? root.player.stemsModel : []
 
                 Skin.StemKnob {
                     id: stemKnob
@@ -45,7 +49,9 @@ Column {
             id: eq
             spacing: 4
             width: visible ? 10 : 0
-            visible: stemCountControl.value == 0
+            // Always show the standard EQ (high/mid/low + filter), including
+            // for stem tracks.
+            visible: true
             Skin.EqKnob {
                 statusKey: "button_parameter3"
                 knob.group: "[EqualizerRack1_" + root.group + "_Effect1]"
