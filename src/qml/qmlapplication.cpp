@@ -6,6 +6,7 @@
 #include <QQmlEngineExtensionPlugin>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QSurfaceFormat>
 #include <QTextDocument>
 #include <utility>
 
@@ -67,6 +68,13 @@ QmlApplication::QmlApplication(
           m_perfSession(nullptr),
 #endif
           m_autoReload() {
+    // 4x MSAA so QtQuick.Shapes strokes (knob value arcs, waveform markers)
+    // are antialiased; the Shape "antialiasing" property is a no-op without a
+    // multisampled surface. Must be set before any QQuickWindow is created.
+    QSurfaceFormat format = QSurfaceFormat::defaultFormat();
+    format.setSamples(4);
+    QSurfaceFormat::setDefaultFormat(format);
+
     QQuickStyle::setStyle("Basic");
 
     m_pCoreServices->initialize(app);
