@@ -1,0 +1,41 @@
+# One-off / on-demand SonarCloud C++ analysis of the fork.
+# Manual trigger only: Actions tab -> SonarCloud analysis -> Run workflow.
+# Requires the SONAR_TOKEN repository secret (SonarCloud account -> security).
+name: SonarCloud analysis
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sonarcloud:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # blame data for accurate new-code attribution
+
+      - name: Install build dependencies
+        run: tools/debian_buildenv.sh setup
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DQML=ON
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Build (generated headers for the analyzer)
+        run: cmake --build build --target mixxx-lib --parallel 4
+
+      - name: SonarCloud scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.projectKey=nomiapps_mixxx
+            -Dsonar.organization=nomiapps
+            -Dsonar.sources=src,res/qml
+            -Dsonar.cfamily.compile-commands=build/compile_commands.json
+            -Dsonar.exclusions=src/test/**,lib/**
