@@ -12,6 +12,8 @@ Skin.Button {
 
     activeColor: Theme.deckActiveColor
     highlight: enabledControl.value
+    // two-line labels need a smaller face than single-line buttons
+    fontPixelSize: Theme.buttonFontPixelSize - 2
 
     Mixxx.ControlProxy {
         id: control

@@ -10,6 +10,7 @@ AbstractButton {
     required property color activeColor
     property color pressedColor: activeColor
     property bool highlight: false
+    property alias fontPixelSize: label.font.pixelSize
 
     implicitWidth: 52
     implicitHeight: 26
@@ -109,6 +110,7 @@ AbstractButton {
 
             anchors.fill: parent
             text: root.text
+            // exposed as fontPixelSize so dense buttons can go smaller
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             font.family: Theme.fontFamily
