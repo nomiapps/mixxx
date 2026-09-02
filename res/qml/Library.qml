@@ -1,6 +1,7 @@
 import Mixxx 1.0 as Mixxx
-import QtQuick 2.12
-import QtQuick.Controls 2.12
+import QtQml.Models
+import QtQuick
+import QtQuick.Controls
 import "Theme"
 
 Item {
@@ -8,11 +9,38 @@ Item {
         color: Theme.deckBackgroundColor
         anchors.fill: parent
 
+        TreeView {
+            id: sidebarTree
+
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.margins: 10
+            width: 200
+            clip: true
+            model: Mixxx.Library.sidebarModel
+            selectionModel: ItemSelectionModel {}
+
+            delegate: TreeViewDelegate {
+                id: sidebarDelegate
+
+                implicitWidth: sidebarTree.width
+                font.pixelSize: 13
+                palette.text: Theme.deckTextColor
+                palette.buttonText: Theme.deckTextColor
+
+                onClicked: {
+                    Mixxx.Library.activateSidebarIndex(
+                            sidebarTree.index(row, column));
+                }
+            }
+        }
+
         TextField {
             id: searchField
 
             anchors.top: parent.top
-            anchors.left: parent.left
+            anchors.left: sidebarTree.right
             anchors.right: parent.right
             anchors.margins: 10
             height: 28
@@ -111,7 +139,7 @@ Item {
 
             anchors.top: searchField.bottom
             anchors.bottom: parent.bottom
-            anchors.left: parent.left
+            anchors.left: sidebarTree.right
             anchors.right: parent.right
             anchors.margins: 10
             clip: true

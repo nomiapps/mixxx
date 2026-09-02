@@ -2,8 +2,10 @@
 
 #include <QAbstractItemModel>
 
+#include "library/basesqltablemodel.h"
 #include "library/library.h"
 #include "library/librarytablemodel.h"
+#include "library/sidebarmodel.h"
 #include "moc_qmllibraryproxy.cpp"
 
 namespace mixxx {
@@ -13,6 +15,31 @@ QmlLibraryProxy::QmlLibraryProxy(std::shared_ptr<Library> pLibrary, QObject* par
         : QObject(parent),
           m_pLibrary(pLibrary),
           m_pModelProperty(new QmlLibraryTrackListModel(m_pLibrary->trackTableModel(), this)) {
+    // Follow the active feature: when the sidebar activates a crate,
+    // playlist, history etc., swap the QML track list onto its model.
+    connect(m_pLibrary.get(),
+            &Library::showTrackModel,
+            this,
+            [this](QAbstractItemModel* pModel) {
+                auto* pSqlModel = qobject_cast<BaseSqlTableModel*>(pModel);
+                if (pSqlModel && pSqlModel != m_pModelProperty->sourceModel()) {
+                    pSqlModel->select();
+                    m_pModelProperty->setSourceModel(pSqlModel);
+                }
+            });
+}
+
+QAbstractItemModel* QmlLibraryProxy::sidebarModel() const {
+    return m_pLibrary->sidebarModel();
+}
+
+void QmlLibraryProxy::activateSidebarIndex(const QModelIndex& index) {
+    SidebarModel* pSidebar = m_pLibrary->sidebarModel();
+    VERIFY_OR_DEBUG_ASSERT(pSidebar) {
+        return;
+    }
+    pSidebar->pressed(index);
+    pSidebar->clicked(index);
 }
 
 void QmlLibraryProxy::search(const QString& searchText) {

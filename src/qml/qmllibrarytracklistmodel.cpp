@@ -1,5 +1,6 @@
 #include "qml/qmllibrarytracklistmodel.h"
 
+#include "library/basesqltablemodel.h"
 #include "library/librarytablemodel.h"
 #include "moc_qmllibrarytracklistmodel.cpp"
 
@@ -30,7 +31,7 @@ QVariant QmlLibraryTrackListModel::data(const QModelIndex& proxyIndex, int role)
         return {};
     }
 
-    const auto pSourceModel = static_cast<LibraryTableModel*>(sourceModel());
+    const auto pSourceModel = static_cast<BaseSqlTableModel*>(sourceModel());
     VERIFY_OR_DEBUG_ASSERT(pSourceModel) {
         return {};
     }
