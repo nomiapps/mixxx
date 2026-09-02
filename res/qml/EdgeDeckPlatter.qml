@@ -119,6 +119,81 @@ Item {
         }
     }
 
+    // Controller-style jog display, always in the hub like the hardware
+    // (semi-translucent over cover art). Deliberately OUTSIDE the rotating
+    // disc so the digits hold still.
+    Item {
+        id: jogDisplay
+
+        anchors.centerIn: disc
+        width: disc.width * 0.34
+        height: width
+
+        Mixxx.ControlProxy {
+            id: bpmControl
+
+            group: root.group
+            key: "bpm"
+        }
+
+        Mixxx.ControlProxy {
+            id: rateRatioControl
+
+            group: root.group
+            key: "rate_ratio"
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: "#e0101418"
+            border.color: "#2e3a44"
+            border.width: 2
+        }
+
+        Column {
+            anchors.centerIn: parent
+            spacing: jogDisplay.height * 0.02
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: bpmControl.value > 0 ? bpmControl.value.toFixed(1) : "--.-"
+                color: Theme.white
+                font.pixelSize: Math.max(14, jogDisplay.height * 0.22)
+                font.bold: true
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "BPM"
+                color: "#5a6a76"
+                font.pixelSize: Math.max(8, jogDisplay.height * 0.07)
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: {
+                    const s = root.positionSeconds;
+                    const m = Math.floor(s / 60);
+                    const sec = Math.floor(s - m * 60);
+                    return (m < 10 ? "0" : "") + m + ":" + (sec < 10 ? "0" : "") + sec;
+                }
+                color: Theme.deckActiveColor
+                font.pixelSize: Math.max(11, jogDisplay.height * 0.14)
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: {
+                    const pct = (rateRatioControl.value - 1) * 100;
+                    return (pct >= 0 ? "+" : "") + pct.toFixed(1) + "%";
+                }
+                color: Theme.bpmSliderBarColor
+                font.pixelSize: Math.max(10, jogDisplay.height * 0.1)
+            }
+        }
+    }
+
     MultiPointTouchArea {
         anchors.fill: disc
         maximumTouchPoints: 1
