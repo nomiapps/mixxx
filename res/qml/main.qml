@@ -31,6 +31,35 @@ ApplicationWindow {
     visibility: Mixxx.Config.configStartInFullscreenKey ? Window.FullScreen : Window.Windowed
     width: 1792
 
+    // The window can open with its title bar beyond the screen edge (observed
+    // repeatedly at a negative y on Windows). Clamp into the screen's
+    // available area -- deferred, because the window manager assigns the real
+    // position after Component.onCompleted.
+    function clampOntoScreen() {
+        if (visibility !== Window.Windowed)
+            return ;
+
+        const s = root.screen;
+        if (!s)
+            return ;
+
+        root.width = Math.min(root.width, s.desktopAvailableWidth);
+        root.height = Math.min(root.height, s.desktopAvailableHeight);
+        root.x = Math.min(Math.max(root.x, s.virtualX),
+                s.virtualX + s.desktopAvailableWidth - root.width);
+        root.y = Math.min(Math.max(root.y, s.virtualY),
+                s.virtualY + s.desktopAvailableHeight - root.height);
+    }
+
+    Component.onCompleted: clampTimer.start()
+
+    Timer {
+        id: clampTimer
+
+        interval: 250
+        onTriggered: root.clampOntoScreen()
+    }
+
     Loader {
         id: nativeApplicationMenuLoader
 
