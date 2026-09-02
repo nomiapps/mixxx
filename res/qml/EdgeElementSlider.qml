@@ -6,6 +6,8 @@ Item {
     id: root
 
     required property var spec
+    property var surface: null
+    readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "") : (spec.group ?? "")
 
     // style presets: volume (bottom-zero bar), tempo (center-zero, bpm art),
     // crossfader (center-zero, crossfader art)
@@ -14,7 +16,7 @@ Item {
     Skin.ControlSlider {
         anchors.fill: parent
         orientation: root.width > root.height ? Qt.Horizontal : Qt.Vertical
-        group: root.spec.group
+        group: root.groupResolved
         key: root.spec.key
         barStart: root.style === "volume" ? 0 : 0.5
         barColor: root.style === "tempo" ? Theme.bpmSliderBarColor : (root.style === "crossfader" ? Theme.crossfaderBarColor : Theme.volumeSliderBarColor)

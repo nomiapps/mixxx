@@ -6,10 +6,12 @@ Item {
     id: root
 
     required property var spec
+    property var surface: null
+    readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "") : (spec.group ?? "")
 
     Skin.ControlButton {
         anchors.fill: parent
-        group: root.spec.group
+        group: root.groupResolved
         key: root.spec.key
         text: root.spec.label ?? ""
         toggleable: root.spec.toggle === true

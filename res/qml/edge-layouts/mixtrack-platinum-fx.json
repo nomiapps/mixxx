@@ -7,7 +7,7 @@
     "elements": [
         {
             "type": "text",
-            "group": "[Channel1]",
+            "group": "@left",
             "rect": [
                 130,
                 4,
@@ -17,7 +17,7 @@
         },
         {
             "type": "platter",
-            "group": "[Channel1]",
+            "group": "@left",
             "rect": [
                 140,
                 108,
@@ -27,7 +27,7 @@
         },
         {
             "type": "button",
-            "group": "[Channel1]",
+            "group": "@left",
             "key": "cue_default",
             "label": "CUE",
             "rect": [
@@ -39,7 +39,7 @@
         },
         {
             "type": "button",
-            "group": "[Channel1]",
+            "group": "@left",
             "key": "play",
             "label": "PLAY",
             "toggle": true,
@@ -53,7 +53,7 @@
         {
             "type": "slider",
             "style": "tempo",
-            "group": "[Channel1]",
+            "group": "@left",
             "key": "rate",
             "rect": [
                 788,
@@ -64,7 +64,7 @@
         },
         {
             "type": "button",
-            "group": "[Channel1]",
+            "group": "@left",
             "key": "sync_enabled",
             "label": "SYNC",
             "toggle": true,
@@ -77,7 +77,7 @@
         },
         {
             "type": "pads",
-            "group": "[Channel1]",
+            "group": "@left",
             "rows": 2,
             "columns": 4,
             "rect": [
@@ -97,7 +97,7 @@
             "type": "knob",
             "label": "GAIN",
             "color": "#e8e8e8",
-            "group": "[Channel1]",
+            "group": "@left",
             "key": "pregain",
             "rect": [
                 1094,
@@ -109,7 +109,7 @@
         {
             "type": "knob",
             "label": "TREBLE",
-            "group": "[EqualizerRack1_[Channel1]_Effect1]",
+            "group": "[EqualizerRack1_@left_Effect1]",
             "key": "parameter3",
             "rect": [
                 1094,
@@ -121,7 +121,7 @@
         {
             "type": "knob",
             "label": "MID",
-            "group": "[EqualizerRack1_[Channel1]_Effect1]",
+            "group": "[EqualizerRack1_@left_Effect1]",
             "key": "parameter2",
             "rect": [
                 1094,
@@ -133,7 +133,7 @@
         {
             "type": "knob",
             "label": "BASS",
-            "group": "[EqualizerRack1_[Channel1]_Effect1]",
+            "group": "[EqualizerRack1_@left_Effect1]",
             "key": "parameter1",
             "rect": [
                 1094,
@@ -146,7 +146,7 @@
             "type": "knob",
             "label": "FILTER",
             "color": "#e0a040",
-            "group": "[QuickEffectRack1_[Channel1]]",
+            "group": "[QuickEffectRack1_@left]",
             "key": "super1",
             "rect": [
                 1094,
@@ -158,7 +158,7 @@
         {
             "type": "slider",
             "style": "volume",
-            "group": "[Channel1]",
+            "group": "@left",
             "key": "volume",
             "rect": [
                 1090,
@@ -169,7 +169,7 @@
         },
         {
             "type": "button",
-            "group": "[Channel1]",
+            "group": "@left",
             "key": "pfl",
             "label": "CUE 1",
             "toggle": true,
@@ -184,7 +184,7 @@
             "type": "knob",
             "label": "GAIN",
             "color": "#e8e8e8",
-            "group": "[Channel2]",
+            "group": "@right",
             "key": "pregain",
             "rect": [
                 1414,
@@ -196,7 +196,7 @@
         {
             "type": "knob",
             "label": "TREBLE",
-            "group": "[EqualizerRack1_[Channel2]_Effect1]",
+            "group": "[EqualizerRack1_@right_Effect1]",
             "key": "parameter3",
             "rect": [
                 1414,
@@ -208,7 +208,7 @@
         {
             "type": "knob",
             "label": "MID",
-            "group": "[EqualizerRack1_[Channel2]_Effect1]",
+            "group": "[EqualizerRack1_@right_Effect1]",
             "key": "parameter2",
             "rect": [
                 1414,
@@ -220,7 +220,7 @@
         {
             "type": "knob",
             "label": "BASS",
-            "group": "[EqualizerRack1_[Channel2]_Effect1]",
+            "group": "[EqualizerRack1_@right_Effect1]",
             "key": "parameter1",
             "rect": [
                 1414,
@@ -233,7 +233,7 @@
             "type": "knob",
             "label": "FILTER",
             "color": "#e0a040",
-            "group": "[QuickEffectRack1_[Channel2]]",
+            "group": "[QuickEffectRack1_@right]",
             "key": "super1",
             "rect": [
                 1414,
@@ -245,7 +245,7 @@
         {
             "type": "slider",
             "style": "volume",
-            "group": "[Channel2]",
+            "group": "@right",
             "key": "volume",
             "rect": [
                 1410,
@@ -256,7 +256,7 @@
         },
         {
             "type": "button",
-            "group": "[Channel2]",
+            "group": "@right",
             "key": "pfl",
             "label": "CUE 2",
             "toggle": true,
@@ -281,7 +281,7 @@
         },
         {
             "type": "text",
-            "group": "[Channel2]",
+            "group": "@right",
             "rect": [
                 1630,
                 4,
@@ -291,7 +291,7 @@
         },
         {
             "type": "platter",
-            "group": "[Channel2]",
+            "group": "@right",
             "rect": [
                 1680,
                 108,
@@ -301,7 +301,7 @@
         },
         {
             "type": "button",
-            "group": "[Channel2]",
+            "group": "@right",
             "key": "cue_default",
             "label": "CUE",
             "rect": [
@@ -313,7 +313,7 @@
         },
         {
             "type": "button",
-            "group": "[Channel2]",
+            "group": "@right",
             "key": "play",
             "label": "PLAY",
             "toggle": true,
@@ -327,7 +327,7 @@
         {
             "type": "slider",
             "style": "tempo",
-            "group": "[Channel2]",
+            "group": "@right",
             "key": "rate",
             "rect": [
                 2438,
@@ -338,7 +338,7 @@
         },
         {
             "type": "button",
-            "group": "[Channel2]",
+            "group": "@right",
             "key": "sync_enabled",
             "label": "SYNC",
             "toggle": true,
@@ -351,7 +351,7 @@
         },
         {
             "type": "pads",
-            "group": "[Channel2]",
+            "group": "@right",
             "rows": 2,
             "columns": 4,
             "rect": [
@@ -370,7 +370,7 @@
         },
         {
             "type": "vumeter",
-            "group": "[Channel1]",
+            "group": "@left",
             "key": "vu_meter",
             "rect": [
                 1156,
@@ -381,7 +381,7 @@
         },
         {
             "type": "vumeter",
-            "group": "[Channel2]",
+            "group": "@right",
             "key": "vu_meter",
             "rect": [
                 1390,
@@ -453,7 +453,7 @@
         },
         {
             "type": "waveform",
-            "group": "[Channel1]",
+            "group": "@left",
             "rect": [
                 140,
                 36,
@@ -463,12 +463,40 @@
         },
         {
             "type": "waveform",
-            "group": "[Channel2]",
+            "group": "@right",
             "rect": [
                 1680,
                 36,
                 600,
                 64
+            ]
+        },
+        {
+            "type": "deckswitch",
+            "slot": "@left",
+            "options": [
+                "[Channel1]",
+                "[Channel3]"
+            ],
+            "rect": [
+                10,
+                240,
+                115,
+                50
+            ]
+        },
+        {
+            "type": "deckswitch",
+            "slot": "@right",
+            "options": [
+                "[Channel2]",
+                "[Channel4]"
+            ],
+            "rect": [
+                1520,
+                240,
+                115,
+                50
             ]
         }
     ]

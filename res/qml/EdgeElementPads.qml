@@ -13,6 +13,8 @@ Item {
     id: root
 
     required property var spec
+    property var surface: null
+    readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "") : (spec.group ?? "")
 
     readonly property int rows: spec.rows ?? 2
     readonly property int columns: spec.columns ?? 4
@@ -105,7 +107,7 @@ Item {
                     width: padArea.padWidth
                     height: padArea.padHeight
                     hotcueNumber: index + 1
-                    group: root.spec.group
+                    group: root.groupResolved
                 }
             }
         }
@@ -125,7 +127,7 @@ Item {
                     height: padArea.padHeight
                     text: index === 0 ? "1/2" : root.loopSizes[index]
                     activeColor: root.modeColor("beatloop")
-                    padGroup: root.spec.group
+                    padGroup: root.groupResolved
                     padKey: "beatloop_" + root.loopSizes[index] + "_toggle"
                     activeKey: "beatloop_" + root.loopSizes[index] + "_enabled"
                 }
@@ -150,7 +152,7 @@ Item {
                     height: padArea.padHeight
                     text: backward ? ("< " + jumpSize) : (jumpSize + " >")
                     activeColor: root.modeColor("beatjump")
-                    padGroup: root.spec.group
+                    padGroup: root.groupResolved
                     padKey: "beatjump_" + jumpSize + (backward ? "_backward" : "_forward")
                 }
             }

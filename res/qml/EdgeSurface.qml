@@ -49,6 +49,31 @@ Window {
         onTriggered: root.clampOntoScreen()
     }
 
+    // Deck slots: layouts may write @left / @right anywhere a group appears
+    // (including inside rack groups like [EqualizerRack1_@left_Effect1]), and
+    // a 'deckswitch' element retargets a slot at runtime - hardware-style
+    // deck select. Reassigning the object notifies every bound element.
+    property var deckAssign: ({
+            "@left": "[Channel1]",
+            "@right": "[Channel2]"
+        })
+
+    function resolveGroup(group) {
+        if (!group)
+            return "";
+
+        let resolved = group;
+        for (const slot in deckAssign)
+            resolved = resolved.split(slot).join(deckAssign[slot]);
+        return resolved;
+    }
+
+    function setDeck(slot, group) {
+        const next = Object.assign({}, deckAssign);
+        next[slot] = group;
+        deckAssign = next;
+    }
+
     function elementFile(type) {
         switch (type) {
         case "platter":
@@ -69,6 +94,8 @@ Window {
             return "EdgeElementVuMeter.qml";
         case "waveform":
             return "EdgeElementWaveform.qml";
+        case "deckswitch":
+            return "EdgeElementDeckSwitch.qml";
         default:
             console.warn("edge-layout: unknown element type", type);
             return "";
@@ -182,7 +209,8 @@ Window {
                     const file = root.elementFile(modelData.type);
                     if (file)
                         setSource(file, {
-                            "spec": modelData
+                            "spec": modelData,
+                            "surface": root
                         });
                 }
             }

@@ -6,6 +6,8 @@ Item {
     id: root
 
     required property var spec
+    property var surface: null
+    readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "") : (spec.group ?? "")
 
     Text {
         id: label
@@ -23,7 +25,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         width: Math.min(root.width, root.height * 0.75)
         height: width
-        group: root.spec.group
+        group: root.groupResolved
         key: root.spec.key
         color: root.spec.color ?? Theme.deckActiveColor
     }
