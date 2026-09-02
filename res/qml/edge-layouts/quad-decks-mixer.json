@@ -1,0 +1,673 @@
+{
+    "name": "Quad Decks + Mixer",
+    "canvas": [
+        2560,
+        720
+    ],
+    "elements": [
+        {
+            "type": "text",
+            "group": "[Channel1]",
+            "rect": [
+                12,
+                4,
+                520,
+                24
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "[Channel1]",
+            "rect": [
+                12,
+                32,
+                520,
+                44
+            ]
+        },
+        {
+            "type": "overview",
+            "group": "[Channel1]",
+            "rect": [
+                12,
+                80,
+                520,
+                20
+            ]
+        },
+        {
+            "type": "platter",
+            "group": "[Channel1]",
+            "rect": [
+                72,
+                106,
+                400,
+                400
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "cue_default",
+            "label": "CUE",
+            "rect": [
+                52,
+                620,
+                140,
+                56
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "play",
+            "label": "PLAY",
+            "toggle": true,
+            "rect": [
+                207,
+                620,
+                140,
+                56
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "sync_enabled",
+            "label": "SYNC",
+            "toggle": true,
+            "rect": [
+                362,
+                620,
+                130,
+                56
+            ]
+        },
+        {
+            "type": "text",
+            "group": "[Channel2]",
+            "rect": [
+                544,
+                4,
+                520,
+                24
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "[Channel2]",
+            "rect": [
+                544,
+                32,
+                520,
+                44
+            ]
+        },
+        {
+            "type": "overview",
+            "group": "[Channel2]",
+            "rect": [
+                544,
+                80,
+                520,
+                20
+            ]
+        },
+        {
+            "type": "platter",
+            "group": "[Channel2]",
+            "rect": [
+                604,
+                106,
+                400,
+                400
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "cue_default",
+            "label": "CUE",
+            "rect": [
+                584,
+                620,
+                140,
+                56
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "play",
+            "label": "PLAY",
+            "toggle": true,
+            "rect": [
+                739,
+                620,
+                140,
+                56
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "sync_enabled",
+            "label": "SYNC",
+            "toggle": true,
+            "rect": [
+                894,
+                620,
+                130,
+                56
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "GAIN 1",
+            "color": "#e8e8e8",
+            "group": "[Channel1]",
+            "key": "pregain",
+            "rect": [
+                1096,
+                36,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "HI",
+            "group": "[EqualizerRack1_[Channel1]_Effect1]",
+            "key": "parameter3",
+            "rect": [
+                1096,
+                108,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "MID",
+            "group": "[EqualizerRack1_[Channel1]_Effect1]",
+            "key": "parameter2",
+            "rect": [
+                1096,
+                180,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "LOW",
+            "group": "[EqualizerRack1_[Channel1]_Effect1]",
+            "key": "parameter1",
+            "rect": [
+                1096,
+                252,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "volume",
+            "group": "[Channel1]",
+            "key": "volume",
+            "rect": [
+                1094,
+                330,
+                44,
+                270
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Channel1]",
+            "key": "vu_meter",
+            "rect": [
+                1142,
+                335,
+                10,
+                260
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "pfl",
+            "label": "CUE",
+            "toggle": true,
+            "rect": [
+                1090,
+                612,
+                64,
+                30
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "GAIN 2",
+            "color": "#e8e8e8",
+            "group": "[Channel2]",
+            "key": "pregain",
+            "rect": [
+                1192,
+                36,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "HI",
+            "group": "[EqualizerRack1_[Channel2]_Effect1]",
+            "key": "parameter3",
+            "rect": [
+                1192,
+                108,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "MID",
+            "group": "[EqualizerRack1_[Channel2]_Effect1]",
+            "key": "parameter2",
+            "rect": [
+                1192,
+                180,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "LOW",
+            "group": "[EqualizerRack1_[Channel2]_Effect1]",
+            "key": "parameter1",
+            "rect": [
+                1192,
+                252,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "volume",
+            "group": "[Channel2]",
+            "key": "volume",
+            "rect": [
+                1190,
+                330,
+                44,
+                270
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Channel2]",
+            "key": "vu_meter",
+            "rect": [
+                1238,
+                335,
+                10,
+                260
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "pfl",
+            "label": "CUE",
+            "toggle": true,
+            "rect": [
+                1186,
+                612,
+                64,
+                30
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "GAIN 3",
+            "color": "#e8e8e8",
+            "group": "[Channel3]",
+            "key": "pregain",
+            "rect": [
+                1288,
+                36,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "HI",
+            "group": "[EqualizerRack1_[Channel3]_Effect1]",
+            "key": "parameter3",
+            "rect": [
+                1288,
+                108,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "MID",
+            "group": "[EqualizerRack1_[Channel3]_Effect1]",
+            "key": "parameter2",
+            "rect": [
+                1288,
+                180,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "LOW",
+            "group": "[EqualizerRack1_[Channel3]_Effect1]",
+            "key": "parameter1",
+            "rect": [
+                1288,
+                252,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "volume",
+            "group": "[Channel3]",
+            "key": "volume",
+            "rect": [
+                1286,
+                330,
+                44,
+                270
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Channel3]",
+            "key": "vu_meter",
+            "rect": [
+                1334,
+                335,
+                10,
+                260
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel3]",
+            "key": "pfl",
+            "label": "CUE",
+            "toggle": true,
+            "rect": [
+                1282,
+                612,
+                64,
+                30
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "GAIN 4",
+            "color": "#e8e8e8",
+            "group": "[Channel4]",
+            "key": "pregain",
+            "rect": [
+                1384,
+                36,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "HI",
+            "group": "[EqualizerRack1_[Channel4]_Effect1]",
+            "key": "parameter3",
+            "rect": [
+                1384,
+                108,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "MID",
+            "group": "[EqualizerRack1_[Channel4]_Effect1]",
+            "key": "parameter2",
+            "rect": [
+                1384,
+                180,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "LOW",
+            "group": "[EqualizerRack1_[Channel4]_Effect1]",
+            "key": "parameter1",
+            "rect": [
+                1384,
+                252,
+                52,
+                66
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "volume",
+            "group": "[Channel4]",
+            "key": "volume",
+            "rect": [
+                1382,
+                330,
+                44,
+                270
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Channel4]",
+            "key": "vu_meter",
+            "rect": [
+                1430,
+                335,
+                10,
+                260
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel4]",
+            "key": "pfl",
+            "label": "CUE",
+            "toggle": true,
+            "rect": [
+                1378,
+                612,
+                64,
+                30
+            ]
+        },
+        {
+            "type": "text",
+            "group": "[Channel3]",
+            "rect": [
+                1492,
+                4,
+                520,
+                24
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "[Channel3]",
+            "rect": [
+                1492,
+                32,
+                520,
+                44
+            ]
+        },
+        {
+            "type": "overview",
+            "group": "[Channel3]",
+            "rect": [
+                1492,
+                80,
+                520,
+                20
+            ]
+        },
+        {
+            "type": "platter",
+            "group": "[Channel3]",
+            "rect": [
+                1552,
+                106,
+                400,
+                400
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel3]",
+            "key": "cue_default",
+            "label": "CUE",
+            "rect": [
+                1532,
+                620,
+                140,
+                56
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel3]",
+            "key": "play",
+            "label": "PLAY",
+            "toggle": true,
+            "rect": [
+                1687,
+                620,
+                140,
+                56
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel3]",
+            "key": "sync_enabled",
+            "label": "SYNC",
+            "toggle": true,
+            "rect": [
+                1842,
+                620,
+                130,
+                56
+            ]
+        },
+        {
+            "type": "text",
+            "group": "[Channel4]",
+            "rect": [
+                2024,
+                4,
+                520,
+                24
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "[Channel4]",
+            "rect": [
+                2024,
+                32,
+                520,
+                44
+            ]
+        },
+        {
+            "type": "overview",
+            "group": "[Channel4]",
+            "rect": [
+                2024,
+                80,
+                520,
+                20
+            ]
+        },
+        {
+            "type": "platter",
+            "group": "[Channel4]",
+            "rect": [
+                2084,
+                106,
+                400,
+                400
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel4]",
+            "key": "cue_default",
+            "label": "CUE",
+            "rect": [
+                2064,
+                620,
+                140,
+                56
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel4]",
+            "key": "play",
+            "label": "PLAY",
+            "toggle": true,
+            "rect": [
+                2219,
+                620,
+                140,
+                56
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel4]",
+            "key": "sync_enabled",
+            "label": "SYNC",
+            "toggle": true,
+            "rect": [
+                2374,
+                620,
+                130,
+                56
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "crossfader",
+            "group": "[Master]",
+            "key": "crossfader",
+            "rect": [
+                1104,
+                664,
+                352,
+                40
+            ]
+        }
+    ]
+}
