@@ -25,6 +25,13 @@ Item {
     readonly property string mode: modes[modeIndex]
 
     readonly property var loopSizes: ["0.5", "1", "2", "4", "8", "16", "32", "64"]
+    readonly property var stemNames: ["DRUMS", "BASS", "OTHER", "VOCALS"]
+    readonly property var stemColors: ["#35b592", "#d78f2c", "#d075b7", "#46a3d9"]
+
+    function stemGroup(index) {
+        const g = root.groupResolved;
+        return g && g.length > 2 ? g.slice(0, -1) + "_Stem" + (index + 1) + "]" : "";
+    }
     readonly property var jumpSizes: ["1", "2", "4", "8"]
     // FLX4-style split: deck 2 declares samplerOffset 4 to get samplers 5..8
     readonly property int samplerOffset: spec.samplerOffset ?? 0
@@ -37,6 +44,8 @@ Item {
             return "#e0a040";
         case "sampler":
             return "#b060e0";
+        case "stems":
+            return "#46a3d9";
         default:
             return Theme.deckActiveColor;
         }
@@ -154,6 +163,44 @@ Item {
                     activeColor: root.modeColor("beatjump")
                     padGroup: root.groupResolved
                     padKey: "beatjump_" + jumpSize + (backward ? "_backward" : "_forward")
+                }
+            }
+        }
+
+        Grid {
+            visible: root.mode === "stems"
+            columns: root.columns
+            spacing: root.gap
+
+            Repeater {
+                model: 4
+
+                Skin.ControlButton {
+                    required property int index
+
+                    width: padArea.padWidth
+                    height: padArea.padHeight
+                    group: root.stemGroup(index)
+                    key: "mute"
+                    text: root.stemNames[index]
+                    toggleable: true
+                    activeColor: root.stemColors[index]
+                }
+            }
+
+            Repeater {
+                model: 4
+
+                Skin.ControlButton {
+                    required property int index
+
+                    width: padArea.padWidth
+                    height: padArea.padHeight
+                    group: "[QuickEffectRack1_" + root.stemGroup(index) + "]"
+                    key: "enabled"
+                    text: "FX " + root.stemNames[index].charAt(0)
+                    toggleable: true
+                    activeColor: root.stemColors[index]
                 }
             }
         }

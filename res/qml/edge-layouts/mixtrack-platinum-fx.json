@@ -90,7 +90,8 @@
                 "hotcue",
                 "beatloop",
                 "beatjump",
-                "sampler"
+                "sampler",
+                "stems"
             ]
         },
         {
@@ -364,7 +365,8 @@
                 "hotcue",
                 "beatloop",
                 "beatjump",
-                "sampler"
+                "sampler",
+                "stems"
             ],
             "samplerOffset": 4
         },
