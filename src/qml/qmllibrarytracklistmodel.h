@@ -19,6 +19,11 @@ class QmlLibraryTrackListModel : public QIdentityProxyModel {
         AlbumRole,
         AlbumArtistRole,
         FileUrlRole,
+        BpmRole,
+        KeyRole,
+        DurationRole,
+        GenreRole,
+        YearRole,
     };
     Q_ENUM(Roles);
 
@@ -29,6 +34,10 @@ class QmlLibraryTrackListModel : public QIdentityProxyModel {
     int columnCount(const QModelIndex& index = QModelIndex()) const override;
     QHash<int, QByteArray> roleNames() const override;
     Q_INVOKABLE QVariant get(int row) const;
+
+    /// Sort the underlying table by a role name ("bpm", "title", ...).
+    /// descending=false is ascending. Reuses BaseSqlTableModel::sort.
+    Q_INVOKABLE void sortByRole(const QString& roleName, bool descending);
 };
 
 } // namespace qml

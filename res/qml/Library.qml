@@ -205,6 +205,63 @@ Item {
             }
         }
 
+        Row {
+            id: columnHeader
+
+            property string sortRole: ""
+            property bool sortDescending: false
+
+            function toggleSort(role) {
+                if (sortRole === role)
+                    sortDescending = !sortDescending;
+                else {
+                    sortRole = role;
+                    sortDescending = false;
+                }
+                Mixxx.Library.model.sortByRole(role, sortDescending);
+            }
+
+            anchors.top: searchField.bottom
+            anchors.left: sidebarTree.right
+            anchors.right: parent.right
+            anchors.topMargin: 4
+            anchors.leftMargin: 10
+            anchors.rightMargin: 10
+            height: 22
+
+            component HeaderCell: Item {
+                required property string role
+                required property string title
+                required property real widthFraction
+
+                width: (columnHeader.width - 4) * widthFraction
+                height: columnHeader.height
+
+                Text {
+                    anchors.fill: parent
+                    verticalAlignment: Text.AlignVCenter
+                    leftPadding: 4
+                    color: columnHeader.sortRole === role ? Theme.blue : Theme.deckTextColor
+                    font.pixelSize: 11
+                    font.bold: true
+                    elide: Text.ElideRight
+                    text: title + (columnHeader.sortRole === role ? (columnHeader.sortDescending ? "  v" : "  ^") : "")
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: columnHeader.toggleSort(role)
+                }
+            }
+
+            HeaderCell { role: "artist"; title: "ARTIST"; widthFraction: 0.30 }
+            HeaderCell { role: "title"; title: "TITLE"; widthFraction: 0.34 }
+            HeaderCell { role: "bpm"; title: "BPM"; widthFraction: 0.09 }
+            HeaderCell { role: "key"; title: "KEY"; widthFraction: 0.07 }
+            HeaderCell { role: "duration"; title: "TIME"; widthFraction: 0.08 }
+            HeaderCell { role: "genre"; title: "GENRE"; widthFraction: 0.12 }
+        }
+
         ListView {
             id: listView
 
@@ -239,7 +296,7 @@ Item {
                 player.loadTrackFromLocationUrl(url, play);
             }
 
-            anchors.top: searchField.bottom
+            anchors.top: columnHeader.bottom
             anchors.bottom: parent.bottom
             anchors.left: sidebarTree.right
             anchors.right: parent.right
@@ -265,19 +322,67 @@ Item {
                 required property url fileUrl
                 required property string artist
                 required property string title
+                required property string bpm
+                required property string key
+                required property string duration
+                required property string genre
+
+                readonly property color rowColor: (listView.currentIndex == itemDlgt.index && listView.activeFocus) ? Theme.blue : Theme.deckTextColor
 
                 implicitWidth: listView.width
-                implicitHeight: 30
+                implicitHeight: 26
 
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: itemDlgt.artist + " - " + itemDlgt.title
-                    color: (listView.currentIndex == itemDlgt.index && listView.activeFocus) ? Theme.blue : Theme.deckTextColor
+                Row {
+                    anchors.fill: parent
+                    anchors.leftMargin: 4
 
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: listView.highlightMoveDuration
-                        }
+                    Text {
+                        width: parent.width * 0.30
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: itemDlgt.artist
+                        color: itemDlgt.rowColor
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        width: parent.width * 0.34
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: itemDlgt.title
+                        color: itemDlgt.rowColor
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        width: parent.width * 0.09
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: itemDlgt.bpm
+                        color: itemDlgt.rowColor
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        width: parent.width * 0.07
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: itemDlgt.key
+                        color: itemDlgt.rowColor
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        width: parent.width * 0.08
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: itemDlgt.duration
+                        color: itemDlgt.rowColor
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        width: parent.width * 0.12
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: itemDlgt.genre
+                        color: itemDlgt.rowColor
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
                     }
                 }
 

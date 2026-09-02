@@ -13,6 +13,11 @@ const QHash<int, QByteArray> kRoleNames = {
         {QmlLibraryTrackListModel::AlbumRole, "album"},
         {QmlLibraryTrackListModel::AlbumArtistRole, "albumArtist"},
         {QmlLibraryTrackListModel::FileUrlRole, "fileUrl"},
+        {QmlLibraryTrackListModel::BpmRole, "bpm"},
+        {QmlLibraryTrackListModel::KeyRole, "key"},
+        {QmlLibraryTrackListModel::DurationRole, "duration"},
+        {QmlLibraryTrackListModel::GenreRole, "genre"},
+        {QmlLibraryTrackListModel::YearRole, "year"},
 };
 }
 
@@ -53,6 +58,21 @@ QVariant QmlLibraryTrackListModel::data(const QModelIndex& proxyIndex, int role)
         break;
     case AlbumArtistRole:
         column = pSourceModel->fieldIndex(ColumnCache::COLUMN_LIBRARYTABLE_ALBUMARTIST);
+        break;
+    case BpmRole:
+        column = pSourceModel->fieldIndex(ColumnCache::COLUMN_LIBRARYTABLE_BPM);
+        break;
+    case KeyRole:
+        column = pSourceModel->fieldIndex(ColumnCache::COLUMN_LIBRARYTABLE_KEY);
+        break;
+    case DurationRole:
+        column = pSourceModel->fieldIndex(ColumnCache::COLUMN_LIBRARYTABLE_DURATION);
+        break;
+    case GenreRole:
+        column = pSourceModel->fieldIndex(ColumnCache::COLUMN_LIBRARYTABLE_GENRE);
+        break;
+    case YearRole:
+        column = pSourceModel->fieldIndex(ColumnCache::COLUMN_LIBRARYTABLE_YEAR);
         break;
     case FileUrlRole: {
         column = pSourceModel->fieldIndex(ColumnCache::COLUMN_TRACKLOCATIONSTABLE_LOCATION);
@@ -96,6 +116,39 @@ QVariant QmlLibraryTrackListModel::get(int row) const {
         dataMap.insert(it.value(), data(idx, it.key()));
     }
     return dataMap;
+}
+
+void QmlLibraryTrackListModel::sortByRole(const QString& roleName, bool descending) {
+    auto* pSourceModel = qobject_cast<BaseSqlTableModel*>(sourceModel());
+    VERIFY_OR_DEBUG_ASSERT(pSourceModel) {
+        return;
+    }
+    ColumnCache::Column col = ColumnCache::COLUMN_LIBRARYTABLE_INVALID;
+    if (roleName == QLatin1String("title")) {
+        col = ColumnCache::COLUMN_LIBRARYTABLE_TITLE;
+    } else if (roleName == QLatin1String("artist")) {
+        col = ColumnCache::COLUMN_LIBRARYTABLE_ARTIST;
+    } else if (roleName == QLatin1String("album")) {
+        col = ColumnCache::COLUMN_LIBRARYTABLE_ALBUM;
+    } else if (roleName == QLatin1String("bpm")) {
+        col = ColumnCache::COLUMN_LIBRARYTABLE_BPM;
+    } else if (roleName == QLatin1String("key")) {
+        col = ColumnCache::COLUMN_LIBRARYTABLE_KEY;
+    } else if (roleName == QLatin1String("duration")) {
+        col = ColumnCache::COLUMN_LIBRARYTABLE_DURATION;
+    } else if (roleName == QLatin1String("genre")) {
+        col = ColumnCache::COLUMN_LIBRARYTABLE_GENRE;
+    } else if (roleName == QLatin1String("year")) {
+        col = ColumnCache::COLUMN_LIBRARYTABLE_YEAR;
+    } else {
+        return;
+    }
+    const int column = pSourceModel->fieldIndex(col);
+    if (column < 0) {
+        return;
+    }
+    pSourceModel->sort(column, descending ? Qt::DescendingOrder : Qt::AscendingOrder);
+    pSourceModel->select();
 }
 
 } // namespace qml
