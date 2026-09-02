@@ -26,25 +26,26 @@ Column {
         Column {
             id: stem
             spacing: 4
-            width: 10
-            visible: opacity != 0
+            width: visible ? 10 : 0
+            visible: stemCountControl.value > 0
             Repeater {
                 model: root.player.stemsModel
 
                 Skin.StemKnob {
+                    id: stemKnob
+
                     required property int index
 
-                    id: stem
                     stemGroup: root.stemGroup(root.group, index)
-                    property alias color: stem.stemColor
+                    property alias color: stemKnob.stemColor
                 }
             }
         }
         Column {
             id: eq
             spacing: 4
-            width: 10
-            visible: opacity != 0
+            width: visible ? 10 : 0
+            visible: stemCountControl.value == 0
             Skin.EqKnob {
                 statusKey: "button_parameter3"
                 knob.group: "[EqualizerRack1_" + root.group + "_Effect1]"
@@ -73,35 +74,6 @@ Column {
                 knob.color: Theme.eqFxColor
             }
         }
-        states: [
-            State {
-                name: "eq"
-                when: stemCountControl.value == 0
-                PropertyChanges { target: stem; opacity: 0; width: 0}
-            },
-            State {
-                name: "stem"
-                when: stemCountControl.value != 0
-                PropertyChanges { target: eq; opacity: 0; width: 0 }
-            }
-        ]
-
-        transitions: [
-            Transition {
-                from: "eq"
-                to: "stem"
-                ParallelAnimation {
-                    PropertyAnimation { targets: [eq, stem]; properties: "opacity,width"; duration: 1000}
-                }
-            },
-            Transition {
-                from: "stem"
-                to: "eq"
-                ParallelAnimation {
-                    PropertyAnimation { targets: [eq, stem]; properties: "opacity,width"; duration: 1000}
-                }
-            }
-        ]
     }
 
     Skin.OrientationToggleButton {
