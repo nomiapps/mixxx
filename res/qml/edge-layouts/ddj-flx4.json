@@ -125,9 +125,9 @@
             "type": "button",
             "rect": [
                 10,
-                336,
+                509,
                 118,
-                64
+                70
             ],
             "group": "[Channel1]",
             "key": "cue_default",
@@ -137,7 +137,7 @@
             "type": "button",
             "rect": [
                 10,
-                406,
+                585,
                 118,
                 84
             ],
@@ -150,9 +150,9 @@
             "type": "slider",
             "rect": [
                 790,
-                60,
+                370,
                 70,
-                320
+                330
             ],
             "group": "[Channel1]",
             "key": "rate",
@@ -332,9 +332,9 @@
             "type": "button",
             "rect": [
                 1520,
-                336,
+                509,
                 118,
-                64
+                70
             ],
             "group": "[Channel2]",
             "key": "cue_default",
@@ -344,7 +344,7 @@
             "type": "button",
             "rect": [
                 1520,
-                406,
+                585,
                 118,
                 84
             ],
@@ -357,9 +357,9 @@
             "type": "slider",
             "rect": [
                 2300,
-                60,
+                370,
                 70,
-                320
+                330
             ],
             "group": "[Channel2]",
             "key": "rate",
