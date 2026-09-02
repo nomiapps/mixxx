@@ -252,33 +252,56 @@ Item {
         }
     }
 
-    // Analysis overlay: a track loads instantly but its waveform is generated
-    // on first play (nothing cached yet), which can take several seconds for
-    // long or stem tracks. Show a centered, self-explaining notice meanwhile.
+    // Analysis overlay: a track loads instantly but its waveform must be
+    // generated (nothing cached yet), which takes several seconds for long or
+    // stem tracks. What we show depends on whether that generation is actually
+    // happening: with auto-analyze on (or after an explicit request) it is
+    // being generated now; with auto-analyze off it is simply not analyzed, and
+    // we offer a one-tap Analyze action instead of falsely claiming progress.
     property var analysisPlayer: Mixxx.PlayerManager.getPlayer(root.group)
+    property bool analyzeRequested: false
+    property bool autoAnalyzeOnLoad: false
+    readonly property bool waveformMissing: analysisPlayer
+            && analysisPlayer.isLoaded
+            && analysisPlayer.waveformLength === 0
+    readonly property bool analyzing: waveformMissing
+            && (autoAnalyzeOnLoad || analyzeRequested)
+
+    function refreshAutoAnalyze() {
+        autoAnalyzeOnLoad = Mixxx.Config.getBool("[Library]", "AnalyzeOnLoad", false);
+    }
+
+    Component.onCompleted: refreshAutoAnalyze()
+
+    Connections {
+        target: root.analysisPlayer
+        function onTrackChanged() {
+            root.analyzeRequested = false;
+            root.refreshAutoAnalyze();
+        }
+    }
 
     Rectangle {
         id: analysisOverlay
 
         anchors.fill: parent
         color: "#66000000"
-        visible: root.analysisPlayer
-                && root.analysisPlayer.isLoaded
-                && root.analysisPlayer.waveformLength === 0
+        visible: root.waveformMissing
 
         Column {
             anchors.centerIn: parent
-            spacing: 4
+            spacing: 6
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "ANALYZING WAVEFORM…"
+                text: root.analyzing ? "ANALYZING WAVEFORM…" : "NOT ANALYZED"
                 color: Theme.white
                 font.pixelSize: 14
                 font.bold: true
 
                 SequentialAnimation on opacity {
-                    running: analysisOverlay.visible
+                    running: root.analyzing
+                    alwaysRunToEnd: true
                     loops: Animation.Infinite
                     NumberAnimation { from: 1.0; to: 0.4; duration: 600 }
                     NumberAnimation { from: 0.4; to: 1.0; duration: 600 }
@@ -287,9 +310,45 @@ Item {
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "Generating on first load — cached after this"
+                text: root.analyzing
+                        ? "Generating on first load — cached after this"
+                        : "Auto-analyze is off — tap to generate the waveform"
                 color: Theme.deckTextColor
                 font.pixelSize: 11
+            }
+
+            // Explicit Analyze action, shown only when nothing is running.
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: root.waveformMissing && !root.analyzing
+                width: analyzeLabel.implicitWidth + 24
+                height: 26
+                radius: 4
+                color: analyzeMouse.pressed ? Theme.blue : Qt.rgba(0.004, 0.863, 0.988, 0.18)
+                border.color: Theme.blue
+                border.width: 1
+
+                Text {
+                    id: analyzeLabel
+
+                    anchors.centerIn: parent
+                    text: "⚡ Analyze"
+                    color: Theme.white
+                    font.pixelSize: 12
+                    font.bold: true
+                }
+
+                MouseArea {
+                    id: analyzeMouse
+
+                    anchors.fill: parent
+                    onClicked: {
+                        if (root.analysisPlayer && root.analysisPlayer.trackLocationUrl != "") {
+                            Mixxx.Library.analyzeTrackUrl(root.analysisPlayer.trackLocationUrl);
+                            root.analyzeRequested = true;
+                        }
+                    }
+                }
             }
         }
     }

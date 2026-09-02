@@ -789,6 +789,16 @@ void PlayerManager::slotAnalyzeTrack(TrackPointer track) {
     VERIFY_OR_DEBUG_ASSERT(track) {
         return;
     }
+    // Analyze-on-load is opt-in: when disabled, loading a track to a deck does
+    // not schedule analysis, so a first load can never stall mid-set. Tracks
+    // are then analyzed explicitly (e.g. the "Analyze view" action). Defaults
+    // to true to preserve the historical behavior for anyone who never set it.
+    if (!m_pConfig->getValue<bool>(
+                ConfigKey(QStringLiteral("[Library]"),
+                        QStringLiteral("AnalyzeOnLoad")),
+                true)) {
+        return;
+    }
     if (m_pTrackAnalysisScheduler) {
         if (m_pTrackAnalysisScheduler->scheduleTrack(track->getId())) {
             m_pTrackAnalysisScheduler->resume();

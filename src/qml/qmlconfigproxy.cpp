@@ -42,6 +42,18 @@ int QmlConfigProxy::getMultiSamplingLevel() {
             mixxx::preferences::MultiSamplingMode::Disabled));
 }
 
+bool QmlConfigProxy::getBool(const QString& group, const QString& item, bool defaultValue) {
+    return m_pConfig->getValue<bool>(ConfigKey(group, item), defaultValue);
+}
+
+void QmlConfigProxy::setBool(const QString& group, const QString& item, bool value) {
+    m_pConfig->setValue(ConfigKey(group, item), value);
+}
+
+bool QmlConfigProxy::exists(const QString& group, const QString& item) {
+    return m_pConfig->exists(ConfigKey(group, item));
+}
+
 // static
 QmlConfigProxy* QmlConfigProxy::create(QQmlEngine* pQmlEngine, QJSEngine* pJsEngine) {
     // The implementation of this method is mostly taken from the code example

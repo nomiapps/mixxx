@@ -6,17 +6,41 @@ import "Theme"
 
 Item {
     Rectangle {
+        id: libraryRoot
+
         color: Theme.deckBackgroundColor
         anchors.fill: parent
 
-        // Themed pill button used across the library chrome.
+        // Whether loading a track to a deck auto-schedules its analysis.
+        // The New UI defaults this OFF (opt-in) so a first load never stalls
+        // mid-set; the shared [Library]/AnalyzeOnLoad key gates it in C++.
+        property bool analyzeOnLoad: false
+
+        function setAnalyzeOnLoad(on) {
+            analyzeOnLoad = on;
+            Mixxx.Config.setBool("[Library]", "AnalyzeOnLoad", on);
+        }
+
+        Component.onCompleted: {
+            // Seed the opt-in default once, then reflect the stored choice.
+            if (!Mixxx.Config.exists("[Library]", "AnalyzeOnLoad"))
+                Mixxx.Config.setBool("[Library]", "AnalyzeOnLoad", false);
+            analyzeOnLoad = Mixxx.Config.getBool("[Library]", "AnalyzeOnLoad", false);
+        }
+
+        // Themed pill button used across the library chrome. When `armed` it
+        // takes an accent (filled tint + blue border) to flag an available
+        // action — e.g. "Analyze view" while auto-analyze is off.
         component LibButton: Button {
             id: lb
+
+            property bool armed: false
+            property bool pulse: false
 
             font.pixelSize: 11
             contentItem: Text {
                 text: lb.text
-                color: lb.enabled ? Theme.deckTextColor : Theme.midGray
+                color: !lb.enabled ? Theme.midGray : (lb.armed ? Theme.white : Theme.deckTextColor)
                 font: lb.font
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
@@ -24,9 +48,29 @@ Item {
             }
             background: Rectangle {
                 radius: 4
-                color: lb.down ? Theme.blue : (lb.hovered ? Theme.darkGray2 : Theme.knobBackgroundColor)
-                border.color: lb.hovered && lb.enabled ? Theme.blue : Theme.midGray
-                border.width: 1
+                color: lb.down
+                        ? Theme.blue
+                        : (lb.armed
+                                ? Qt.rgba(0.004, 0.863, 0.988, 0.18)
+                                : (lb.hovered ? Theme.darkGray2 : Theme.knobBackgroundColor))
+                border.color: (lb.armed || (lb.hovered && lb.enabled)) ? Theme.blue : Theme.midGray
+                border.width: lb.armed ? 2 : 1
+
+                // Gentle pulse while armed, to read as a live indicator.
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    color: "transparent"
+                    border.color: Theme.blue
+                    border.width: 2
+                    visible: lb.pulse
+                    SequentialAnimation on opacity {
+                        running: lb.pulse
+                        loops: Animation.Infinite
+                        NumberAnimation { from: 0.7; to: 0.0; duration: 900 }
+                        NumberAnimation { from: 0.0; to: 0.7; duration: 900 }
+                    }
+                }
             }
         }
 
@@ -269,7 +313,7 @@ Item {
 
             anchors.top: parent.top
             anchors.left: sidebarTree.right
-            anchors.right: analyzeViewButton.left
+            anchors.right: autoAnalyzeToggle.left
             anchors.topMargin: 10
             anchors.leftMargin: 10
             anchors.rightMargin: 6
@@ -312,6 +356,23 @@ Item {
             }
         }
 
+        // Toggle: auto-analyze tracks when they are loaded to a deck. Off by
+        // default in the New UI so a first load never stalls; when off, the
+        // "Analyze view" button is armed as a reminder to pre-analyze.
+        LibButton {
+            id: autoAnalyzeToggle
+
+            anchors.top: parent.top
+            anchors.right: analyzeViewButton.left
+            anchors.topMargin: 10
+            anchors.rightMargin: 6
+            width: 132
+            height: 28
+            text: (libraryRoot.analyzeOnLoad ? "◉  " : "○  ") + "Auto-analyze"
+            armed: libraryRoot.analyzeOnLoad
+            onClicked: libraryRoot.setAnalyzeOnLoad(!libraryRoot.analyzeOnLoad)
+        }
+
         LibButton {
             id: analyzeViewButton
 
@@ -322,6 +383,9 @@ Item {
             width: 110
             height: 28
             text: "⚡ Analyze view"
+            // While auto-analyze is off, flag this as the way to pre-analyze.
+            armed: !libraryRoot.analyzeOnLoad
+            pulse: !libraryRoot.analyzeOnLoad
             // Pre-analyze every track in the current view so waveforms/BPM/key
             // are cached before a set — avoids the first-load stall mid-party.
             onClicked: {
