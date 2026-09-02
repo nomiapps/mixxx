@@ -1,12 +1,25 @@
 #include "qml/qmllibraryproxy.h"
 
 #include <QAbstractItemModel>
+#include <QDir>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 #include "library/basesqltablemodel.h"
 #include "library/library.h"
 #include "library/librarytablemodel.h"
 #include "library/sidebarmodel.h"
 #include "moc_qmllibraryproxy.cpp"
+#include "util/cmdlineargs.h"
+
+namespace {
+QString smartCratesPath() {
+    return QDir(CmdlineArgs::Instance().getSettingsPath())
+            .filePath(QStringLiteral("qml_smart_crates.json"));
+}
+} // namespace
 
 namespace mixxx {
 namespace qml {
@@ -27,6 +40,83 @@ QmlLibraryProxy::QmlLibraryProxy(std::shared_ptr<Library> pLibrary, QObject* par
                     m_pModelProperty->setSourceModel(pSqlModel);
                 }
             });
+    loadSmartCrates();
+}
+
+void QmlLibraryProxy::addSmartCrate(const QString& name, const QString& query) {
+    if (name.trimmed().isEmpty()) {
+        return;
+    }
+    // Replace an existing crate with the same name, otherwise append.
+    for (int i = 0; i < m_smartCrates.size(); ++i) {
+        if (m_smartCrates.at(i).toMap().value(QStringLiteral("name")).toString() ==
+                name) {
+            m_smartCrates.removeAt(i);
+            break;
+        }
+    }
+    QVariantMap entry;
+    entry.insert(QStringLiteral("name"), name);
+    entry.insert(QStringLiteral("query"), query);
+    m_smartCrates.append(entry);
+    saveSmartCrates();
+    emit smartCratesChanged();
+}
+
+void QmlLibraryProxy::removeSmartCrate(int index) {
+    if (index < 0 || index >= m_smartCrates.size()) {
+        return;
+    }
+    m_smartCrates.removeAt(index);
+    saveSmartCrates();
+    emit smartCratesChanged();
+}
+
+void QmlLibraryProxy::activateSmartCrate(int index) {
+    if (index < 0 || index >= m_smartCrates.size()) {
+        return;
+    }
+    const QString query =
+            m_smartCrates.at(index).toMap().value(QStringLiteral("query")).toString();
+    m_pLibrary->searchTracksInCollection(query);
+}
+
+void QmlLibraryProxy::loadSmartCrates() {
+    QFile file(smartCratesPath());
+    if (!file.open(QIODevice::ReadOnly)) {
+        return;
+    }
+    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    file.close();
+    m_smartCrates.clear();
+    const QJsonArray arr = doc.array();
+    for (const QJsonValue& v : arr) {
+        const QJsonObject o = v.toObject();
+        QVariantMap entry;
+        entry.insert(QStringLiteral("name"), o.value(QStringLiteral("name")).toString());
+        entry.insert(QStringLiteral("query"), o.value(QStringLiteral("query")).toString());
+        m_smartCrates.append(entry);
+    }
+    emit smartCratesChanged();
+}
+
+void QmlLibraryProxy::saveSmartCrates() {
+    QJsonArray arr;
+    for (const QVariant& v : std::as_const(m_smartCrates)) {
+        const QVariantMap m = v.toMap();
+        QJsonObject o;
+        o.insert(QStringLiteral("name"), m.value(QStringLiteral("name")).toString());
+        o.insert(QStringLiteral("query"), m.value(QStringLiteral("query")).toString());
+        arr.append(o);
+    }
+    QFile file(smartCratesPath());
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        qWarning() << "QmlLibraryProxy: cannot save smart crates to"
+                   << file.fileName();
+        return;
+    }
+    file.write(QJsonDocument(arr).toJson(QJsonDocument::Indented));
+    file.close();
 }
 
 QAbstractItemModel* QmlLibraryProxy::sidebarModel() const {

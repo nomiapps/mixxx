@@ -13,7 +13,7 @@ Item {
             id: sidebarTree
 
             anchors.top: parent.top
-            anchors.bottom: parent.bottom
+            anchors.bottom: smartCratePane.top
             anchors.left: parent.left
             anchors.margins: 10
             width: 200
@@ -32,6 +32,108 @@ Item {
                 onClicked: {
                     Mixxx.Library.activateSidebarIndex(
                             sidebarTree.index(row, column));
+                }
+            }
+        }
+
+        Rectangle {
+            id: smartCratePane
+
+            anchors.left: parent.left
+            anchors.bottom: parent.bottom
+            anchors.margins: 10
+            width: 200
+            height: 168
+            color: "transparent"
+
+            Row {
+                id: smartHeader
+
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                spacing: 6
+
+                Text {
+                    text: "SMART CRATES"
+                    color: Theme.deckTextColor
+                    font.pixelSize: 11
+                    font.bold: true
+                    width: parent.width - saveSmartButton.width - 6
+                    elide: Text.ElideRight
+                    verticalAlignment: Text.AlignVCenter
+                    height: saveSmartButton.height
+                }
+
+                Button {
+                    id: saveSmartButton
+
+                    text: "+ save search"
+                    font.pixelSize: 10
+                    padding: 3
+                    enabled: searchField.text.trim().length > 0
+                    onClicked: Mixxx.Library.addSmartCrate(searchField.text, searchField.text)
+                }
+            }
+
+            ListView {
+                id: smartList
+
+                anchors.top: smartHeader.bottom
+                anchors.topMargin: 4
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                clip: true
+                spacing: 2
+                model: Mixxx.Library.smartCrates
+
+                delegate: Rectangle {
+                    required property int index
+                    required property var modelData
+
+                    width: smartList.width
+                    height: 22
+                    radius: 3
+                    color: smartMouse.containsMouse ? Theme.knobBackgroundColor : "transparent"
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.right: removeSmart.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: 6
+                        text: "⚙  " + modelData.name
+                        color: Theme.deckTextColor
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                    }
+
+                    MouseArea {
+                        id: smartMouse
+
+                        anchors.fill: parent
+                        anchors.rightMargin: 20
+                        hoverEnabled: true
+                        onClicked: Mixxx.Library.activateSmartCrate(index)
+                    }
+
+                    Text {
+                        id: removeSmart
+
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.rightMargin: 6
+                        text: "✕"
+                        color: Theme.deckTextColor
+                        font.pixelSize: 11
+                        opacity: 0.6
+
+                        MouseArea {
+                            anchors.fill: parent
+                            anchors.margins: -4
+                            onClicked: Mixxx.Library.removeSmartCrate(index)
+                        }
+                    }
                 }
             }
         }
