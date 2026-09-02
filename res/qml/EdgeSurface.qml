@@ -98,6 +98,8 @@ Window {
             return "EdgeElementOverview.qml";
         case "deckswitch":
             return "EdgeElementDeckSwitch.qml";
+        case "divider":
+            return "EdgeElementDivider.qml";
         default:
             console.warn("edge-layout: unknown element type", type);
             return "";

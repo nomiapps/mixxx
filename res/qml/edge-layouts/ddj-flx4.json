@@ -686,6 +686,200 @@
             ],
             "toggle": true,
             "color": "#b060e0"
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "loop_halve",
+            "label": "\u25c4 \u00bdX",
+            "rect": [
+                10,
+                80,
+                58,
+                44
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "loop_double",
+            "label": "2X \u25ba",
+            "rect": [
+                72,
+                80,
+                58,
+                44
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "beatloop_4_toggle",
+            "label": "4 BEAT",
+            "rect": [
+                10,
+                278,
+                120,
+                44
+            ],
+            "activeKey": "beatloop_4_enabled",
+            "color": "#e0a040"
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "bpm_tap",
+            "label": "TAP",
+            "rect": [
+                775,
+                494,
+                100,
+                36
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "loop_halve",
+            "label": "\u25c4 \u00bdX",
+            "rect": [
+                1520,
+                80,
+                58,
+                44
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "loop_double",
+            "label": "2X \u25ba",
+            "rect": [
+                1582,
+                80,
+                58,
+                44
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "beatloop_4_toggle",
+            "label": "4 BEAT",
+            "rect": [
+                1520,
+                278,
+                120,
+                44
+            ],
+            "activeKey": "beatloop_4_enabled",
+            "color": "#e0a040"
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "bpm_tap",
+            "label": "TAP",
+            "rect": [
+                2425,
+                494,
+                100,
+                36
+            ]
+        },
+        {
+            "type": "knob",
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "mix",
+            "label": "FX1 LVL",
+            "rect": [
+                1206,
+                140,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "mix",
+            "label": "FX2 LVL",
+            "rect": [
+                1302,
+                140,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit1_Effect1]",
+            "key": "enabled",
+            "label": "FX1 ON",
+            "rect": [
+                1190,
+                224,
+                85,
+                40
+            ],
+            "toggle": true,
+            "color": "#e0a040"
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit2_Effect1]",
+            "key": "enabled",
+            "label": "FX2 ON",
+            "rect": [
+                1285,
+                224,
+                85,
+                40
+            ],
+            "toggle": true,
+            "color": "#e0a040"
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit1_Effect1]",
+            "key": "next_effect",
+            "label": "FX1 SEL",
+            "rect": [
+                1190,
+                270,
+                85,
+                32
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit2_Effect1]",
+            "key": "next_effect",
+            "label": "FX2 SEL",
+            "rect": [
+                1285,
+                270,
+                85,
+                32
+            ]
+        },
+        {
+            "type": "divider",
+            "rect": [
+                1058,
+                0,
+                10,
+                720
+            ]
+        },
+        {
+            "type": "divider",
+            "rect": [
+                1494,
+                0,
+                10,
+                720
+            ]
         }
     ]
 }
