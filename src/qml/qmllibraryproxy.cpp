@@ -8,12 +8,14 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include "analyzer/analyzerscheduledtrack.h"
 #include "library/basesqltablemodel.h"
 #include "library/library.h"
 #include "library/librarytablemodel.h"
 #include "library/sidebarmodel.h"
 #include "library/trackcollection.h"
 #include "library/trackcollectionmanager.h"
+#include "library/trackmodel.h"
 #include "library/trackset/crate/crate.h"
 #include "library/trackset/crate/cratestorage.h"
 #include "moc_qmllibraryproxy.cpp"
@@ -139,6 +141,41 @@ void QmlLibraryProxy::deleteCrate(const QString& name) {
         return;
     }
     pCollection->deleteCrate(crate.getId());
+}
+
+void QmlLibraryProxy::analyzeTrackUrl(const QUrl& trackUrl) {
+    const QList<TrackId> trackIds =
+            m_pLibrary->trackCollectionManager()->resolveTrackIdsFromUrls(
+                    QList<QUrl>{trackUrl}, /*addMissing*/ true);
+    if (trackIds.isEmpty()) {
+        return;
+    }
+    QList<AnalyzerScheduledTrack> tracks;
+    tracks.reserve(trackIds.size());
+    for (const TrackId& id : trackIds) {
+        tracks.append(AnalyzerScheduledTrack(id));
+    }
+    m_pLibrary->analyzeTracks(tracks);
+}
+
+int QmlLibraryProxy::analyzeCurrentView() {
+    auto* pTrackModel = dynamic_cast<TrackModel*>(m_pModelProperty->sourceModel());
+    VERIFY_OR_DEBUG_ASSERT(pTrackModel) {
+        return 0;
+    }
+    QAbstractItemModel* pSource = m_pModelProperty->sourceModel();
+    QList<AnalyzerScheduledTrack> tracks;
+    const int rows = pSource->rowCount();
+    for (int row = 0; row < rows; ++row) {
+        const TrackId id = pTrackModel->getTrackId(pSource->index(row, 0));
+        if (id.isValid()) {
+            tracks.append(AnalyzerScheduledTrack(id));
+        }
+    }
+    if (!tracks.isEmpty()) {
+        m_pLibrary->analyzeTracks(tracks);
+    }
+    return tracks.size();
 }
 
 QStringList QmlLibraryProxy::crateNames() const {

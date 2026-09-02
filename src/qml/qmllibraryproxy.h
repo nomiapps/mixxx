@@ -56,6 +56,13 @@ class QmlLibraryProxy : public QObject {
     /// Delete the crate with the given name.
     Q_INVOKABLE void deleteCrate(const QString& name);
 
+    /// Queue the track at the given file URL for analysis (waveform/BPM/key).
+    Q_INVOKABLE void analyzeTrackUrl(const QUrl& trackUrl);
+    /// Queue every track in the current library view (library, crate, search
+    /// result...) for analysis. Pre-analyzing before a set avoids the
+    /// first-load waveform-generation stall.
+    Q_INVOKABLE int analyzeCurrentView();
+
     /// Names of all (real) crates, for building an "Add to crate" menu.
     Q_INVOKABLE QStringList crateNames() const;
     /// Add the track at the given file URL to the named crate.

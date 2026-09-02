@@ -269,8 +269,10 @@ Item {
 
             anchors.top: parent.top
             anchors.left: sidebarTree.right
-            anchors.right: parent.right
-            anchors.margins: 10
+            anchors.right: analyzeViewButton.left
+            anchors.topMargin: 10
+            anchors.leftMargin: 10
+            anchors.rightMargin: 6
             height: 28
             placeholderText: "Search..."
             color: Theme.deckTextColor
@@ -307,6 +309,69 @@ Item {
 
                 interval: 300
                 onTriggered: Mixxx.Library.search(searchField.text)
+            }
+        }
+
+        LibButton {
+            id: analyzeViewButton
+
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.topMargin: 10
+            anchors.rightMargin: 10
+            width: 110
+            height: 28
+            text: "⚡ Analyze view"
+            // Pre-analyze every track in the current view so waveforms/BPM/key
+            // are cached before a set — avoids the first-load stall mid-party.
+            onClicked: {
+                const n = Mixxx.Library.analyzeCurrentView();
+                analyzeToast.show(n);
+            }
+        }
+
+        // Transient confirmation for "Analyze view" / "Analyze all in view".
+        Rectangle {
+            id: analyzeToast
+
+            function show(count) {
+                toastText.text = count > 0
+                        ? "Queued " + count + " track" + (count === 1 ? "" : "s") + " for analysis"
+                        : "Nothing to analyze in this view";
+                opacity = 1;
+                toastTimer.restart();
+            }
+
+            anchors.top: analyzeViewButton.bottom
+            anchors.right: parent.right
+            anchors.topMargin: 6
+            anchors.rightMargin: 10
+            width: toastText.implicitWidth + 20
+            height: 26
+            radius: 4
+            color: Theme.knobBackgroundColor
+            border.color: Theme.blue
+            border.width: 1
+            opacity: 0
+            visible: opacity > 0
+
+            Behavior on opacity {
+                NumberAnimation { duration: 250 }
+            }
+
+            Text {
+                id: toastText
+
+                anchors.centerIn: parent
+                color: Theme.white
+                font.pixelSize: 11
+            }
+
+            Timer {
+                id: toastTimer
+
+                interval: 2500
+                onTriggered: analyzeToast.opacity = 0
             }
         }
 
@@ -665,6 +730,18 @@ Item {
                     MenuItem {
                         text: "Load to next deck"
                         onTriggered: itemDlgt.loadToNextDeck()
+                    }
+                    MenuSeparator {}
+                    MenuItem {
+                        text: "Analyze this track"
+                        onTriggered: Mixxx.Library.analyzeTrackUrl(itemDlgt.fileUrl)
+                    }
+                    MenuItem {
+                        text: "Analyze all in view"
+                        onTriggered: {
+                            const n = Mixxx.Library.analyzeCurrentView();
+                            analyzeToast.show(n);
+                        }
                     }
                     MenuSeparator {}
                     Menu {
