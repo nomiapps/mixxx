@@ -94,6 +94,8 @@ Window {
             return "EdgeElementVuMeter.qml";
         case "waveform":
             return "EdgeElementWaveform.qml";
+        case "overview":
+            return "EdgeElementOverview.qml";
         case "deckswitch":
             return "EdgeElementDeckSwitch.qml";
         default:

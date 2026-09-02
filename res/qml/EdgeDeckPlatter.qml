@@ -173,7 +173,7 @@ Item {
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: {
-                    const s = root.positionSeconds;
+                    const s = Math.max(0, root.positionSeconds);
                     const m = Math.floor(s / 60);
                     const sec = Math.floor(s - m * 60);
                     return (m < 10 ? "0" : "") + m + ":" + (sec < 10 ? "0" : "") + sec;
