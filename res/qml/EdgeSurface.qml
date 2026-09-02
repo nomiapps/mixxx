@@ -171,6 +171,9 @@ Window {
                 font.pixelSize: 12
             }
 
+            // Opaque themed dropdown. Skin.ComboBox uses the deck "embedded"
+            // (semi-transparent) background, which reads as see-through for a
+            // floating toolbar popup, so this one is styled opaque locally.
             ComboBox {
                 id: layoutPicker
 
@@ -180,6 +183,63 @@ Window {
                 textRole: "name"
                 onActivated: (index) => {
                     root.loadLayout(layoutList.get(index).url);
+                }
+
+                background: Rectangle {
+                    color: Theme.knobBackgroundColor
+                    radius: 4
+                    border.color: layoutPicker.pressed ? Theme.blue : Theme.midGray
+                    border.width: 1
+                }
+
+                contentItem: Text {
+                    leftPadding: 8
+                    rightPadding: layoutPicker.indicator.width + 4
+                    text: layoutPicker.displayText
+                    color: Theme.deckTextColor
+                    font.pixelSize: 12
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                }
+
+                delegate: ItemDelegate {
+                    id: layoutItem
+
+                    required property int index
+                    width: layoutPicker.width
+                    highlighted: layoutPicker.highlightedIndex === index
+
+                    contentItem: Text {
+                        text: layoutPicker.textAt(layoutItem.index)
+                        color: Theme.deckTextColor
+                        font.pixelSize: 12
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+                    background: Rectangle {
+                        color: layoutItem.highlighted ? Qt.rgba(0.004, 0.863, 0.988, 0.18) : "transparent"
+                    }
+                }
+
+                popup: Popup {
+                    y: layoutPicker.height + 2
+                    width: layoutPicker.width
+                    implicitHeight: Math.min(contentItem.implicitHeight, 400)
+                    padding: 4
+
+                    contentItem: ListView {
+                        clip: true
+                        implicitHeight: contentHeight
+                        model: layoutPicker.popup.visible ? layoutPicker.delegateModel : null
+                        currentIndex: layoutPicker.highlightedIndex
+                        ScrollIndicator.vertical: ScrollIndicator {}
+                    }
+                    background: Rectangle {
+                        color: Theme.darkGray2
+                        radius: 4
+                        border.color: Theme.midGray
+                        border.width: 1
+                    }
                 }
             }
         }
