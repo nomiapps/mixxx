@@ -1,5 +1,5 @@
 import Mixxx 1.0 as Mixxx
-import QtQuick 2.12
+import QtQuick
 import Qt5Compat.GraphicalEffects
 import "Theme"
 
@@ -15,6 +15,44 @@ Item {
     readonly property real positionSeconds: {
         const s = samplesControl.value / 2 / sampleRateControl.value * playPositionControl.value;
         return isNaN(s) ? 0 : s;
+    }
+
+    // The playposition control updates at engine-visual rate (well below the
+    // display refresh), which makes a directly-bound disc step visibly.
+    // displaySeconds is a per-frame integration of the estimated velocity,
+    // pulled toward the control's predicted position and snapped on seeks.
+    property real displaySeconds: 0
+    property real velocitySeconds: 0
+    property real lastCoPos: 0
+    property double lastCoTime: 0
+
+    onPositionSecondsChanged: {
+        const now = Date.now() / 1000;
+        const pos = positionSeconds;
+        if (lastCoTime > 0) {
+            const dt = now - lastCoTime;
+            if (dt > 0.001 && dt < 0.5)
+                velocitySeconds = (pos - lastCoPos) / dt;
+        }
+        if (Math.abs(pos - displaySeconds) > 0.25)
+            displaySeconds = pos; // seek/jump: snap, don't glide
+        lastCoPos = pos;
+        lastCoTime = now;
+    }
+
+    FrameAnimation {
+        running: root.visible
+        onTriggered: {
+            const now = Date.now() / 1000;
+            if (now - root.lastCoTime > 0.3) {
+                // no updates: paused/stopped - stop the disc
+                root.velocitySeconds = 0;
+                return;
+            }
+            root.displaySeconds += root.velocitySeconds * frameTime;
+            const predicted = root.lastCoPos + root.velocitySeconds * (now - root.lastCoTime);
+            root.displaySeconds += (predicted - root.displaySeconds) * 0.15;
+        }
     }
 
     Mixxx.ControlProxy {
