@@ -7,85 +7,203 @@
     "elements": [
         {
             "type": "text",
-            "group": "[Channel1]",
             "rect": [
                 130,
                 4,
                 800,
                 26
-            ]
+            ],
+            "group": "[Channel1]"
+        },
+        {
+            "type": "waveform",
+            "rect": [
+                150,
+                34,
+                610,
+                58
+            ],
+            "group": "[Channel1]"
+        },
+        {
+            "type": "overview",
+            "rect": [
+                150,
+                96,
+                610,
+                26
+            ],
+            "group": "[Channel1]"
         },
         {
             "type": "platter",
-            "group": "[Channel1]",
             "rect": [
                 150,
                 128,
                 610,
                 372
-            ]
+            ],
+            "group": "[Channel1]"
         },
         {
             "type": "button",
-            "group": "[Channel1]",
-            "key": "cue_default",
-            "label": "CUE",
             "rect": [
                 10,
-                330,
-                120,
-                64
-            ]
+                80,
+                57,
+                44
+            ],
+            "group": "[Channel1]",
+            "key": "loop_in",
+            "label": "IN"
         },
         {
             "type": "button",
+            "rect": [
+                71,
+                80,
+                57,
+                44
+            ],
+            "group": "[Channel1]",
+            "key": "loop_out",
+            "label": "OUT"
+        },
+        {
+            "type": "button",
+            "rect": [
+                10,
+                130,
+                57,
+                44
+            ],
+            "group": "[Channel1]",
+            "key": "beatloop_4_toggle",
+            "label": "4 BEAT",
+            "activeKey": "beatloop_4_enabled",
+            "color": "#e0a040"
+        },
+        {
+            "type": "button",
+            "rect": [
+                71,
+                130,
+                57,
+                44
+            ],
+            "group": "[Channel1]",
+            "key": "reloop_toggle",
+            "label": "RELOOP",
+            "activeKey": "loop_enabled",
+            "color": "#e0a040"
+        },
+        {
+            "type": "button",
+            "rect": [
+                10,
+                180,
+                57,
+                40
+            ],
+            "group": "[Channel1]",
+            "key": "loop_halve",
+            "label": "\u25c4 \u00bdX"
+        },
+        {
+            "type": "button",
+            "rect": [
+                71,
+                180,
+                57,
+                40
+            ],
+            "group": "[Channel1]",
+            "key": "loop_double",
+            "label": "2X \u25ba"
+        },
+        {
+            "type": "button",
+            "rect": [
+                10,
+                336,
+                118,
+                64
+            ],
+            "group": "[Channel1]",
+            "key": "cue_default",
+            "label": "CUE"
+        },
+        {
+            "type": "button",
+            "rect": [
+                10,
+                406,
+                118,
+                84
+            ],
             "group": "[Channel1]",
             "key": "play",
             "label": "PLAY",
-            "toggle": true,
-            "rect": [
-                10,
-                402,
-                120,
-                84
-            ]
+            "toggle": true
         },
         {
             "type": "slider",
-            "style": "tempo",
-            "group": "[Channel1]",
-            "key": "rate",
             "rect": [
                 790,
                 60,
                 70,
                 320
-            ]
+            ],
+            "group": "[Channel1]",
+            "key": "rate",
+            "style": "tempo"
         },
         {
             "type": "button",
-            "group": "[Channel1]",
-            "key": "sync_enabled",
-            "label": "BEAT SYNC",
-            "toggle": true,
             "rect": [
-                775,
-                400,
+                880,
+                60,
                 100,
                 44
-            ]
+            ],
+            "group": "[Channel1]",
+            "key": "sync_enabled",
+            "label": "BEAT SYNC"
+        },
+        {
+            "type": "button",
+            "rect": [
+                880,
+                110,
+                100,
+                40
+            ],
+            "group": "[Channel1]",
+            "key": "keylock",
+            "label": "KEYLOCK",
+            "toggle": true
+        },
+        {
+            "type": "button",
+            "rect": [
+                880,
+                156,
+                100,
+                36
+            ],
+            "group": "[Channel1]",
+            "key": "bpm_tap",
+            "label": "TAP"
         },
         {
             "type": "pads",
-            "group": "[Channel1]",
-            "rows": 2,
-            "columns": 4,
             "rect": [
                 230,
                 509,
                 458,
                 150
             ],
+            "group": "[Channel1]",
             "modes": [
                 "hotcue",
                 "beatloop",
@@ -95,272 +213,204 @@
             ]
         },
         {
-            "type": "knob",
-            "label": "TRIM",
-            "color": "#e8e8e8",
-            "group": "[Channel1]",
-            "key": "pregain",
-            "rect": [
-                1094,
-                8,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "knob",
-            "label": "HI",
-            "group": "[EqualizerRack1_[Channel1]_Effect1]",
-            "key": "parameter3",
-            "rect": [
-                1094,
-                84,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "knob",
-            "label": "MID",
-            "group": "[EqualizerRack1_[Channel1]_Effect1]",
-            "key": "parameter2",
-            "rect": [
-                1094,
-                160,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "knob",
-            "label": "LOW",
-            "group": "[EqualizerRack1_[Channel1]_Effect1]",
-            "key": "parameter1",
-            "rect": [
-                1094,
-                236,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "knob",
-            "label": "CFX",
-            "color": "#e05050",
-            "group": "[QuickEffectRack1_[Channel1]]",
-            "key": "super1",
-            "rect": [
-                1094,
-                312,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "slider",
-            "style": "volume",
-            "group": "[Channel1]",
-            "key": "volume",
-            "rect": [
-                1090,
-                471,
-                60,
-                139
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[Channel1]",
-            "key": "pfl",
-            "label": "CUE 1",
-            "toggle": true,
-            "rect": [
-                1075,
-                616,
-                100,
-                36
-            ]
-        },
-        {
-            "type": "knob",
-            "label": "TRIM",
-            "color": "#e8e8e8",
-            "group": "[Channel2]",
-            "key": "pregain",
-            "rect": [
-                1414,
-                8,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "knob",
-            "label": "HI",
-            "group": "[EqualizerRack1_[Channel2]_Effect1]",
-            "key": "parameter3",
-            "rect": [
-                1414,
-                84,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "knob",
-            "label": "MID",
-            "group": "[EqualizerRack1_[Channel2]_Effect1]",
-            "key": "parameter2",
-            "rect": [
-                1414,
-                160,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "knob",
-            "label": "LOW",
-            "group": "[EqualizerRack1_[Channel2]_Effect1]",
-            "key": "parameter1",
-            "rect": [
-                1414,
-                236,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "knob",
-            "label": "CFX",
-            "color": "#e05050",
-            "group": "[QuickEffectRack1_[Channel2]]",
-            "key": "super1",
-            "rect": [
-                1414,
-                312,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "slider",
-            "style": "volume",
-            "group": "[Channel2]",
-            "key": "volume",
-            "rect": [
-                1410,
-                471,
-                60,
-                139
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[Channel2]",
-            "key": "pfl",
-            "label": "CUE 2",
-            "toggle": true,
-            "rect": [
-                1385,
-                616,
-                100,
-                36
-            ]
-        },
-        {
-            "type": "slider",
-            "style": "crossfader",
-            "group": "[Master]",
-            "key": "crossfader",
-            "rect": [
-                1071,
-                664,
-                418,
-                44
-            ]
-        },
-        {
             "type": "text",
-            "group": "[Channel2]",
             "rect": [
-                1630,
+                1640,
                 4,
                 800,
                 26
-            ]
+            ],
+            "group": "[Channel2]"
+        },
+        {
+            "type": "waveform",
+            "rect": [
+                1660,
+                34,
+                610,
+                58
+            ],
+            "group": "[Channel2]"
+        },
+        {
+            "type": "overview",
+            "rect": [
+                1660,
+                96,
+                610,
+                26
+            ],
+            "group": "[Channel2]"
         },
         {
             "type": "platter",
-            "group": "[Channel2]",
             "rect": [
                 1660,
                 128,
                 610,
                 372
-            ]
+            ],
+            "group": "[Channel2]"
         },
         {
             "type": "button",
-            "group": "[Channel2]",
-            "key": "cue_default",
-            "label": "CUE",
             "rect": [
                 1520,
-                330,
-                120,
-                64
-            ]
+                80,
+                57,
+                44
+            ],
+            "group": "[Channel2]",
+            "key": "loop_in",
+            "label": "IN"
         },
         {
             "type": "button",
+            "rect": [
+                1581,
+                80,
+                57,
+                44
+            ],
+            "group": "[Channel2]",
+            "key": "loop_out",
+            "label": "OUT"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1520,
+                130,
+                57,
+                44
+            ],
+            "group": "[Channel2]",
+            "key": "beatloop_4_toggle",
+            "label": "4 BEAT",
+            "activeKey": "beatloop_4_enabled",
+            "color": "#e0a040"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1581,
+                130,
+                57,
+                44
+            ],
+            "group": "[Channel2]",
+            "key": "reloop_toggle",
+            "label": "RELOOP",
+            "activeKey": "loop_enabled",
+            "color": "#e0a040"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1520,
+                180,
+                57,
+                40
+            ],
+            "group": "[Channel2]",
+            "key": "loop_halve",
+            "label": "\u25c4 \u00bdX"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1581,
+                180,
+                57,
+                40
+            ],
+            "group": "[Channel2]",
+            "key": "loop_double",
+            "label": "2X \u25ba"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1520,
+                336,
+                118,
+                64
+            ],
+            "group": "[Channel2]",
+            "key": "cue_default",
+            "label": "CUE"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1520,
+                406,
+                118,
+                84
+            ],
             "group": "[Channel2]",
             "key": "play",
             "label": "PLAY",
-            "toggle": true,
-            "rect": [
-                1520,
-                402,
-                120,
-                84
-            ]
+            "toggle": true
         },
         {
             "type": "slider",
-            "style": "tempo",
-            "group": "[Channel2]",
-            "key": "rate",
             "rect": [
-                2440,
+                2300,
                 60,
                 70,
                 320
-            ]
+            ],
+            "group": "[Channel2]",
+            "key": "rate",
+            "style": "tempo"
         },
         {
             "type": "button",
-            "group": "[Channel2]",
-            "key": "sync_enabled",
-            "label": "BEAT SYNC",
-            "toggle": true,
             "rect": [
-                2425,
-                400,
+                2390,
+                60,
                 100,
                 44
-            ]
+            ],
+            "group": "[Channel2]",
+            "key": "sync_enabled",
+            "label": "BEAT SYNC"
+        },
+        {
+            "type": "button",
+            "rect": [
+                2390,
+                110,
+                100,
+                40
+            ],
+            "group": "[Channel2]",
+            "key": "keylock",
+            "label": "KEYLOCK",
+            "toggle": true
+        },
+        {
+            "type": "button",
+            "rect": [
+                2390,
+                156,
+                100,
+                36
+            ],
+            "group": "[Channel2]",
+            "key": "bpm_tap",
+            "label": "TAP"
         },
         {
             "type": "pads",
-            "group": "[Channel2]",
-            "rows": 2,
-            "columns": 4,
             "rect": [
                 1740,
                 509,
                 458,
                 150
             ],
+            "group": "[Channel2]",
             "modes": [
                 "hotcue",
                 "beatloop",
@@ -369,499 +419,6 @@
                 "stems"
             ],
             "samplerOffset": 4
-        },
-        {
-            "type": "vumeter",
-            "group": "[Channel1]",
-            "key": "vu_meter",
-            "rect": [
-                1156,
-                471,
-                14,
-                139
-            ]
-        },
-        {
-            "type": "vumeter",
-            "group": "[Channel2]",
-            "key": "vu_meter",
-            "rect": [
-                1390,
-                471,
-                14,
-                139
-            ]
-        },
-        {
-            "type": "vumeter",
-            "group": "[Master]",
-            "key": "vu_meter_left",
-            "rect": [
-                1246,
-                441,
-                14,
-                84
-            ]
-        },
-        {
-            "type": "vumeter",
-            "group": "[Master]",
-            "key": "vu_meter_right",
-            "rect": [
-                1300,
-                441,
-                14,
-                84
-            ]
-        },
-        {
-            "type": "knob",
-            "label": "PH MIX",
-            "color": "#e8e8e8",
-            "group": "[Master]",
-            "key": "headMix",
-            "rect": [
-                1206,
-                535,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "knob",
-            "label": "PH VOL",
-            "color": "#e8e8e8",
-            "group": "[Master]",
-            "key": "headGain",
-            "rect": [
-                1302,
-                535,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "button",
-            "label": "SPLIT",
-            "group": "[Master]",
-            "key": "headSplit",
-            "toggle": true,
-            "rect": [
-                1235,
-                616,
-                90,
-                36
-            ]
-        },
-        {
-            "type": "waveform",
-            "group": "[Channel1]",
-            "rect": [
-                150,
-                34,
-                610,
-                58
-            ]
-        },
-        {
-            "type": "waveform",
-            "group": "[Channel2]",
-            "rect": [
-                1660,
-                34,
-                610,
-                58
-            ]
-        },
-        {
-            "type": "overview",
-            "group": "[Channel1]",
-            "rect": [
-                150,
-                96,
-                610,
-                26
-            ]
-        },
-        {
-            "type": "overview",
-            "group": "[Channel2]",
-            "rect": [
-                1660,
-                96,
-                610,
-                26
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[Channel1]",
-            "key": "loop_in",
-            "label": "IN",
-            "rect": [
-                10,
-                128,
-                120,
-                44
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[Channel1]",
-            "key": "loop_out",
-            "label": "OUT",
-            "rect": [
-                10,
-                178,
-                120,
-                44
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[Channel1]",
-            "key": "reloop_toggle",
-            "label": "RELOOP",
-            "rect": [
-                10,
-                228,
-                120,
-                44
-            ],
-            "activeKey": "loop_enabled",
-            "color": "#e0a040"
-        },
-        {
-            "type": "button",
-            "group": "[Channel2]",
-            "key": "loop_in",
-            "label": "IN",
-            "rect": [
-                1520,
-                128,
-                120,
-                44
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[Channel2]",
-            "key": "loop_out",
-            "label": "OUT",
-            "rect": [
-                1520,
-                178,
-                120,
-                44
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[Channel2]",
-            "key": "reloop_toggle",
-            "label": "RELOOP",
-            "rect": [
-                1520,
-                228,
-                120,
-                44
-            ],
-            "activeKey": "loop_enabled",
-            "color": "#e0a040"
-        },
-        {
-            "type": "button",
-            "group": "[Channel1]",
-            "key": "keylock",
-            "label": "KEYLOCK",
-            "rect": [
-                775,
-                450,
-                100,
-                36
-            ],
-            "toggle": true
-        },
-        {
-            "type": "button",
-            "group": "[Channel2]",
-            "key": "keylock",
-            "label": "KEYLOCK",
-            "rect": [
-                2425,
-                450,
-                100,
-                36
-            ],
-            "toggle": true
-        },
-        {
-            "type": "button",
-            "group": "[Channel1]",
-            "key": "LoadSelectedTrack",
-            "label": "LOAD 1",
-            "rect": [
-                1180,
-                8,
-                90,
-                40
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[Channel2]",
-            "key": "LoadSelectedTrack",
-            "label": "LOAD 2",
-            "rect": [
-                1290,
-                8,
-                90,
-                40
-            ]
-        },
-        {
-            "type": "knob",
-            "group": "[Master]",
-            "key": "gain",
-            "label": "MASTER",
-            "rect": [
-                1254,
-                56,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[EffectRack1_EffectUnit1]",
-            "key": "group_[Channel1]_enable",
-            "label": "FX1",
-            "rect": [
-                1090,
-                390,
-                60,
-                34
-            ],
-            "toggle": true,
-            "color": "#b060e0"
-        },
-        {
-            "type": "button",
-            "group": "[EffectRack1_EffectUnit2]",
-            "key": "group_[Channel1]_enable",
-            "label": "FX2",
-            "rect": [
-                1090,
-                428,
-                60,
-                34
-            ],
-            "toggle": true,
-            "color": "#b060e0"
-        },
-        {
-            "type": "button",
-            "group": "[EffectRack1_EffectUnit1]",
-            "key": "group_[Channel2]_enable",
-            "label": "FX1",
-            "rect": [
-                1410,
-                390,
-                60,
-                34
-            ],
-            "toggle": true,
-            "color": "#b060e0"
-        },
-        {
-            "type": "button",
-            "group": "[EffectRack1_EffectUnit2]",
-            "key": "group_[Channel2]_enable",
-            "label": "FX2",
-            "rect": [
-                1410,
-                428,
-                60,
-                34
-            ],
-            "toggle": true,
-            "color": "#b060e0"
-        },
-        {
-            "type": "button",
-            "group": "[Channel1]",
-            "key": "loop_halve",
-            "label": "\u25c4 \u00bdX",
-            "rect": [
-                10,
-                80,
-                58,
-                44
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[Channel1]",
-            "key": "loop_double",
-            "label": "2X \u25ba",
-            "rect": [
-                72,
-                80,
-                58,
-                44
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[Channel1]",
-            "key": "beatloop_4_toggle",
-            "label": "4 BEAT",
-            "rect": [
-                10,
-                278,
-                120,
-                44
-            ],
-            "activeKey": "beatloop_4_enabled",
-            "color": "#e0a040"
-        },
-        {
-            "type": "button",
-            "group": "[Channel1]",
-            "key": "bpm_tap",
-            "label": "TAP",
-            "rect": [
-                775,
-                494,
-                100,
-                36
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[Channel2]",
-            "key": "loop_halve",
-            "label": "\u25c4 \u00bdX",
-            "rect": [
-                1520,
-                80,
-                58,
-                44
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[Channel2]",
-            "key": "loop_double",
-            "label": "2X \u25ba",
-            "rect": [
-                1582,
-                80,
-                58,
-                44
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[Channel2]",
-            "key": "beatloop_4_toggle",
-            "label": "4 BEAT",
-            "rect": [
-                1520,
-                278,
-                120,
-                44
-            ],
-            "activeKey": "beatloop_4_enabled",
-            "color": "#e0a040"
-        },
-        {
-            "type": "button",
-            "group": "[Channel2]",
-            "key": "bpm_tap",
-            "label": "TAP",
-            "rect": [
-                2425,
-                494,
-                100,
-                36
-            ]
-        },
-        {
-            "type": "knob",
-            "group": "[EffectRack1_EffectUnit1]",
-            "key": "mix",
-            "label": "FX1 LVL",
-            "rect": [
-                1206,
-                140,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "knob",
-            "group": "[EffectRack1_EffectUnit2]",
-            "key": "mix",
-            "label": "FX2 LVL",
-            "rect": [
-                1302,
-                140,
-                52,
-                70
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[EffectRack1_EffectUnit1_Effect1]",
-            "key": "enabled",
-            "label": "FX1 ON",
-            "rect": [
-                1190,
-                224,
-                85,
-                40
-            ],
-            "toggle": true,
-            "color": "#e0a040"
-        },
-        {
-            "type": "button",
-            "group": "[EffectRack1_EffectUnit2_Effect1]",
-            "key": "enabled",
-            "label": "FX2 ON",
-            "rect": [
-                1285,
-                224,
-                85,
-                40
-            ],
-            "toggle": true,
-            "color": "#e0a040"
-        },
-        {
-            "type": "button",
-            "group": "[EffectRack1_EffectUnit1_Effect1]",
-            "key": "next_effect",
-            "label": "FX1 SEL",
-            "rect": [
-                1190,
-                270,
-                85,
-                32
-            ]
-        },
-        {
-            "type": "button",
-            "group": "[EffectRack1_EffectUnit2_Effect1]",
-            "key": "next_effect",
-            "label": "FX2 SEL",
-            "rect": [
-                1285,
-                270,
-                85,
-                32
-            ]
         },
         {
             "type": "divider",
@@ -880,6 +437,432 @@
                 10,
                 720
             ]
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1094,
+                8,
+                52,
+                70
+            ],
+            "group": "[Channel1]",
+            "key": "pregain",
+            "label": "TRIM"
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1094,
+                84,
+                52,
+                70
+            ],
+            "group": "[EqualizerRack1_[Channel1]_Effect1]",
+            "key": "parameter3",
+            "label": "HI"
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1094,
+                160,
+                52,
+                70
+            ],
+            "group": "[EqualizerRack1_[Channel1]_Effect1]",
+            "key": "parameter2",
+            "label": "MID"
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1094,
+                236,
+                52,
+                70
+            ],
+            "group": "[EqualizerRack1_[Channel1]_Effect1]",
+            "key": "parameter1",
+            "label": "LOW"
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1094,
+                312,
+                52,
+                70
+            ],
+            "group": "[QuickEffectRack1_[Channel1]]",
+            "key": "super1",
+            "label": "CFX"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1082,
+                390,
+                76,
+                34
+            ],
+            "group": "[Channel1]",
+            "key": "pfl",
+            "label": "CUE 1"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1075,
+                430,
+                48,
+                32
+            ],
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "group_[Channel1]_enable",
+            "label": "FX1",
+            "toggle": true,
+            "color": "#b060e0"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1127,
+                430,
+                48,
+                32
+            ],
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "group_[Channel1]_enable",
+            "label": "FX2",
+            "toggle": true,
+            "color": "#b060e0"
+        },
+        {
+            "type": "slider",
+            "rect": [
+                1090,
+                471,
+                60,
+                139
+            ],
+            "group": "[Channel1]",
+            "key": "volume"
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1414,
+                8,
+                52,
+                70
+            ],
+            "group": "[Channel2]",
+            "key": "pregain",
+            "label": "TRIM"
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1414,
+                84,
+                52,
+                70
+            ],
+            "group": "[EqualizerRack1_[Channel2]_Effect1]",
+            "key": "parameter3",
+            "label": "HI"
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1414,
+                160,
+                52,
+                70
+            ],
+            "group": "[EqualizerRack1_[Channel2]_Effect1]",
+            "key": "parameter2",
+            "label": "MID"
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1414,
+                236,
+                52,
+                70
+            ],
+            "group": "[EqualizerRack1_[Channel2]_Effect1]",
+            "key": "parameter1",
+            "label": "LOW"
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1414,
+                312,
+                52,
+                70
+            ],
+            "group": "[QuickEffectRack1_[Channel2]]",
+            "key": "super1",
+            "label": "CFX"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1402,
+                390,
+                76,
+                34
+            ],
+            "group": "[Channel2]",
+            "key": "pfl",
+            "label": "CUE 2"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1395,
+                430,
+                48,
+                32
+            ],
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "group_[Channel2]_enable",
+            "label": "FX1",
+            "toggle": true,
+            "color": "#b060e0"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1447,
+                430,
+                48,
+                32
+            ],
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "group_[Channel2]_enable",
+            "label": "FX2",
+            "toggle": true,
+            "color": "#b060e0"
+        },
+        {
+            "type": "slider",
+            "rect": [
+                1410,
+                471,
+                60,
+                139
+            ],
+            "group": "[Channel2]",
+            "key": "volume"
+        },
+        {
+            "type": "vumeter",
+            "rect": [
+                1156,
+                471,
+                14,
+                139
+            ],
+            "group": "[Channel1]",
+            "key": "vu_meter"
+        },
+        {
+            "type": "vumeter",
+            "rect": [
+                1390,
+                471,
+                14,
+                139
+            ],
+            "group": "[Channel2]",
+            "key": "vu_meter"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1180,
+                8,
+                90,
+                40
+            ],
+            "group": "[Channel1]",
+            "key": "LoadSelectedTrack",
+            "label": "LOAD 1"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1290,
+                8,
+                90,
+                40
+            ],
+            "group": "[Channel2]",
+            "key": "LoadSelectedTrack",
+            "label": "LOAD 2"
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1254,
+                56,
+                52,
+                70
+            ],
+            "group": "[Master]",
+            "key": "gain",
+            "label": "MASTER"
+        },
+        {
+            "type": "vumeter",
+            "rect": [
+                1246,
+                140,
+                14,
+                160
+            ],
+            "group": "[Master]",
+            "key": "vu_meter_left"
+        },
+        {
+            "type": "vumeter",
+            "rect": [
+                1300,
+                140,
+                14,
+                160
+            ],
+            "group": "[Master]",
+            "key": "vu_meter_right"
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1206,
+                310,
+                52,
+                70
+            ],
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "mix",
+            "label": "FX1 LVL"
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1302,
+                310,
+                52,
+                70
+            ],
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "mix",
+            "label": "FX2 LVL"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1190,
+                386,
+                85,
+                38
+            ],
+            "group": "[EffectRack1_EffectUnit1_Effect1]",
+            "key": "enabled",
+            "label": "FX1 ON",
+            "toggle": true,
+            "color": "#e0a040"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1285,
+                386,
+                85,
+                38
+            ],
+            "group": "[EffectRack1_EffectUnit2_Effect1]",
+            "key": "enabled",
+            "label": "FX2 ON",
+            "toggle": true,
+            "color": "#e0a040"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1190,
+                428,
+                85,
+                32
+            ],
+            "group": "[EffectRack1_EffectUnit1_Effect1]",
+            "key": "next_effect",
+            "label": "FX1 SEL"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1285,
+                428,
+                85,
+                32
+            ],
+            "group": "[EffectRack1_EffectUnit2_Effect1]",
+            "key": "next_effect",
+            "label": "FX2 SEL"
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1206,
+                535,
+                52,
+                70
+            ],
+            "group": "[Master]",
+            "key": "headMix",
+            "label": "PH MIX"
+        },
+        {
+            "type": "knob",
+            "rect": [
+                1302,
+                535,
+                52,
+                70
+            ],
+            "group": "[Master]",
+            "key": "headGain",
+            "label": "PH VOL"
+        },
+        {
+            "type": "button",
+            "rect": [
+                1235,
+                616,
+                90,
+                36
+            ],
+            "group": "[Master]",
+            "key": "headSplit",
+            "label": "SPLIT"
+        },
+        {
+            "type": "slider",
+            "rect": [
+                1071,
+                664,
+                418,
+                44
+            ],
+            "group": "[Master]",
+            "key": "crossfader",
+            "style": "crossfader"
         }
     ]
 }
