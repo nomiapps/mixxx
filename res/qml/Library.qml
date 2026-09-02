@@ -329,6 +329,21 @@ Item {
 
                 readonly property color rowColor: (listView.currentIndex == itemDlgt.index && listView.activeFocus) ? Theme.blue : Theme.deckTextColor
 
+                function loadToGroup(group) {
+                    const player = Mixxx.PlayerManager.getPlayer(group);
+                    if (!player)
+                        return ;
+
+                    player.loadTrackFromLocationUrl(itemDlgt.fileUrl, false);
+                }
+
+                function loadToNextDeck() {
+                    if (!itemDlgt.fileUrl)
+                        return ;
+
+                    Mixxx.PlayerManager.loadLocationUrlIntoNextAvailableDeck(itemDlgt.fileUrl, false);
+                }
+
                 implicitWidth: listView.width
                 implicitHeight: 26
 
@@ -412,6 +427,49 @@ Item {
                         });
                     }
                     onDoubleClicked: listView.loadSelectedTrackIntoNextAvailableDeck(false)
+                    onPressAndHold: {
+                        listView.forceActiveFocus();
+                        listView.currentIndex = itemDlgt.index;
+                        loadMenu.popup();
+                    }
+                }
+
+                MouseArea {
+                    id: contextArea
+
+                    anchors.fill: parent
+                    acceptedButtons: Qt.RightButton
+                    onPressed: {
+                        listView.forceActiveFocus();
+                        listView.currentIndex = itemDlgt.index;
+                        loadMenu.popup();
+                    }
+                }
+
+                Menu {
+                    id: loadMenu
+
+                    MenuItem {
+                        text: "Load to Deck 1"
+                        onTriggered: itemDlgt.loadToGroup("[Channel1]")
+                    }
+                    MenuItem {
+                        text: "Load to Deck 2"
+                        onTriggered: itemDlgt.loadToGroup("[Channel2]")
+                    }
+                    MenuItem {
+                        text: "Load to Deck 3"
+                        onTriggered: itemDlgt.loadToGroup("[Channel3]")
+                    }
+                    MenuItem {
+                        text: "Load to Deck 4"
+                        onTriggered: itemDlgt.loadToGroup("[Channel4]")
+                    }
+                    MenuSeparator {}
+                    MenuItem {
+                        text: "Load to next deck"
+                        onTriggered: itemDlgt.loadToNextDeck()
+                    }
                 }
             }
 
