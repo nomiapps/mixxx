@@ -53,8 +53,11 @@ bool WaveformRenderBeat::preprocessInner() {
 
     const bool isStemTrack = trackInfo && trackInfo->hasStem() &&
             trackInfo->getWaveform() && trackInfo->getWaveform()->hasStem();
-    const bool splitStemTracks = isStemTrack &&
-            WaveformWidgetFactory::instance()->isStemSplitTracks();
+    // The factory singleton only exists in the QWidget UI; in the QML UI it
+    // is null and dereferencing it crashed on every stem track load.
+    WaveformWidgetFactory* pWaveformWidgetFactory = WaveformWidgetFactory::instance();
+    const bool splitStemTracks = isStemTrack && pWaveformWidgetFactory &&
+            pWaveformWidgetFactory->isStemSplitTracks();
 
     auto positionType = m_isSlipRenderer ? ::WaveformRendererAbstract::Slip
                                          : ::WaveformRendererAbstract::Play;
