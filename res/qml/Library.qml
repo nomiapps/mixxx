@@ -74,13 +74,92 @@ Item {
             }
         }
 
+        // Themed context-menu chrome so right-click menus match the skin
+        // instead of falling back to vanilla Qt Quick Controls styling.
+        component LibMenuItem: MenuItem {
+            id: menuItem
+
+            implicitHeight: 30
+            implicitWidth: 210
+
+            contentItem: Text {
+                text: menuItem.text
+                color: menuItem.enabled ? Theme.deckTextColor : Theme.midGray
+                font.pixelSize: 12
+                verticalAlignment: Text.AlignVCenter
+                leftPadding: 8
+                rightPadding: 20
+                elide: Text.ElideRight
+            }
+            background: Rectangle {
+                radius: 3
+                color: menuItem.highlighted ? Qt.rgba(0.004, 0.863, 0.988, 0.18) : "transparent"
+            }
+        }
+
+        component LibMenuSeparator: MenuSeparator {
+            contentItem: Rectangle {
+                implicitHeight: 1
+                color: Theme.midGray
+                opacity: 0.5
+            }
+        }
+
+        component LibMenu: Menu {
+            padding: 4
+            // Style submenu-opener rows and any model-generated items too.
+            delegate: LibMenuItem {}
+            background: Rectangle {
+                implicitWidth: 210
+                color: Theme.darkGray2
+                border.color: Theme.midGray
+                border.width: 1
+                radius: 4
+            }
+        }
+
+        // Sidebar title bar, styled like the track-table column header.
+        Rectangle {
+            id: sidebarHeader
+
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.topMargin: 10
+            anchors.leftMargin: 10
+            width: 200
+            height: 22
+            color: Theme.toolbarBackgroundColor
+            radius: 3
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: 6
+                text: "BROWSE"
+                color: Theme.deckTextColor
+                font.pixelSize: 11
+                font.bold: true
+            }
+
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: Theme.blue
+                opacity: 0.35
+            }
+        }
+
         TreeView {
             id: sidebarTree
 
-            anchors.top: parent.top
+            anchors.top: sidebarHeader.bottom
             anchors.bottom: newCrateButton.top
             anchors.left: parent.left
-            anchors.margins: 10
+            anchors.leftMargin: 10
+            anchors.topMargin: 6
+            anchors.bottomMargin: 10
             width: 200
             clip: true
             model: Mixxx.Library.sidebarModel
@@ -123,6 +202,12 @@ Item {
                 }
 
                 onClicked: {
+                    // Single click expands/collapses a parent node (Tracks,
+                    // Crates, Playlists, ...) instead of only the disclosure
+                    // triangle; leaves just activate.
+                    if (sidebarDelegate.hasChildren) {
+                        sidebarTree.toggleExpanded(row);
+                    }
                     Mixxx.Library.activateSidebarIndex(
                             sidebarTree.index(row, column));
                 }
@@ -137,18 +222,55 @@ Item {
                     onPressAndHold: crateMenu.popup()
                 }
 
-                Menu {
+                LibMenu {
                     id: crateMenu
 
-                    MenuItem {
+                    LibMenuItem {
                         text: "Rename \"" + model.display + "\""
                         onTriggered: crateNameDialog.openForRename(model.display)
                     }
-                    MenuItem {
+                    LibMenuItem {
                         text: "Delete \"" + model.display + "\""
                         onTriggered: Mixxx.Library.deleteCrate(model.display)
                     }
                 }
+            }
+        }
+
+        // Continuation cues: fade the sidebar edges (with a "⋯" at the bottom)
+        // when the list scrolls, so it's obvious it continues past the view.
+        // Plain Rectangles don't grab clicks, so rows underneath stay usable.
+        Rectangle {
+            anchors.left: sidebarTree.left
+            anchors.right: sidebarTree.right
+            anchors.top: sidebarTree.top
+            height: 16
+            visible: !sidebarTree.atYBeginning
+            gradient: Gradient {
+                GradientStop { position: 0; color: Theme.deckBackgroundColor }
+                GradientStop { position: 1; color: "transparent" }
+            }
+        }
+
+        Rectangle {
+            anchors.left: sidebarTree.left
+            anchors.right: sidebarTree.right
+            anchors.bottom: sidebarTree.bottom
+            height: 20
+            visible: !sidebarTree.atYEnd
+            gradient: Gradient {
+                GradientStop { position: 0; color: "transparent" }
+                GradientStop { position: 1; color: Theme.deckBackgroundColor }
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: -2
+                text: "⋯"
+                color: Theme.deckTextColor
+                font.pixelSize: 14
+                font.bold: true
             }
         }
 
@@ -771,44 +893,44 @@ Item {
                     }
                 }
 
-                Menu {
+                LibMenu {
                     id: loadMenu
 
-                    MenuItem {
+                    LibMenuItem {
                         text: "Load to Deck 1"
                         onTriggered: itemDlgt.loadToGroup("[Channel1]")
                     }
-                    MenuItem {
+                    LibMenuItem {
                         text: "Load to Deck 2"
                         onTriggered: itemDlgt.loadToGroup("[Channel2]")
                     }
-                    MenuItem {
+                    LibMenuItem {
                         text: "Load to Deck 3"
                         onTriggered: itemDlgt.loadToGroup("[Channel3]")
                     }
-                    MenuItem {
+                    LibMenuItem {
                         text: "Load to Deck 4"
                         onTriggered: itemDlgt.loadToGroup("[Channel4]")
                     }
-                    MenuSeparator {}
-                    MenuItem {
+                    LibMenuSeparator {}
+                    LibMenuItem {
                         text: "Load to next deck"
                         onTriggered: itemDlgt.loadToNextDeck()
                     }
-                    MenuSeparator {}
-                    MenuItem {
+                    LibMenuSeparator {}
+                    LibMenuItem {
                         text: "Analyze this track"
                         onTriggered: Mixxx.Library.analyzeTrackUrl(itemDlgt.fileUrl)
                     }
-                    MenuItem {
+                    LibMenuItem {
                         text: "Analyze all in view"
                         onTriggered: {
                             const n = Mixxx.Library.analyzeCurrentView();
                             analyzeToast.show(n);
                         }
                     }
-                    MenuSeparator {}
-                    Menu {
+                    LibMenuSeparator {}
+                    LibMenu {
                         id: addToCrateMenu
 
                         title: "Add to crate"
@@ -822,7 +944,7 @@ Item {
                             id: crateRepeater
 
                             model: []
-                            MenuItem {
+                            LibMenuItem {
                                 required property string modelData
                                 text: modelData
                                 onTriggered: Mixxx.Library.addTrackUrlToCrate(
