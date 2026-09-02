@@ -726,7 +726,7 @@
                 14,
                 160
             ],
-            "group": "[Master]",
+            "group": "[Main]",
             "key": "vu_meter_left"
         },
         {
@@ -737,7 +737,7 @@
                 14,
                 160
             ],
-            "group": "[Master]",
+            "group": "[Main]",
             "key": "vu_meter_right"
         },
         {
