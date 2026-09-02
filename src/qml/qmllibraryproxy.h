@@ -56,6 +56,16 @@ class QmlLibraryProxy : public QObject {
     /// Delete the crate with the given name.
     Q_INVOKABLE void deleteCrate(const QString& name);
 
+    /// Names of all (real) crates, for building an "Add to crate" menu.
+    Q_INVOKABLE QStringList crateNames() const;
+    /// Add the track at the given file URL to the named crate.
+    Q_INVOKABLE void addTrackUrlToCrate(const QUrl& trackUrl, const QString& crateName);
+
+    /// Persist/restore small QML view state (column widths, sort) as a JSON
+    /// object in qml_view_state.json. Opaque to C++; the QML owns the shape.
+    Q_INVOKABLE void saveViewState(const QString& key, const QVariant& value);
+    Q_INVOKABLE QVariant loadViewState(const QString& key) const;
+
   signals:
     void smartCratesChanged();
 

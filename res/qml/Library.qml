@@ -307,6 +307,31 @@ Item {
                     sortDescending = false;
                 }
                 Mixxx.Library.model.sortByRole(role, sortDescending);
+                saveState();
+            }
+
+            function saveState() {
+                Mixxx.Library.saveViewState("libraryColumns", {
+                    "artist": colArtist, "title": colTitle, "bpm": colBpm,
+                    "key": colKey, "time": colTime,
+                    "sortRole": sortRole, "sortDescending": sortDescending
+                });
+            }
+
+            Component.onCompleted: {
+                const st = Mixxx.Library.loadViewState("libraryColumns");
+                if (st) {
+                    if (st.artist) colArtist = st.artist;
+                    if (st.title) colTitle = st.title;
+                    if (st.bpm) colBpm = st.bpm;
+                    if (st.key) colKey = st.key;
+                    if (st.time) colTime = st.time;
+                    if (st.sortRole) {
+                        sortRole = st.sortRole;
+                        sortDescending = st.sortDescending === true;
+                        Mixxx.Library.model.sortByRole(sortRole, sortDescending);
+                    }
+                }
             }
 
             anchors.top: searchField.bottom
@@ -372,6 +397,7 @@ Item {
                         parent.dragged(cx - lastX);
                         lastX = cx;
                     }
+                    onReleased: columnHeader.saveState()
                 }
             }
 
@@ -562,6 +588,29 @@ Item {
                     MenuItem {
                         text: "Load to next deck"
                         onTriggered: itemDlgt.loadToNextDeck()
+                    }
+                    MenuSeparator {}
+                    Menu {
+                        id: addToCrateMenu
+
+                        title: "Add to crate"
+
+                        // Rebuild the crate list each time the menu opens.
+                        onAboutToShow: {
+                            crateRepeater.model = Mixxx.Library.crateNames();
+                        }
+
+                        Repeater {
+                            id: crateRepeater
+
+                            model: []
+                            MenuItem {
+                                required property string modelData
+                                text: modelData
+                                onTriggered: Mixxx.Library.addTrackUrlToCrate(
+                                        itemDlgt.fileUrl, modelData)
+                            }
+                        }
                     }
                 }
             }

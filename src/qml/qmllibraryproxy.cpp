@@ -3,6 +3,7 @@
 #include <QAbstractItemModel>
 #include <QDir>
 #include <QFile>
+#include <QJSValue>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -14,13 +15,19 @@
 #include "library/trackcollection.h"
 #include "library/trackcollectionmanager.h"
 #include "library/trackset/crate/crate.h"
+#include "library/trackset/crate/cratestorage.h"
 #include "moc_qmllibraryproxy.cpp"
 #include "util/cmdlineargs.h"
 
 namespace {
+QString settingsFilePath(const QString& fileName) {
+    return QDir(CmdlineArgs::Instance().getSettingsPath()).filePath(fileName);
+}
 QString smartCratesPath() {
-    return QDir(CmdlineArgs::Instance().getSettingsPath())
-            .filePath(QStringLiteral("qml_smart_crates.json"));
+    return settingsFilePath(QStringLiteral("qml_smart_crates.json"));
+}
+QString viewStatePath() {
+    return settingsFilePath(QStringLiteral("qml_view_state.json"));
 }
 } // namespace
 
@@ -132,6 +139,72 @@ void QmlLibraryProxy::deleteCrate(const QString& name) {
         return;
     }
     pCollection->deleteCrate(crate.getId());
+}
+
+QStringList QmlLibraryProxy::crateNames() const {
+    QStringList names;
+    TrackCollection* pCollection =
+            m_pLibrary->trackCollectionManager()->internalCollection();
+    VERIFY_OR_DEBUG_ASSERT(pCollection) {
+        return names;
+    }
+    CrateSelectResult crates = pCollection->crates().selectCrates();
+    Crate crate;
+    while (crates.populateNext(&crate)) {
+        names.append(crate.getName());
+    }
+    return names;
+}
+
+void QmlLibraryProxy::addTrackUrlToCrate(const QUrl& trackUrl, const QString& crateName) {
+    TrackCollection* pCollection =
+            m_pLibrary->trackCollectionManager()->internalCollection();
+    VERIFY_OR_DEBUG_ASSERT(pCollection) {
+        return;
+    }
+    Crate crate;
+    if (!pCollection->crates().readCrateByName(crateName, &crate)) {
+        return;
+    }
+    const QList<TrackId> trackIds =
+            m_pLibrary->trackCollectionManager()->resolveTrackIdsFromUrls(
+                    QList<QUrl>{trackUrl}, /*addMissing*/ true);
+    if (trackIds.isEmpty()) {
+        return;
+    }
+    pCollection->addCrateTracks(crate.getId(), trackIds);
+}
+
+void QmlLibraryProxy::saveViewState(const QString& key, const QVariant& value) {
+    // QML passes plain JS objects as a QJSValue wrapped in the QVariant;
+    // unwrap to a QVariantMap so fromVariant produces a JSON object, not null.
+    QVariant v = value;
+    if (v.canConvert<QJSValue>()) {
+        v = v.value<QJSValue>().toVariant();
+    }
+    QJsonObject root;
+    QFile in(viewStatePath());
+    if (in.open(QIODevice::ReadOnly)) {
+        root = QJsonDocument::fromJson(in.readAll()).object();
+        in.close();
+    }
+    root.insert(key, QJsonValue::fromVariant(v));
+    QFile out(viewStatePath());
+    if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        return;
+    }
+    out.write(QJsonDocument(root).toJson(QJsonDocument::Compact));
+    out.close();
+}
+
+QVariant QmlLibraryProxy::loadViewState(const QString& key) const {
+    QFile file(viewStatePath());
+    if (!file.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    const QJsonObject root = QJsonDocument::fromJson(file.readAll()).object();
+    file.close();
+    return root.value(key).toVariant();
 }
 
 void QmlLibraryProxy::loadSmartCrates() {
