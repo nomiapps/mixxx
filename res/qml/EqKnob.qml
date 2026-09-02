@@ -35,16 +35,18 @@ Rectangle {
 
         anchors.left: root.left
         anchors.bottom: root.bottom
-        anchors.leftMargin: 4
-        anchors.bottomMargin: 4
-        width: 8
+        anchors.leftMargin: 3
+        anchors.bottomMargin: 3
+        width: 12
         height: width
         radius: width / 2
         border.width: 1
         border.color: Theme.buttonNormalColor
         color: statusControl.value ? knob.color : "transparent"
 
+        // oversized touch target around the small dot
         TapHandler {
+            margin: 6
             onTapped: statusControl.value = !statusControl.value
         }
     }
