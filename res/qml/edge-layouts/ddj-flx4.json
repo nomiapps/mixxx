@@ -492,6 +492,200 @@
                 610,
                 26
             ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "loop_in",
+            "label": "IN",
+            "rect": [
+                10,
+                128,
+                120,
+                44
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "loop_out",
+            "label": "OUT",
+            "rect": [
+                10,
+                178,
+                120,
+                44
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "reloop_toggle",
+            "label": "RELOOP",
+            "rect": [
+                10,
+                228,
+                120,
+                44
+            ],
+            "activeKey": "loop_enabled",
+            "color": "#e0a040"
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "loop_in",
+            "label": "IN",
+            "rect": [
+                1520,
+                128,
+                120,
+                44
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "loop_out",
+            "label": "OUT",
+            "rect": [
+                1520,
+                178,
+                120,
+                44
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "reloop_toggle",
+            "label": "RELOOP",
+            "rect": [
+                1520,
+                228,
+                120,
+                44
+            ],
+            "activeKey": "loop_enabled",
+            "color": "#e0a040"
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "keylock",
+            "label": "KEYLOCK",
+            "rect": [
+                775,
+                450,
+                100,
+                36
+            ],
+            "toggle": true
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "keylock",
+            "label": "KEYLOCK",
+            "rect": [
+                2425,
+                450,
+                100,
+                36
+            ],
+            "toggle": true
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "LoadSelectedTrack",
+            "label": "LOAD 1",
+            "rect": [
+                1180,
+                8,
+                90,
+                40
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "LoadSelectedTrack",
+            "label": "LOAD 2",
+            "rect": [
+                1290,
+                8,
+                90,
+                40
+            ]
+        },
+        {
+            "type": "knob",
+            "group": "[Master]",
+            "key": "gain",
+            "label": "MASTER",
+            "rect": [
+                1254,
+                56,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "group_[Channel1]_enable",
+            "label": "FX1",
+            "rect": [
+                1090,
+                390,
+                60,
+                34
+            ],
+            "toggle": true,
+            "color": "#b060e0"
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "group_[Channel1]_enable",
+            "label": "FX2",
+            "rect": [
+                1090,
+                428,
+                60,
+                34
+            ],
+            "toggle": true,
+            "color": "#b060e0"
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "group_[Channel2]_enable",
+            "label": "FX1",
+            "rect": [
+                1410,
+                390,
+                60,
+                34
+            ],
+            "toggle": true,
+            "color": "#b060e0"
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "group_[Channel2]_enable",
+            "label": "FX2",
+            "rect": [
+                1410,
+                428,
+                60,
+                34
+            ],
+            "toggle": true,
+            "color": "#b060e0"
         }
     ]
 }
