@@ -1,0 +1,447 @@
+{
+    "name": "Quad Decks",
+    "canvas": [
+        2560,
+        720
+    ],
+    "elements": [
+        {
+            "type": "text",
+            "group": "[Channel1]",
+            "rect": [
+                12,
+                4,
+                600,
+                24
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "[Channel1]",
+            "rect": [
+                12,
+                32,
+                600,
+                48
+            ]
+        },
+        {
+            "type": "overview",
+            "group": "[Channel1]",
+            "rect": [
+                12,
+                84,
+                600,
+                22
+            ]
+        },
+        {
+            "type": "platter",
+            "group": "[Channel1]",
+            "rect": [
+                72,
+                112,
+                420,
+                420
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "volume",
+            "group": "[Channel1]",
+            "key": "volume",
+            "rect": [
+                522,
+                130,
+                50,
+                330
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Channel1]",
+            "key": "vu_meter",
+            "rect": [
+                578,
+                130,
+                12,
+                330
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "cue_default",
+            "label": "CUE",
+            "rect": [
+                72,
+                550,
+                130,
+                52
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "play",
+            "label": "PLAY",
+            "toggle": true,
+            "rect": [
+                222,
+                550,
+                130,
+                52
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel1]",
+            "key": "sync_enabled",
+            "label": "SYNC",
+            "toggle": true,
+            "rect": [
+                372,
+                550,
+                120,
+                52
+            ]
+        },
+        {
+            "type": "text",
+            "group": "[Channel2]",
+            "rect": [
+                650,
+                4,
+                600,
+                24
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "[Channel2]",
+            "rect": [
+                650,
+                32,
+                600,
+                48
+            ]
+        },
+        {
+            "type": "overview",
+            "group": "[Channel2]",
+            "rect": [
+                650,
+                84,
+                600,
+                22
+            ]
+        },
+        {
+            "type": "platter",
+            "group": "[Channel2]",
+            "rect": [
+                710,
+                112,
+                420,
+                420
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "volume",
+            "group": "[Channel2]",
+            "key": "volume",
+            "rect": [
+                1160,
+                130,
+                50,
+                330
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Channel2]",
+            "key": "vu_meter",
+            "rect": [
+                1216,
+                130,
+                12,
+                330
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "cue_default",
+            "label": "CUE",
+            "rect": [
+                710,
+                550,
+                130,
+                52
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "play",
+            "label": "PLAY",
+            "toggle": true,
+            "rect": [
+                860,
+                550,
+                130,
+                52
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel2]",
+            "key": "sync_enabled",
+            "label": "SYNC",
+            "toggle": true,
+            "rect": [
+                1010,
+                550,
+                120,
+                52
+            ]
+        },
+        {
+            "type": "text",
+            "group": "[Channel3]",
+            "rect": [
+                1288,
+                4,
+                600,
+                24
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "[Channel3]",
+            "rect": [
+                1288,
+                32,
+                600,
+                48
+            ]
+        },
+        {
+            "type": "overview",
+            "group": "[Channel3]",
+            "rect": [
+                1288,
+                84,
+                600,
+                22
+            ]
+        },
+        {
+            "type": "platter",
+            "group": "[Channel3]",
+            "rect": [
+                1348,
+                112,
+                420,
+                420
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "volume",
+            "group": "[Channel3]",
+            "key": "volume",
+            "rect": [
+                1798,
+                130,
+                50,
+                330
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Channel3]",
+            "key": "vu_meter",
+            "rect": [
+                1854,
+                130,
+                12,
+                330
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel3]",
+            "key": "cue_default",
+            "label": "CUE",
+            "rect": [
+                1348,
+                550,
+                130,
+                52
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel3]",
+            "key": "play",
+            "label": "PLAY",
+            "toggle": true,
+            "rect": [
+                1498,
+                550,
+                130,
+                52
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel3]",
+            "key": "sync_enabled",
+            "label": "SYNC",
+            "toggle": true,
+            "rect": [
+                1648,
+                550,
+                120,
+                52
+            ]
+        },
+        {
+            "type": "text",
+            "group": "[Channel4]",
+            "rect": [
+                1926,
+                4,
+                600,
+                24
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "[Channel4]",
+            "rect": [
+                1926,
+                32,
+                600,
+                48
+            ]
+        },
+        {
+            "type": "overview",
+            "group": "[Channel4]",
+            "rect": [
+                1926,
+                84,
+                600,
+                22
+            ]
+        },
+        {
+            "type": "platter",
+            "group": "[Channel4]",
+            "rect": [
+                1986,
+                112,
+                420,
+                420
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "volume",
+            "group": "[Channel4]",
+            "key": "volume",
+            "rect": [
+                2436,
+                130,
+                50,
+                330
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Channel4]",
+            "key": "vu_meter",
+            "rect": [
+                2492,
+                130,
+                12,
+                330
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel4]",
+            "key": "cue_default",
+            "label": "CUE",
+            "rect": [
+                1986,
+                550,
+                130,
+                52
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel4]",
+            "key": "play",
+            "label": "PLAY",
+            "toggle": true,
+            "rect": [
+                2136,
+                550,
+                130,
+                52
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[Channel4]",
+            "key": "sync_enabled",
+            "label": "SYNC",
+            "toggle": true,
+            "rect": [
+                2286,
+                550,
+                120,
+                52
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "crossfader",
+            "group": "[Master]",
+            "key": "crossfader",
+            "rect": [
+                1030,
+                660,
+                500,
+                44
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Master]",
+            "key": "vu_meter_left",
+            "rect": [
+                990,
+                662,
+                12,
+                40
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Master]",
+            "key": "vu_meter_right",
+            "rect": [
+                1548,
+                662,
+                12,
+                40
+            ]
+        }
+    ]
+}

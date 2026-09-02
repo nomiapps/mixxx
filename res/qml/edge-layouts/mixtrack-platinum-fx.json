@@ -518,6 +518,25 @@
                 600,
                 26
             ]
+        },
+        {
+            "type": "deckswitch",
+            "slots": {
+                "@left": [
+                    "[Channel1]",
+                    "[Channel3]"
+                ],
+                "@right": [
+                    "[Channel2]",
+                    "[Channel4]"
+                ]
+            },
+            "rect": [
+                1216,
+                2,
+                128,
+                30
+            ]
         }
     ]
 }

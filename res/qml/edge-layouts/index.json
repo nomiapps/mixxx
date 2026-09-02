@@ -3,6 +3,7 @@
     "layouts": [
         "ddj-flx4.json",
         "mixtrack-platinum-fx.json",
-        "waveforms-xl.json"
+        "waveforms-xl.json",
+        "quad-decks.json"
     ]
 }

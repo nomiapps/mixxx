@@ -2,35 +2,61 @@ import "." as Skin
 import QtQuick 2.12
 import "Theme"
 
-// Hardware-style deck select: cycles a deck slot (spec.slot, e.g. "@left")
-// through spec.options (e.g. ["[Channel1]", "[Channel3]"]). Everything in the
-// layout bound to that slot retargets instantly. Lights up when the slot is
-// on any option other than the first, like the DECK 3/4 LEDs on controllers.
+// Hardware-style deck select.
+// Single-slot: spec.slot + spec.options cycles one side (e.g. DECK 1 -> 3).
+// Pair mode: spec.slots = { "@left": ["[Channel1]", "[Channel3]"],
+//                           "@right": ["[Channel2]", "[Channel4]"] }
+// cycles every listed slot in lockstep (index-synced) - one tap flips the
+// whole surface between deck pairs, like toggling 1/2 <-> 3/4.
+// Lights up when off the primary (first) option.
 Item {
     id: root
 
     required property var spec
     property var surface: null
 
-    readonly property var options: spec.options ?? ["[Channel1]", "[Channel3]"]
-    readonly property string current: surface ? (surface.deckAssign[spec.slot] ?? options[0]) : options[0]
+    readonly property bool pairMode: !!spec.slots
+    readonly property var slotNames: pairMode ? Object.keys(spec.slots) : [spec.slot]
+    readonly property var firstOptions: pairMode ? spec.slots[slotNames[0]] : (spec.options ?? ["[Channel1]", "[Channel3]"])
+    readonly property int currentIndex: {
+        if (!surface)
+            return 0;
+
+        const current = surface.deckAssign[slotNames[0]] ?? firstOptions[0];
+        const i = firstOptions.indexOf(current);
+        return i < 0 ? 0 : i;
+    }
 
     function deckNumber(group) {
         const m = /\[Channel(\d+)\]/.exec(group);
         return m ? m[1] : "?";
     }
 
+    readonly property string labelText: {
+        if (!pairMode)
+            return "DECK " + deckNumber(surface ? (surface.deckAssign[spec.slot] ?? firstOptions[0]) : firstOptions[0]);
+
+        const nums = slotNames.map(s => {
+            const opts = spec.slots[s];
+            return deckNumber(opts[Math.min(currentIndex, opts.length - 1)]);
+        });
+        return "DECKS " + nums.join("/");
+    }
+
     Skin.Button {
         anchors.fill: parent
-        text: "DECK " + root.deckNumber(root.current)
+        text: root.labelText
         activeColor: Theme.deckActiveColor
-        highlight: root.options.indexOf(root.current) > 0
+        highlight: root.currentIndex > 0
         onClicked: {
             if (!root.surface)
                 return ;
 
-            const i = root.options.indexOf(root.current);
-            root.surface.setDeck(root.spec.slot, root.options[(i + 1) % root.options.length]);
+            const next = (root.currentIndex + 1) % root.firstOptions.length;
+            for (const slot of root.slotNames) {
+                const opts = root.pairMode ? root.spec.slots[slot] : root.firstOptions;
+                root.surface.setDeck(slot, opts[Math.min(next, opts.length - 1)]);
+            }
         }
     }
 }
