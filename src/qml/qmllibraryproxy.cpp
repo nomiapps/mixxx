@@ -11,6 +11,9 @@
 #include "library/library.h"
 #include "library/librarytablemodel.h"
 #include "library/sidebarmodel.h"
+#include "library/trackcollection.h"
+#include "library/trackcollectionmanager.h"
+#include "library/trackset/crate/crate.h"
 #include "moc_qmllibraryproxy.cpp"
 #include "util/cmdlineargs.h"
 
@@ -79,6 +82,56 @@ void QmlLibraryProxy::activateSmartCrate(int index) {
     const QString query =
             m_smartCrates.at(index).toMap().value(QStringLiteral("query")).toString();
     m_pLibrary->searchTracksInCollection(query);
+}
+
+void QmlLibraryProxy::createCrate(const QString& name) {
+    const QString trimmed = name.trimmed();
+    if (trimmed.isEmpty()) {
+        return;
+    }
+    TrackCollection* pCollection =
+            m_pLibrary->trackCollectionManager()->internalCollection();
+    VERIFY_OR_DEBUG_ASSERT(pCollection) {
+        return;
+    }
+    // Don't create a duplicate name.
+    if (pCollection->crates().readCrateByName(trimmed)) {
+        return;
+    }
+    Crate crate;
+    crate.setName(trimmed);
+    pCollection->insertCrate(crate);
+}
+
+void QmlLibraryProxy::renameCrate(const QString& oldName, const QString& newName) {
+    const QString trimmed = newName.trimmed();
+    if (trimmed.isEmpty()) {
+        return;
+    }
+    TrackCollection* pCollection =
+            m_pLibrary->trackCollectionManager()->internalCollection();
+    VERIFY_OR_DEBUG_ASSERT(pCollection) {
+        return;
+    }
+    Crate crate;
+    if (!pCollection->crates().readCrateByName(oldName, &crate)) {
+        return;
+    }
+    crate.setName(trimmed);
+    pCollection->updateCrate(crate);
+}
+
+void QmlLibraryProxy::deleteCrate(const QString& name) {
+    TrackCollection* pCollection =
+            m_pLibrary->trackCollectionManager()->internalCollection();
+    VERIFY_OR_DEBUG_ASSERT(pCollection) {
+        return;
+    }
+    Crate crate;
+    if (!pCollection->crates().readCrateByName(name, &crate)) {
+        return;
+    }
+    pCollection->deleteCrate(crate.getId());
 }
 
 void QmlLibraryProxy::loadSmartCrates() {

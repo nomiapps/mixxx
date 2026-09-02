@@ -13,7 +13,7 @@ Item {
             id: sidebarTree
 
             anchors.top: parent.top
-            anchors.bottom: smartCratePane.top
+            anchors.bottom: newCrateButton.top
             anchors.left: parent.left
             anchors.margins: 10
             width: 200
@@ -33,6 +33,84 @@ Item {
                     Mixxx.Library.activateSidebarIndex(
                             sidebarTree.index(row, column));
                 }
+
+                // Right-click / long-press a crate to rename or delete it.
+                // Rename/delete are no-ops server-side if the entry is not a
+                // real crate, so it is safe to offer on any sidebar row.
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.RightButton
+                    onClicked: crateMenu.popup()
+                    onPressAndHold: crateMenu.popup()
+                }
+
+                Menu {
+                    id: crateMenu
+
+                    MenuItem {
+                        text: "Rename \"" + sidebarDelegate.display + "\""
+                        onTriggered: crateNameDialog.openForRename(sidebarDelegate.display)
+                    }
+                    MenuItem {
+                        text: "Delete \"" + sidebarDelegate.display + "\""
+                        onTriggered: Mixxx.Library.deleteCrate(sidebarDelegate.display)
+                    }
+                }
+            }
+        }
+
+        Button {
+            id: newCrateButton
+
+            anchors.left: parent.left
+            anchors.bottom: smartCratePane.top
+            anchors.leftMargin: 10
+            anchors.bottomMargin: 4
+            width: 200
+            height: 24
+            text: "+ New Crate"
+            font.pixelSize: 11
+            onClicked: crateNameDialog.openForCreate()
+        }
+
+        Dialog {
+            id: crateNameDialog
+
+            property bool renaming: false
+            property string originalName: ""
+
+            function openForCreate() {
+                renaming = false;
+                originalName = "";
+                nameInput.text = "";
+                open();
+            }
+            function openForRename(name) {
+                renaming = true;
+                originalName = name;
+                nameInput.text = name;
+                open();
+            }
+
+            anchors.centerIn: parent
+            width: 320
+            modal: true
+            title: renaming ? "Rename crate" : "New crate"
+            standardButtons: Dialog.Ok | Dialog.Cancel
+
+            onAccepted: {
+                if (renaming)
+                    Mixxx.Library.renameCrate(originalName, nameInput.text);
+                else
+                    Mixxx.Library.createCrate(nameInput.text);
+            }
+
+            TextField {
+                id: nameInput
+
+                width: parent.width
+                placeholderText: "Crate name"
+                onAccepted: crateNameDialog.accept()
             }
         }
 

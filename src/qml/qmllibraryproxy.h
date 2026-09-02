@@ -48,6 +48,14 @@ class QmlLibraryProxy : public QObject {
     /// Show a smart crate: switch to the library and apply its saved search.
     Q_INVOKABLE void activateSmartCrate(int index);
 
+    /// Create a new (real) crate with the given name. No-op if a crate with
+    /// that name already exists or the name is blank.
+    Q_INVOKABLE void createCrate(const QString& name);
+    /// Rename the crate currently named oldName to newName.
+    Q_INVOKABLE void renameCrate(const QString& oldName, const QString& newName);
+    /// Delete the crate with the given name.
+    Q_INVOKABLE void deleteCrate(const QString& name);
+
   signals:
     void smartCratesChanged();
 
