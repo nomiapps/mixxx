@@ -46,9 +46,37 @@ Item {
                 id: sidebarDelegate
 
                 implicitWidth: sidebarTree.width
+                implicitHeight: 26
                 font.pixelSize: 13
                 palette.text: Theme.deckTextColor
                 palette.buttonText: Theme.deckTextColor
+
+                // Themed row background: hover + selection tint.
+                background: Rectangle {
+                    radius: 3
+                    color: sidebarDelegate.current
+                            ? Qt.rgba(0.004, 0.863, 0.988, 0.16)
+                            : (sidebarDelegate.hovered ? Qt.rgba(1, 1, 1, 0.05) : "transparent")
+                }
+
+                // Themed disclosure triangle instead of the default indicator.
+                indicator: Text {
+                    x: sidebarDelegate.leftMargin + sidebarDelegate.depth * sidebarDelegate.indentation
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: sidebarDelegate.hasChildren
+                    text: sidebarDelegate.expanded ? "▾" : "▸"
+                    color: Theme.deckTextColor
+                    font.pixelSize: 10
+                }
+
+                contentItem: Text {
+                    leftPadding: sidebarDelegate.hasChildren ? 4 : 0
+                    text: model.display
+                    color: sidebarDelegate.current ? Theme.white : Theme.deckTextColor
+                    font: sidebarDelegate.font
+                    elide: Text.ElideRight
+                    verticalAlignment: Text.AlignVCenter
+                }
 
                 onClicked: {
                     Mixxx.Library.activateSidebarIndex(
@@ -69,12 +97,12 @@ Item {
                     id: crateMenu
 
                     MenuItem {
-                        text: "Rename \"" + sidebarDelegate.display + "\""
-                        onTriggered: crateNameDialog.openForRename(sidebarDelegate.display)
+                        text: "Rename \"" + model.display + "\""
+                        onTriggered: crateNameDialog.openForRename(model.display)
                     }
                     MenuItem {
-                        text: "Delete \"" + sidebarDelegate.display + "\""
-                        onTriggered: Mixxx.Library.deleteCrate(sidebarDelegate.display)
+                        text: "Delete \"" + model.display + "\""
+                        onTriggered: Mixxx.Library.deleteCrate(model.display)
                     }
                 }
             }
