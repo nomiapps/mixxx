@@ -9,6 +9,27 @@ Item {
         color: Theme.deckBackgroundColor
         anchors.fill: parent
 
+        // Themed pill button used across the library chrome.
+        component LibButton: Button {
+            id: lb
+
+            font.pixelSize: 11
+            contentItem: Text {
+                text: lb.text
+                color: lb.enabled ? Theme.deckTextColor : Theme.midGray
+                font: lb.font
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+            }
+            background: Rectangle {
+                radius: 4
+                color: lb.down ? Theme.blue : (lb.hovered ? Theme.darkGray2 : Theme.knobBackgroundColor)
+                border.color: lb.hovered && lb.enabled ? Theme.blue : Theme.midGray
+                border.width: 1
+            }
+        }
+
         TreeView {
             id: sidebarTree
 
@@ -59,7 +80,7 @@ Item {
             }
         }
 
-        Button {
+        LibButton {
             id: newCrateButton
 
             anchors.left: parent.left
@@ -69,7 +90,6 @@ Item {
             width: 200
             height: 24
             text: "+ New Crate"
-            font.pixelSize: 11
             onClicked: crateNameDialog.openForCreate()
         }
 
@@ -143,12 +163,12 @@ Item {
                     height: saveSmartButton.height
                 }
 
-                Button {
+                LibButton {
                     id: saveSmartButton
 
                     text: "+ save search"
                     font.pixelSize: 10
-                    padding: 3
+                    height: 22
                     enabled: searchField.text.trim().length > 0
                     onClicked: Mixxx.Library.addSmartCrate(searchField.text, searchField.text)
                 }
@@ -280,6 +300,27 @@ Item {
                         listView.forceActiveFocus();
                         break;
                 }
+            }
+        }
+
+        Rectangle {
+            // Header bar behind the column labels, with a divider under it.
+            anchors.top: columnHeader.top
+            anchors.left: sidebarTree.right
+            anchors.right: parent.right
+            anchors.leftMargin: 10
+            anchors.rightMargin: 10
+            height: columnHeader.height + 2
+            color: Theme.toolbarBackgroundColor
+            radius: 3
+
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: Theme.blue
+                opacity: 0.35
             }
         }
 
@@ -499,6 +540,14 @@ Item {
                 implicitWidth: listView.width
                 implicitHeight: 26
 
+                // Zebra striping; the selected row gets a tinted highlight.
+                Rectangle {
+                    anchors.fill: parent
+                    color: (listView.currentIndex === itemDlgt.index)
+                            ? Qt.rgba(0.004, 0.863, 0.988, 0.14)
+                            : (itemDlgt.index % 2 === 0 ? "transparent" : Qt.rgba(1, 1, 1, 0.02))
+                }
+
                 Row {
                     anchors.fill: parent
                     anchors.leftMargin: 4
@@ -616,7 +665,8 @@ Item {
             }
 
             highlight: Rectangle {
-                border.color: listView.activeFocus ? Theme.blue : Theme.deckTextColor
+                radius: 3
+                border.color: listView.activeFocus ? Theme.blue : Theme.midGray
                 border.width: 1
                 color: "transparent"
             }
