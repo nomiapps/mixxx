@@ -261,11 +261,33 @@ Item {
     property var analysisPlayer: Mixxx.PlayerManager.getPlayer(root.group)
     property bool analyzeRequested: false
     property bool autoAnalyzeOnLoad: false
-    readonly property bool waveformMissing: analysisPlayer
+
+    // waveformLength is briefly 0 even when a stored waveform is loading from
+    // the analysis DB, so the raw condition flashes on every load. Debounce it:
+    // only treat the waveform as missing if it is STILL empty a beat after the
+    // track loads — a cached waveform arrives far faster than that.
+    readonly property bool rawMissing: analysisPlayer
             && analysisPlayer.isLoaded
             && analysisPlayer.waveformLength === 0
+    property bool waveformMissing: false
     readonly property bool analyzing: waveformMissing
             && (autoAnalyzeOnLoad || analyzeRequested)
+
+    onRawMissingChanged: {
+        if (rawMissing) {
+            missingDebounce.restart();
+        } else {
+            missingDebounce.stop();
+            waveformMissing = false;
+        }
+    }
+
+    Timer {
+        id: missingDebounce
+
+        interval: 700
+        onTriggered: root.waveformMissing = root.rawMissing
+    }
 
     function refreshAutoAnalyze() {
         autoAnalyzeOnLoad = Mixxx.Config.getBool("[Library]", "AnalyzeOnLoad", false);
