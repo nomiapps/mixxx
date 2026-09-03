@@ -7,6 +7,8 @@ AbstractButton {
     id: root
 
     property color activeColor: Theme.buttonActiveColor
+    // exposed so dense (e.g. two-line) buttons can use a smaller face
+    property alias fontPixelSize: label.font.pixelSize
     property bool highlight: false
     property color normalColor: Theme.buttonNormalColor
     property color pressedColor: activeColor

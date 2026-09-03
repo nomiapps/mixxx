@@ -10,6 +10,8 @@ Skin.Button {
     required property string group
 
     activeColor: Theme.deckActiveColor
+    // two-line labels need a smaller face than single-line buttons
+    fontPixelSize: Theme.buttonFontPixelSize - 2
     highlight: cueBehavior.isActive
 
     IntroOutroButtonBehavior {

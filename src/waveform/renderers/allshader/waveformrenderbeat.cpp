@@ -21,7 +21,8 @@ namespace allshader {
 WaveformRenderBeat::WaveformRenderBeat(WaveformWidgetRenderer* waveformWidget,
         ::WaveformRendererAbstract::PositionSource type)
         : ::WaveformRendererAbstract(waveformWidget),
-          m_isSlipRenderer(type == ::WaveformRendererAbstract::Slip) {
+          m_isSlipRenderer(type == ::WaveformRendererAbstract::Slip),
+          m_pWaveformWidgetFactory(WaveformWidgetFactory::instance()) {
     initForRectangles<UniColorMaterial>(0);
     setUsePreprocess(true);
 }
@@ -55,9 +56,8 @@ bool WaveformRenderBeat::preprocessInner() {
             trackInfo->getWaveform() && trackInfo->getWaveform()->hasStem();
     // The factory singleton only exists in the QWidget UI; in the QML UI it
     // is null and dereferencing it crashed on every stem track load.
-    WaveformWidgetFactory* pWaveformWidgetFactory = WaveformWidgetFactory::instance();
-    const bool splitStemTracks = isStemTrack && pWaveformWidgetFactory &&
-            pWaveformWidgetFactory->isStemSplitTracks();
+    const bool splitStemTracks = isStemTrack && m_pWaveformWidgetFactory &&
+            m_pWaveformWidgetFactory->isStemSplitTracks();
 
     auto positionType = m_isSlipRenderer ? ::WaveformRendererAbstract::Slip
                                          : ::WaveformRendererAbstract::Play;

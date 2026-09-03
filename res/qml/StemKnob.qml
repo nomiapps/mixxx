@@ -15,7 +15,7 @@ Rectangle {
     readonly property string fxGroup: `[QuickEffectRack1_${stemGroup}]`
 
     width: 56
-    height: 56
+    height: 72
     radius: 5
     color: stemColor
     opacity: statusControl.value ? 0.5 : 1
@@ -34,14 +34,15 @@ Rectangle {
         key: "enabled"
     }
 
+    // top row: mute dot + label, nothing else in this band
     Rectangle {
         id: statusButton
 
         anchors.left: root.left
         anchors.top: root.top
-        anchors.leftMargin: 4
-        anchors.topMargin: 4
-        width: 8
+        anchors.leftMargin: 3
+        anchors.topMargin: 3
+        width: 11
         height: width
         radius: width / 2
         border.width: 1
@@ -55,39 +56,57 @@ Rectangle {
 
     Text {
         id: stemLabel
-        anchors.top: root.top
+
+        anchors.left: statusButton.right
         anchors.right: root.right
-        anchors.topMargin: 2
+        anchors.top: root.top
+        anchors.topMargin: 3
+        anchors.leftMargin: 3
         anchors.rightMargin: 2
         elide: Text.ElideRight
-        text: label
+        text: root.label
         font.pixelSize: 10
     }
 
+    // middle row: volume knob left, quick-effect knob + its enable dot right
     Skin.ControlKnob {
         id: volume
+
         group: root.stemGroup
         key: "volume"
         color: Theme.gainKnobColor
-        anchors.leftMargin: 1
-        anchors.top: statusButton.bottom
         anchors.left: root.left
-
+        anchors.top: stemLabel.bottom
+        anchors.leftMargin: 2
+        anchors.topMargin: 2
         arcStart: 0
+        width: 30
+        height: 30
+    }
 
-        width: 32
-        height: 32
+    Skin.ControlMiniKnob {
+        id: effectSuperKnob
+
+        anchors.right: root.right
+        anchors.top: stemLabel.bottom
+        anchors.rightMargin: 3
+        anchors.topMargin: 4
+        width: 18
+        height: 18
+        arcStart: Knob.ArcStart.Minimum
+        group: root.fxGroup
+        key: "super1"
+        color: Theme.effectColor
+        opacity: fxControl.value ? 1 : 0.5
     }
 
     Rectangle {
         id: fxButton
 
-        anchors.top: stemLabel.bottom
-        anchors.right: root.right
-        anchors.left: volume.right
-        anchors.leftMargin: 8
-        anchors.rightMargin: 8
-        width: 8
+        anchors.horizontalCenter: effectSuperKnob.horizontalCenter
+        anchors.top: effectSuperKnob.bottom
+        anchors.topMargin: 3
+        width: 11
         height: width
         radius: width / 2
         border.width: 1
@@ -99,20 +118,6 @@ Rectangle {
         }
     }
 
-    Skin.ControlMiniKnob {
-        id: effectSuperKnob
-
-        anchors.right: root.right
-        anchors.left: volume.right
-        anchors.bottom: effectSelector.top
-        anchors.margins: 2
-        arcStart: Knob.ArcStart.Minimum
-        group: root.fxGroup
-        key: "super1"
-        color: Theme.effectColor
-        opacity: fxControl.value ? 1 : 0.5
-    }
-
     Mixxx.ControlProxy {
         id: fxSelect
 
@@ -120,24 +125,26 @@ Rectangle {
         key: "loaded_chain_preset"
     }
 
+    // bottom row: effect preset selector on its own band
     Skin.ComboBox {
         id: effectSelector
+
         anchors.left: root.left
         anchors.right: root.right
         anchors.bottom: root.bottom
         anchors.margins: 1
+        height: 16
         spacing: 2
         indicator.width: 0
         popupWidth: 150
         clip: true
-
         opacity: fxControl.value ? 1 : 0.5
         textRole: "display"
         font.pixelSize: 10
         model: Mixxx.EffectsManager.quickChainPresetModel
         currentIndex: fxSelect.value == -1 ? 0 : fxSelect.value
         onActivated: (index) => {
-            fxSelect.value = index
+            fxSelect.value = index;
         }
     }
 }

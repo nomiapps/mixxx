@@ -26,7 +26,9 @@
 using namespace allshader;
 
 namespace {
-constexpr int kDefaultSyncInternalMs = 100;
+// Start at a 60 Hz frame time; slotFrameSwapped() adapts this to the actual
+// refresh rate of the screen the window is on.
+constexpr int kDefaultSyncIntervalMicros = 16667;
 } // namespace
 
 namespace mixxx {
@@ -35,7 +37,7 @@ namespace qml {
 QmlWaveformDisplay::QmlWaveformDisplay(QQuickItem* parent)
         : QQuickItem(parent),
           WaveformWidgetRenderer(),
-          m_syncInterval(kDefaultSyncInternalMs),
+          m_syncInterval(kDefaultSyncIntervalMicros),
           m_pPlayer(nullptr),
           m_pTrack(nullptr),
           m_visualPlayPosition(QSharedPointer<VisualPlayPosition>::create()) {
@@ -169,7 +171,13 @@ std::chrono::microseconds QmlWaveformDisplay::fromTimerToNextSync(const Performa
 }
 
 void QmlWaveformDisplay::slotFrameSwapped() {
-    m_timer.restart();
+    const auto frameMicros = m_timer.restart().toIntegerMicros();
+    if (frameMicros >= 5000 && frameMicros <= 50000) {
+        // Smooth over compositor jitter while adapting independently to the
+        // refresh rate of whichever screen owns this window.
+        m_syncInterval = std::chrono::microseconds(
+                (m_syncInterval.count() * 7 + frameMicros) / 8);
+    }
 
     // continuous redraw
     update();

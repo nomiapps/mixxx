@@ -1,5 +1,5 @@
 import Mixxx 1.0 as Mixxx
-import QtQuick 2.12
+import QtQuick
 import QtQuick.Controls 2.12
 
 Item {
@@ -68,6 +68,51 @@ Item {
     readonly property real rps: Math.PI * rpm / 60.0
     readonly property real frameRate: sampleRateControl.value
 
+    // Play position in seconds as reported by the engine. It only updates at
+    // the engine's control refresh rate, which makes the indicator step
+    // visibly at higher RPM, so the rotation below is driven by a per-frame
+    // integration of the estimated velocity (displaySeconds) instead, pulled
+    // toward the predicted engine position so it stays locked to the deck.
+    readonly property real positionSeconds: {
+        const totalFrames = samplesControl.value / 2;
+        return (!isNaN(sampleRateControl.value) && sampleRateControl.value > 0) ? playPositionControl.value * totalFrames / sampleRateControl.value : 0;
+    }
+    property real displaySeconds: 0
+    property real velocitySeconds: 0
+    property real lastPositionSeconds: 0
+    property double lastPositionTime: 0
+
+    onPositionSecondsChanged: {
+        const now = Date.now() / 1000;
+        if (lastPositionTime > 0) {
+            const dt = now - lastPositionTime;
+            if (dt > 0.001 && dt < 0.5)
+                velocitySeconds = (positionSeconds - lastPositionSeconds) / dt;
+            // seek/jump: snap, don't glide
+            if (Math.abs(positionSeconds - displaySeconds) > 0.25)
+                displaySeconds = positionSeconds;
+        } else {
+            displaySeconds = positionSeconds;
+        }
+        lastPositionSeconds = positionSeconds;
+        lastPositionTime = now;
+    }
+
+    FrameAnimation {
+        running: root.visible && root.indicatorVisible
+        onTriggered: {
+            const now = Date.now() / 1000;
+            if (now - root.lastPositionTime > 0.3) {
+                // No position updates for a while: the deck is stopped.
+                root.velocitySeconds = 0;
+                return;
+            }
+            root.displaySeconds += root.velocitySeconds * frameTime;
+            const predicted = root.lastPositionSeconds + root.velocitySeconds * (now - root.lastPositionTime);
+            root.displaySeconds += (predicted - root.displaySeconds) * 0.15;
+        }
+    }
+
     Control {
         id: indicatorContainer
 
@@ -85,9 +130,7 @@ Item {
             id: indicatorRotation
 
             property real roundsPerSecond: root.rps / Math.PI
-            property real totalFrames: samplesControl.value / 2
-            property real positionSeconds: (!isNaN(sampleRateControl.value) && sampleRateControl.value > 0) ? playPositionControl.value * totalFrames / sampleRateControl.value : 0
-            property real rotationFactor: indicatorRotation.roundsPerSecond * indicatorRotation.positionSeconds % 1
+            property real rotationFactor: indicatorRotation.roundsPerSecond * root.displaySeconds % 1
 
             origin.x: root.width / 2
             origin.y: root.height / 2

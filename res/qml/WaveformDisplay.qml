@@ -14,6 +14,7 @@ Item {
     }
 
     required property string group
+    property color beatColor: "#a1a1a1a1"
     property bool splitStemTracks: false
     readonly property string zoomGroup: Mixxx.Config.waveformZoomSynchronization ? "[Channel1]" : group
 
@@ -82,7 +83,7 @@ Item {
             splitStemTracks: root.splitStemTracks
         }
         Mixxx.WaveformRendererBeat {
-            color: '#a1a1a1a1'
+            color: root.beatColor
         }
         Mixxx.WaveformRendererMark {
             playMarkerBackground: '#D9D9D9'

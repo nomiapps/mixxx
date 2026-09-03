@@ -156,7 +156,7 @@ class QmlWaveformDisplay : public QQuickItem, VSyncTimeProvider, public Waveform
     QmlTrackProxy* m_pTrack;
     QSharedPointer<VisualPlayPosition> m_visualPlayPosition;
 
-    std::chrono::milliseconds m_syncInterval;
+    std::chrono::microseconds m_syncInterval;
     enum class DirtyFlag : int {
         None = 0x0,
         Geometry = 0x1,
