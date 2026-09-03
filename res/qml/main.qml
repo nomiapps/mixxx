@@ -258,6 +258,36 @@ ApplicationWindow {
                     checkable: true
                     text: "Edit"
                 }
+                // --- Edge surface (begin) ---
+                Skin.Button {
+                    id: showEdgeSurfaceButton
+
+                    activeColor: Theme.white
+                    checkable: true
+                    checked: edgeSurfaceWindow.visible
+                    text: "Edge"
+
+                    function toggleEdgeSurface() {
+                        if (edgeSurfaceWindow.visible)
+                            edgeSurfaceWindow.close();
+                        else
+                            edgeSurfaceWindow.show();
+                    }
+
+                    onClicked: toggleEdgeSurface()
+
+                    Skin.EdgeSurface {
+                        id: edgeSurfaceWindow
+                    }
+                    Connections {
+                        function onShowEdgeSurfaceRequested() {
+                            showEdgeSurfaceButton.toggleEdgeSurface();
+                        }
+
+                        target: applicationMenuCommands
+                    }
+                }
+                // --- Edge surface (end) ---
                 Skin.Button {
                     id: showDevToolsButton
 
@@ -344,8 +374,14 @@ ApplicationWindow {
             Item {
                 id: waveforms
 
+                // Total height of the per-deck stem strips currently shown
+                // (each is 0 px unless a stem track is loaded on that deck).
+                // The waveforms give up this height, and the pane grows by
+                // it so the waveforms keep their size when strips appear.
+                readonly property real stemStripsHeight: deck3stems.height + deck1stems.height + deck2stems.height + deck4stems.height
+
                 SplitView.fillHeight: !library.active
-                SplitView.preferredHeight: library.active ? 120 : undefined
+                SplitView.preferredHeight: library.active ? 120 + waveforms.stemStripsHeight : undefined
                 visible: !root.maximizeLibrary
 
                 FadeBehavior on visible {
@@ -359,7 +395,7 @@ ApplicationWindow {
 
                     active: root.show4decks
                     anchors.top: parent.top
-                    height: parent.height / 4
+                    height: (parent.height - waveforms.stemStripsHeight) / 4
                     width: root.width
 
                     sourceComponent: Component {
@@ -372,20 +408,50 @@ ApplicationWindow {
                         }
                     }
                 }
+                Skin.StemStrip {
+                    id: deck3stems
+
+                    active: root.show4decks
+                    anchors.top: deck3waveform.bottom
+                    group: deck3waveform.group
+                    width: root.width
+                }
                 Skin.WaveformDisplay {
                     id: deck1waveform
 
-                    anchors.top: root.show4decks ? deck3waveform.bottom : parent.top
+                    anchors.top: root.show4decks ? deck3stems.bottom : parent.top
                     group: "[Channel1]"
-                    height: parent.height / (root.show4decks ? 4 : 2)
+                    height: (parent.height - waveforms.stemStripsHeight) / (root.show4decks ? 4 : 2)
+                    width: root.width
+                }
+                Skin.StemStrip {
+                    id: deck1stems
+
+                    anchors.top: deck1waveform.bottom
+                    group: deck1waveform.group
+                    width: root.width
+                }
+                Skin.StemStrip {
+                    id: deck2stems
+
+                    anchors.bottom: root.show4decks ? deck4waveform.top : parent.bottom
+                    group: deck2waveform.group
                     width: root.width
                 }
                 Skin.WaveformDisplay {
                     id: deck2waveform
 
-                    anchors.bottom: root.show4decks ? deck4waveform.top : parent.bottom
+                    anchors.bottom: deck2stems.top
                     group: "[Channel2]"
-                    height: parent.height / (root.show4decks ? 4 : 2)
+                    height: (parent.height - waveforms.stemStripsHeight) / (root.show4decks ? 4 : 2)
+                    width: root.width
+                }
+                Skin.StemStrip {
+                    id: deck4stems
+
+                    active: root.show4decks
+                    anchors.bottom: parent.bottom
+                    group: deck4waveform.group
                     width: root.width
                 }
                 Loader {
@@ -394,8 +460,8 @@ ApplicationWindow {
                     readonly property string group: "[Channel4]"
 
                     active: root.show4decks
-                    anchors.bottom: parent.bottom
-                    height: parent.height / 4
+                    anchors.bottom: deck4stems.top
+                    height: (parent.height - waveforms.stemStripsHeight) / 4
                     width: root.width
 
                     sourceComponent: Component {
