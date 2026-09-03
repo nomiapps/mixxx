@@ -25,6 +25,18 @@ Item {
         searchField.forceActiveFocus(Qt.ShortcutFocusReason);
         searchField.selectAll();
     }
+    // Smart crates are searches over the whole collection: show the first
+    // source (all tracks) and then apply the saved query.
+    function applySavedSearch(query) {
+        if (root.sidebar) {
+            root.sidebar.activate(root.sidebar.index(0, 0));
+        }
+        if (searchField.text === query) {
+            root.applySearch();
+        } else {
+            searchField.text = query;
+        }
+    }
 
     LibraryComponent.SourceTree {
         id: librarySources
@@ -127,6 +139,13 @@ Item {
                 SplitView.minimumHeight: 200
                 SplitView.preferredHeight: 500
                 model: root.sidebar
+            }
+            LibraryComponent.SmartCrates {
+                SplitView.minimumHeight: 60
+                SplitView.preferredHeight: 130
+                searchText: searchField.text
+
+                onActivated: query => root.applySavedSearch(query)
             }
             Skin.PreviewDeck {
                 SplitView.maximumHeight: 200

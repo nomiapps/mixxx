@@ -99,11 +99,31 @@ Item {
         Menu {
             id: addToCrateMenu
 
+            // Refreshed each time the submenu opens so new crates show up.
+            property var crates: []
+
             enabled: {
                 hasCapabilities(Mixxx.LibraryTrackListModel.Capability.AddToTrackSet);
             }
             title: qsTr("Crates")
 
+            onAboutToShow: crates = library.crates()
+
+            Instantiator {
+                model: addToCrateMenu.crates
+
+                delegate: MenuItem {
+                    required property var modelData
+
+                    enabled: !modelData.locked
+                    text: modelData.name
+
+                    onTriggered: library.addTrackToCrate(track, modelData.id)
+                }
+
+                onObjectAdded: (index, object) => addToCrateMenu.insertItem(index, object)
+                onObjectRemoved: (index, object) => addToCrateMenu.removeItem(object)
+            }
             MenuSeparator {
             }
             MenuItem {
@@ -124,6 +144,13 @@ Item {
 
                 onTriggered: {
                     library.analyze(track);
+                }
+            }
+            MenuItem {
+                text: qsTr("Analyze all in view")
+
+                onTriggered: {
+                    tableView.model.analyzeAll();
                 }
             }
             MenuItem {

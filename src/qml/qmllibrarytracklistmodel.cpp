@@ -8,10 +8,13 @@
 #include <QStandardItemModel>
 #include <QVariant>
 
+#include "analyzer/analyzerscheduledtrack.h"
 #include "library/basetracktablemodel.h"
 #include "library/columncache.h"
+#include "library/library.h"
 #include "moc_qmllibrarytracklistmodel.cpp"
 #include "qml/asyncimageprovider.h"
+#include "qml/qmllibraryproxy.h"
 #include "qml/qmllibrarytracklistcolumn.h"
 #include "qml_owned_ptr.h"
 #include "qmltrackproxy.h"
@@ -226,6 +229,27 @@ void QmlLibraryTrackListModel::sort(int column, Qt::SortOrder order) {
                     : pColumn->columnIdx(),
             order);
     emit layoutChanged(QList<QPersistentModelIndex>(), QAbstractItemModel::VerticalSortHint);
+}
+
+int QmlLibraryTrackListModel::analyzeAll() const {
+    auto* const pTrackModel = dynamic_cast<TrackModel*>(sourceModel());
+    Library* pLibrary = QmlLibraryProxy::get();
+    VERIFY_OR_DEBUG_ASSERT(pTrackModel && pLibrary) {
+        return 0;
+    }
+    const int rowCount = sourceModel()->rowCount();
+    QList<AnalyzerScheduledTrack> tracks;
+    tracks.reserve(rowCount);
+    for (int row = 0; row < rowCount; ++row) {
+        const TrackId trackId = pTrackModel->getTrackId(sourceModel()->index(row, 0));
+        if (trackId.isValid()) {
+            tracks.append(AnalyzerScheduledTrack(trackId));
+        }
+    }
+    if (!tracks.isEmpty()) {
+        emit pLibrary->analyzeTracks(tracks);
+    }
+    return tracks.size();
 }
 
 } // namespace qml

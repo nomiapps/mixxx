@@ -95,6 +95,7 @@ class QmlLibraryProxy : public QObject {
     Q_PROPERTY(mixxx::qml::QmlLibraryScannerProxy* scanner MEMBER m_pScanner CONSTANT)
     Q_PROPERTY(bool libraryScanActive READ libraryScanActive NOTIFY libraryScanActiveChanged)
     Q_PROPERTY(bool enginePrimeExportAvailable READ enginePrimeExportAvailable CONSTANT)
+    Q_PROPERTY(QVariantList smartCrates READ smartCrates NOTIFY smartCratesChanged)
     QML_NAMED_ELEMENT(Library)
     QML_SINGLETON
 
@@ -178,6 +179,25 @@ class QmlLibraryProxy : public QObject {
     Q_INVOKABLE void searchInCurrentView();
     Q_INVOKABLE void searchInTracksLibrary();
     Q_INVOKABLE void showAutoDJ();
+
+    /// All crates of the internal collection, in name order, as a list of
+    /// {id, name, locked} maps for building an "add to crate" menu.
+    Q_INVOKABLE QVariantList crates() const;
+    /// Add a track to the crate with the given id. Returns false if the
+    /// track or crate is unknown or the crate is locked.
+    Q_INVOKABLE bool addTrackToCrate(
+            const mixxx::qml::QmlTrackProxy* track, int crateId);
+
+    /// Smart crates are named saved library searches, as a list of
+    /// {name, query} maps. Persisted per profile in qml_smart_crates.json.
+    QVariantList smartCrates() const {
+        return m_smartCrates;
+    }
+    /// Save a smart crate (replaces an existing one with the same name).
+    Q_INVOKABLE void addSmartCrate(const QString& name, const QString& query);
+    /// Remove the smart crate at the given index of `smartCrates`.
+    Q_INVOKABLE void removeSmartCrate(int index);
+
     Q_INVOKABLE QString deckHotcueLabel(
             mixxx::qml::QmlTrackProxy* track,
             int hotcueNumber) const;
@@ -196,6 +216,7 @@ class QmlLibraryProxy : public QObject {
 
   signals:
     void libraryScanActiveChanged();
+    void smartCratesChanged();
     void libraryScanSummaryAvailable(
             const QString& title,
             const QString& text,
@@ -203,7 +224,11 @@ class QmlLibraryProxy : public QObject {
 
   private:
     void deliverPendingLibraryScanSummary();
+    void loadSmartCrates();
+    void saveSmartCrates() const;
     static inline std::shared_ptr<Library> s_pLibrary;
+
+    QVariantList m_smartCrates;
 
     /// This needs to be a plain pointer because it's used as a `Q_PROPERTY` member variable.
     QmlLibraryTrackListModel* m_pModelProperty;

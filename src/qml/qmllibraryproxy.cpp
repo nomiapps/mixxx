@@ -1,6 +1,11 @@
 #include "qml/qmllibraryproxy.h"
 
 #include <QAbstractItemModel>
+#include <QDir>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QQmlEngine>
 #include <QStringList>
 #include <cmath>
@@ -11,6 +16,8 @@
 #include "library/librarytablemodel.h"
 #include "library/trackcollection.h"
 #include "library/trackcollectionmanager.h"
+#include "library/trackset/crate/crate.h"
+#include "library/trackset/crate/cratestorage.h"
 #ifdef __ENGINEPRIME__
 #include "library/export/libraryexporter.h"
 #endif
@@ -32,6 +39,18 @@ const ConfigKey kLoopDefaultColorIndexConfigKey("[Controls]", "LoopDefaultColorI
 const ConfigKey kJumpDefaultColorIndexConfigKey("[Controls]", "jump_default_color_index");
 
 constexpr mixxx::audio::FrameDiff_t kMinimumAudibleLoopSizeFrames = 150;
+
+const QString kSmartCratesFileName = QStringLiteral("qml_smart_crates.json");
+const QString kSmartCrateNameKey = QStringLiteral("name");
+const QString kSmartCrateQueryKey = QStringLiteral("query");
+
+QString smartCratesFilePath() {
+    const UserSettingsPointer pConfig = QmlConfigProxy::get();
+    VERIFY_OR_DEBUG_ASSERT(pConfig) {
+        return {};
+    }
+    return QDir(pConfig->getSettingsPath()).filePath(kSmartCratesFileName);
+}
 
 CuePointer findDeckHotcue(QmlTrackProxy* track, int hotcueNumber) {
     if (!track || !track->internal() || hotcueNumber <= 0) {
@@ -174,6 +193,7 @@ QmlLibraryProxy::QmlLibraryProxy(QObject* parent)
                 deliverPendingLibraryScanSummary();
             });
     deliverPendingLibraryScanSummary();
+    loadSmartCrates();
 #ifdef __ENGINEPRIME__
     m_pLibraryExporter = s_pLibrary->makeLibraryExporter(nullptr);
     connect(s_pLibrary.get(),
@@ -328,6 +348,123 @@ void QmlLibraryProxy::showAutoDJ() {
         return;
     }
     s_pLibrary->showAutoDJ();
+}
+
+QVariantList QmlLibraryProxy::crates() const {
+    QVariantList crates;
+    VERIFY_OR_DEBUG_ASSERT(s_pLibrary) {
+        return crates;
+    }
+    TrackCollection* pCollection =
+            s_pLibrary->trackCollectionManager()->internalCollection();
+    VERIFY_OR_DEBUG_ASSERT(pCollection) {
+        return crates;
+    }
+    CrateSelectResult result = pCollection->crates().selectCrates();
+    Crate crate;
+    while (result.populateNext(&crate)) {
+        crates.append(QVariantMap{
+                {QStringLiteral("id"), crate.getId().toVariant()},
+                {QStringLiteral("name"), crate.getName()},
+                {QStringLiteral("locked"), crate.isLocked()},
+        });
+    }
+    return crates;
+}
+
+bool QmlLibraryProxy::addTrackToCrate(const QmlTrackProxy* track, int crateId) {
+    VERIFY_OR_DEBUG_ASSERT(s_pLibrary && track && track->internal()) {
+        return false;
+    }
+    const CrateId id{QVariant(crateId)};
+    if (!id.isValid()) {
+        return false;
+    }
+    TrackCollection* pCollection =
+            s_pLibrary->trackCollectionManager()->internalCollection();
+    VERIFY_OR_DEBUG_ASSERT(pCollection) {
+        return false;
+    }
+    Crate crate;
+    if (!pCollection->crates().readCrateById(id, &crate) || crate.isLocked()) {
+        return false;
+    }
+    return pCollection->addCrateTracks(id, {track->internal()->getId()});
+}
+
+void QmlLibraryProxy::addSmartCrate(const QString& name, const QString& query) {
+    const QString trimmedName = name.trimmed();
+    if (trimmedName.isEmpty()) {
+        return;
+    }
+    // Replace an existing entry with the same name, otherwise append.
+    for (int i = 0; i < m_smartCrates.size(); ++i) {
+        if (m_smartCrates.at(i).toMap().value(kSmartCrateNameKey).toString() ==
+                trimmedName) {
+            m_smartCrates.removeAt(i);
+            break;
+        }
+    }
+    m_smartCrates.append(QVariantMap{
+            {kSmartCrateNameKey, trimmedName},
+            {kSmartCrateQueryKey, query},
+    });
+    saveSmartCrates();
+    emit smartCratesChanged();
+}
+
+void QmlLibraryProxy::removeSmartCrate(int index) {
+    if (index < 0 || index >= m_smartCrates.size()) {
+        return;
+    }
+    m_smartCrates.removeAt(index);
+    saveSmartCrates();
+    emit smartCratesChanged();
+}
+
+void QmlLibraryProxy::loadSmartCrates() {
+    const QString filePath = smartCratesFilePath();
+    if (filePath.isEmpty()) {
+        return;
+    }
+    QFile file(filePath);
+    if (!file.exists() || !file.open(QIODevice::ReadOnly)) {
+        return;
+    }
+    const QJsonArray entries = QJsonDocument::fromJson(file.readAll()).array();
+    m_smartCrates.clear();
+    for (const auto& entry : entries) {
+        const QJsonObject object = entry.toObject();
+        const QString name = object.value(kSmartCrateNameKey).toString();
+        if (name.isEmpty()) {
+            continue;
+        }
+        m_smartCrates.append(QVariantMap{
+                {kSmartCrateNameKey, name},
+                {kSmartCrateQueryKey, object.value(kSmartCrateQueryKey).toString()},
+        });
+    }
+}
+
+void QmlLibraryProxy::saveSmartCrates() const {
+    const QString filePath = smartCratesFilePath();
+    if (filePath.isEmpty()) {
+        return;
+    }
+    QJsonArray entries;
+    for (const QVariant& entry : std::as_const(m_smartCrates)) {
+        const QVariantMap map = entry.toMap();
+        entries.append(QJsonObject{
+                {kSmartCrateNameKey, map.value(kSmartCrateNameKey).toString()},
+                {kSmartCrateQueryKey, map.value(kSmartCrateQueryKey).toString()},
+        });
+    }
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        qWarning() << "Failed to save smart crates to" << filePath;
+        return;
+    }
+    file.write(QJsonDocument(entries).toJson(QJsonDocument::Indented));
 }
 
 QString QmlLibraryProxy::deckHotcueLabel(

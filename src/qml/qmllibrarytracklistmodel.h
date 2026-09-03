@@ -76,6 +76,9 @@ class QmlLibraryTrackListModel : public QIdentityProxyModel {
             Qt::Orientation orientation,
             int role = Qt::DisplayRole) const override;
     Q_INVOKABLE void sort(int column, Qt::SortOrder order) override;
+    /// Queue every track of the current view (library, search result, ...)
+    /// for analysis. Returns the number of tracks queued.
+    Q_INVOKABLE int analyzeAll() const;
 
   private:
     std::vector<parented_ptr<QmlLibraryTrackListColumn>> m_columns;
