@@ -12,6 +12,7 @@ Item {
     property int pendingDeck: 1
 
     signal showDeveloperToolsRequested
+    signal showEdgeSurfaceRequested
 
     function loadTrackToDeck(deck) {
         pendingDeck = deck;

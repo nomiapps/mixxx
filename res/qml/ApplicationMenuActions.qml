@@ -46,6 +46,7 @@ Item {
     property alias viewMaximizeLibrary: viewMaximizeLibraryAction
     property alias viewShowAutoDJ: viewShowAutoDJAction
     property alias viewShowCoverArt: viewShowCoverArtAction
+    property alias viewShowEdgeSurface: viewShowEdgeSurfaceAction
     property alias viewShowKeywheel: viewShowKeywheelAction
     property alias viewShowMicrophone: viewShowMicrophoneAction
     property alias viewShowPreviewDeck: viewShowPreviewDeckAction
@@ -209,6 +210,13 @@ Item {
         text: qsTranslate("WMainMenuBar", "Show Keywheel")
 
         onTriggered: root.commands.showKeywheel()
+    }
+    Action {
+        id: viewShowEdgeSurfaceAction
+
+        text: qsTr("Edge Surface")
+
+        onTriggered: root.commands.showEdgeSurfaceRequested()
     }
     Action {
         id: viewMaximizeLibraryAction

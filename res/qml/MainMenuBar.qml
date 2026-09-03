@@ -87,6 +87,9 @@ MenuBar {
         MenuItem {
             action: root.actions.viewMaximizeLibrary
         }
+        MenuItem {
+            action: root.actions.viewShowEdgeSurface
+        }
         MenuSeparator {
         }
         MenuItem {

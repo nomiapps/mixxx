@@ -68,6 +68,10 @@ QmlApplication::QmlApplication(
           m_perfSession(nullptr),
 #endif
           m_autoReload() {
+    // The Edge surface layout engine reads its JSON controller layouts with
+    // XMLHttpRequest, which Qt6 blocks for local files unless this is set.
+    qputenv("QML_XHR_ALLOW_FILE_READ", "1");
+
     // 4x MSAA so QtQuick.Shapes strokes (knob value arcs, waveform markers)
     // are antialiased; the Shape "antialiasing" property is a no-op without a
     // multisampled surface. Must be set before any QQuickWindow is created.

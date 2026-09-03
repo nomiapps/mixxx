@@ -1,0 +1,13 @@
+{
+    "_comment": "Register controller layouts here: add your .json to this folder and list it below. See ddj-flx4.json for the element format.",
+    "layouts": [
+        "ddj-flx4.json",
+        "mixtrack-platinum-fx.json",
+        "waveforms-xl.json",
+        "waveforms-only.json",
+        "quad-decks.json",
+        "quad-decks-mixer.json",
+        "ddj-flx4-vision-draft.json",
+        "mixtrack-platinum-fx-vision-draft.json"
+    ]
+}

@@ -1,0 +1,670 @@
+{
+  "name": "Mixtrack Platinum FX (vision, reviewed)",
+  "canvas": [
+    2560,
+    720
+  ],
+  "elements": [
+    {
+      "group": "@left",
+      "rect": [
+        22,
+        521,
+        112,
+        54
+      ],
+      "label": "CUE",
+      "key": "cue_default",
+      "type": "button"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        30,
+        4,
+        789,
+        26
+      ],
+      "type": "text"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        50,
+        34,
+        749,
+        58
+      ],
+      "type": "waveform"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        50,
+        96,
+        749,
+        26
+      ],
+      "type": "overview"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        50,
+        128,
+        749,
+        389
+      ],
+      "type": "platter"
+    },
+    {
+      "group": "[Microphone]",
+      "rect": [
+        27,
+        31,
+        88,
+        54
+      ],
+      "label": "MIC",
+      "key": "pregain",
+      "type": "knob"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        27,
+        490,
+        88,
+        29
+      ],
+      "label": "SYNC",
+      "key": "sync_enabled",
+      "toggle": true,
+      "type": "button"
+    },
+    {
+      "group": "@left",
+      "rows": 2,
+      "rect": [
+        158,
+        575,
+        512,
+        113
+      ],
+      "modes": [
+        "hotcue",
+        "beatloop",
+        "fadercuts",
+        "sampler"
+      ],
+      "columns": 4,
+      "type": "pads"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        22,
+        590,
+        112,
+        59
+      ],
+      "label": "PLAY",
+      "key": "play",
+      "toggle": true,
+      "type": "button"
+    },
+    {
+      "activeKey": "loop_enabled",
+      "color": "#e0a040",
+      "group": "@left",
+      "rect": [
+        773,
+        658,
+        54,
+        33
+      ],
+      "label": "RELOOP",
+      "key": "reloop_toggle",
+      "type": "button"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        853,
+        621,
+        56,
+        18
+      ],
+      "label": "2X \u25ba",
+      "key": "loop_double",
+      "type": "button"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        860,
+        664,
+        64,
+        38
+      ],
+      "label": "IN",
+      "key": "loop_in",
+      "type": "button"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        860,
+        664,
+        40,
+        28
+      ],
+      "label": "OUT",
+      "key": "loop_out",
+      "type": "button"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        866,
+        144,
+        43,
+        324
+      ],
+      "style": "tempo",
+      "key": "rate",
+      "type": "slider"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        1604,
+        193,
+        101,
+        192
+      ],
+      "style": "tempo",
+      "key": "rate",
+      "type": "slider"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        1612,
+        521,
+        112,
+        54
+      ],
+      "label": "CUE",
+      "key": "cue_default",
+      "type": "button"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        1612,
+        590,
+        112,
+        59
+      ],
+      "label": "PLAY",
+      "key": "play",
+      "toggle": true,
+      "type": "button"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        1701,
+        4,
+        636,
+        26
+      ],
+      "type": "text"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        1721,
+        34,
+        596,
+        58
+      ],
+      "type": "waveform"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        1721,
+        96,
+        596,
+        26
+      ],
+      "type": "overview"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        1721,
+        128,
+        596,
+        342
+      ],
+      "type": "platter"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        1615,
+        490,
+        88,
+        29
+      ],
+      "label": "SYNC",
+      "key": "sync_enabled",
+      "toggle": true,
+      "type": "button"
+    },
+    {
+      "group": "@right",
+      "rows": 2,
+      "rect": [
+        1768,
+        575,
+        512,
+        113
+      ],
+      "modes": [
+        "hotcue",
+        "beatloop",
+        "fadercuts",
+        "sampler"
+      ],
+      "columns": 4,
+      "type": "pads",
+      "samplerOffset": 4
+    },
+    {
+      "group": "@right",
+      "rect": [
+        2339,
+        664,
+        62,
+        26
+      ],
+      "label": "IN",
+      "key": "loop_in",
+      "type": "button"
+    },
+    {
+      "activeKey": "loop_enabled",
+      "color": "#e0a040",
+      "group": "@right",
+      "rect": [
+        2357,
+        662,
+        72,
+        28
+      ],
+      "label": "RELOOP",
+      "key": "reloop_toggle",
+      "type": "button"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        2434,
+        664,
+        64,
+        26
+      ],
+      "label": "2X \u25ba",
+      "key": "loop_double",
+      "type": "button"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        2473,
+        664,
+        40,
+        28
+      ],
+      "label": "OUT",
+      "key": "loop_out",
+      "type": "button"
+    },
+    {
+      "group": "[QuickEffectRack1_@left]",
+      "rect": [
+        1021,
+        394,
+        60,
+        55
+      ],
+      "label": "CFX",
+      "key": "super1",
+      "type": "knob"
+    },
+    {
+      "group": "[EqualizerRack1_@left_Effect1]",
+      "rect": [
+        1017,
+        307,
+        66,
+        51
+      ],
+      "label": "LOW",
+      "key": "parameter1",
+      "type": "knob"
+    },
+    {
+      "group": "[Master]",
+      "rect": [
+        1162,
+        636,
+        239,
+        31
+      ],
+      "style": "crossfader",
+      "key": "crossfader",
+      "type": "slider"
+    },
+    {
+      "group": "[EqualizerRack1_@left_Effect1]",
+      "rect": [
+        1020,
+        260,
+        55,
+        34
+      ],
+      "label": "MID",
+      "key": "parameter2",
+      "type": "knob"
+    },
+    {
+      "group": "[EqualizerRack1_@left_Effect1]",
+      "rect": [
+        1021,
+        185,
+        58,
+        36
+      ],
+      "label": "HI",
+      "key": "parameter3",
+      "type": "knob"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        1021,
+        114,
+        58,
+        35
+      ],
+      "label": "TRIM",
+      "key": "pregain",
+      "type": "knob"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        1023,
+        443,
+        51,
+        148
+      ],
+      "style": "volume",
+      "key": "volume",
+      "type": "slider"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        1132,
+        183,
+        72,
+        24
+      ],
+      "label": "LOAD",
+      "key": "LoadSelectedTrack",
+      "type": "button"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        1161,
+        134,
+        62,
+        38
+      ],
+      "label": "LOAD",
+      "key": "LoadSelectedTrack",
+      "type": "button"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        1164,
+        499,
+        11,
+        75
+      ],
+      "key": "vu_meter",
+      "type": "vumeter"
+    },
+    {
+      "group": "[EffectRack1_EffectUnit1_Effect1]",
+      "rect": [
+        1190,
+        323,
+        72,
+        24
+      ],
+      "label": "FX SEL",
+      "key": "next_effect",
+      "type": "button"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        1190,
+        440,
+        72,
+        24
+      ],
+      "label": "CUE",
+      "key": "pfl",
+      "toggle": true,
+      "type": "button"
+    },
+    {
+      "group": "@left",
+      "rect": [
+        1238,
+        281,
+        74,
+        45
+      ],
+      "label": "TAP",
+      "key": "bpm_tap",
+      "type": "button"
+    },
+    {
+      "group": "[Master]",
+      "rect": [
+        1268,
+        500,
+        52,
+        50
+      ],
+      "label": "PH VOL",
+      "key": "headGain",
+      "type": "knob"
+    },
+    {
+      "group": "[Master]",
+      "rect": [
+        1210,
+        548,
+        52,
+        50
+      ],
+      "label": "PH MIX",
+      "key": "headMix",
+      "type": "knob"
+    },
+    {
+      "color": "#e0a040",
+      "group": "[EffectRack1_EffectUnit1_Effect1]",
+      "rect": [
+        1247,
+        323,
+        72,
+        24
+      ],
+      "label": "FX ON",
+      "key": "enabled",
+      "toggle": true,
+      "type": "button"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        1305,
+        440,
+        72,
+        24
+      ],
+      "label": "CUE",
+      "key": "pfl",
+      "toggle": true,
+      "type": "button"
+    },
+    {
+      "group": "[EffectRack1_EffectUnit1]",
+      "rect": [
+        1236,
+        255,
+        55,
+        50
+      ],
+      "label": "FX LVL",
+      "key": "mix",
+      "type": "knob"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        1386,
+        500,
+        11,
+        74
+      ],
+      "key": "vu_meter",
+      "type": "vumeter"
+    },
+    {
+      "group": "[QuickEffectRack1_@right]",
+      "rect": [
+        1482,
+        394,
+        60,
+        55
+      ],
+      "label": "CFX",
+      "key": "super1",
+      "type": "knob"
+    },
+    {
+      "group": "[EqualizerRack1_@right_Effect1]",
+      "rect": [
+        1478,
+        307,
+        66,
+        51
+      ],
+      "label": "LOW",
+      "key": "parameter1",
+      "type": "knob"
+    },
+    {
+      "group": "[EqualizerRack1_@right_Effect1]",
+      "rect": [
+        1479,
+        255,
+        68,
+        41
+      ],
+      "label": "MID",
+      "key": "parameter2",
+      "type": "knob"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        1485,
+        114,
+        56,
+        34
+      ],
+      "label": "TRIM",
+      "key": "pregain",
+      "type": "knob"
+    },
+    {
+      "group": "[EqualizerRack1_@right_Effect1]",
+      "rect": [
+        1486,
+        187,
+        57,
+        35
+      ],
+      "label": "HI",
+      "key": "parameter3",
+      "type": "knob"
+    },
+    {
+      "group": "[Master]",
+      "rect": [
+        2328,
+        31,
+        88,
+        54
+      ],
+      "label": "MASTER",
+      "key": "gain",
+      "type": "knob"
+    },
+    {
+      "group": "@right",
+      "rect": [
+        1565,
+        546,
+        51,
+        126
+      ],
+      "style": "volume",
+      "key": "volume",
+      "type": "slider"
+    },
+    {
+      "rect": [
+        985,
+        0,
+        10,
+        720
+      ],
+      "type": "divider"
+    },
+    {
+      "rect": [
+        1564,
+        0,
+        10,
+        720
+      ],
+      "type": "divider"
+    }
+  ]
+}
