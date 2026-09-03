@@ -15,13 +15,16 @@ ApplicationWindow {
     width: 1920
     height: 1080
     // Hard floor on window size (like a VS Code / Claude sidebar min width) so
-    // the layout can't be squished until elements overlap. 1280x720 fits the
-    // deck rows, mixer and the full 4-cell stem strip without clipping, and
-    // matches the smallest landscape tablet we currently target. Going below
-    // this needs a responsive reflow (stacked decks, collapsible panels) —
-    // scoped separately, not implemented.
+    // the layout can't be squished until elements overlap. 1280 wide fits the
+    // deck rows, mixer and the full 4-cell stem strip without clipping.
+    // Height (logical/device-independent px, like all Qt geometry): the fixed
+    // stack above the library (toolbar + two waveforms + deck row + crossfader)
+    // is ~630px, so below ~880 the library is crushed and its sidebar collides
+    // with itself. 880 keeps ~250px of library and still fits a 1080p screen.
+    // A shorter window (e.g. the 720px tablet/Edge target) needs the
+    // responsive reflow — scoped separately, not implemented.
     minimumWidth: 1280
-    minimumHeight: 720
+    minimumHeight: 880
     color: Theme.backgroundColor
     visible: true
 

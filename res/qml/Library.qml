@@ -303,11 +303,24 @@ Item {
         Rectangle {
             id: smartCratePane
 
+            // The sidebar is anchored from both ends (header from the top, this
+            // pane + "New Crate" from the bottom). With a fixed height the two
+            // ends pass through each other when the library is short, so this
+            // pane yields instead: it shrinks to keep the tree >= 90px and
+            // hides entirely once there's no useful room left.
+            readonly property real roomForPane: libraryRoot.height
+                    - (10 + sidebarHeader.height + 6)      // top margin + header + gap
+                    - 90                                    // minimum tree height
+                    - (10 + newCrateButton.height + 4 + 10) // tree gap + button + gaps
+
             anchors.left: parent.left
             anchors.bottom: parent.bottom
             anchors.margins: 10
             width: 200
-            height: 168
+            // Snap to 0 below the useful threshold: an invisible item still
+            // occupies its anchored space, so a hidden sliver would leave a gap.
+            height: roomForPane >= 60 ? Math.min(168, roomForPane) : 0
+            visible: height > 0
             color: "transparent"
 
             Row {
