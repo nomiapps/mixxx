@@ -126,18 +126,26 @@ Item {
             delegate: TreeViewDelegate {
                 id: sidebarDelegate
 
+                readonly property bool openParent: sidebarDelegate.hasChildren && sidebarDelegate.expanded
+
                 implicitWidth: sidebarTree.width
                 implicitHeight: 26
+                // Tighter indentation — the dulled open-parent + blue chevron
+                // carry the hierarchy, so nesting needs less horizontal offset.
+                indentation: 13
                 font.pixelSize: 13
                 palette.text: Theme.deckTextColor
                 palette.buttonText: Theme.deckTextColor
 
-                // Themed row background: hover + selection tint.
+                // Themed row background: hover + selection tint. Expanded parents
+                // get a faint fill so it's obvious the container is open.
                 background: Rectangle {
                     radius: 3
                     color: sidebarDelegate.current
                             ? Qt.rgba(0.004, 0.863, 0.988, 0.16)
-                            : (sidebarDelegate.hovered ? Qt.rgba(1, 1, 1, 0.05) : "transparent")
+                            : (sidebarDelegate.hovered
+                                    ? Qt.rgba(1, 1, 1, 0.05)
+                                    : (sidebarDelegate.openParent ? Qt.rgba(1, 1, 1, 0.03) : "transparent"))
                 }
 
                 // Themed disclosure triangle instead of the default indicator.
@@ -146,15 +154,21 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: sidebarDelegate.hasChildren
                     text: sidebarDelegate.expanded ? "▾" : "▸"
-                    color: Theme.deckTextColor
-                    font.pixelSize: 10
+                    color: sidebarDelegate.expanded ? Theme.blue : Theme.deckTextColor
+                    font.pixelSize: 12
+                    font.bold: true
                 }
 
                 contentItem: Text {
-                    leftPadding: sidebarDelegate.hasChildren ? 4 : 0
+                    leftPadding: sidebarDelegate.hasChildren ? 6 : 0
                     text: model.display
-                    color: sidebarDelegate.current ? Theme.white : Theme.deckTextColor
-                    font: sidebarDelegate.font
+                    // Dull an open parent (it's a container, not the selection);
+                    // keep leaves and the current row bright.
+                    color: sidebarDelegate.current
+                            ? Theme.white
+                            : (sidebarDelegate.openParent ? Theme.midGray : Theme.deckTextColor)
+                    font.pixelSize: sidebarDelegate.font.pixelSize
+                    font.bold: sidebarDelegate.hasChildren
                     elide: Text.ElideRight
                     verticalAlignment: Text.AlignVCenter
                 }
