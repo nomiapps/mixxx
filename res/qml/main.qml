@@ -14,6 +14,14 @@ ApplicationWindow {
 
     width: 1920
     height: 1080
+    // Hard floor on window size (like a VS Code / Claude sidebar min width) so
+    // the layout can't be squished until elements overlap. 1280x720 fits the
+    // deck rows, mixer and the full 4-cell stem strip without clipping, and
+    // matches the smallest landscape tablet we currently target. Going below
+    // this needs a responsive reflow (stacked decks, collapsible panels) —
+    // scoped separately, not implemented.
+    minimumWidth: 1280
+    minimumHeight: 720
     color: Theme.backgroundColor
     visible: true
 
@@ -157,6 +165,12 @@ ApplicationWindow {
             }
         }
 
+        Skin.StemStrip {
+            group: "[Channel3]"
+            width: root.width
+            active: root.show4decks && !root.maximizeLibrary
+        }
+
         Skin.WaveformDisplay {
             id: deck1waveform
 
@@ -168,6 +182,12 @@ ApplicationWindow {
             FadeBehavior on visible {
                 fadeTarget: deck1waveform
             }
+        }
+
+        Skin.StemStrip {
+            group: "[Channel1]"
+            width: root.width
+            active: !root.maximizeLibrary
         }
 
         Skin.WaveformDisplay {
@@ -183,6 +203,12 @@ ApplicationWindow {
             }
         }
 
+        Skin.StemStrip {
+            group: "[Channel2]"
+            width: root.width
+            active: !root.maximizeLibrary
+        }
+
         Skin.WaveformDisplay {
             id: deck4waveform
 
@@ -194,6 +220,12 @@ ApplicationWindow {
             FadeBehavior on visible {
                 fadeTarget: deck4waveform
             }
+        }
+
+        Skin.StemStrip {
+            group: "[Channel4]"
+            width: root.width
+            active: root.show4decks && !root.maximizeLibrary
         }
 
         Skin.DeckRow {
