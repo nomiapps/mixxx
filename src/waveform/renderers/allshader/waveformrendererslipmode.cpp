@@ -33,7 +33,8 @@ WaveformRendererSlipMode::WaveformRendererSlipMode(
         WaveformWidgetRenderer* waveformWidget)
         : ::WaveformRendererAbstract(waveformWidget),
           m_slipBorderTopOutlineSize(10.f),
-          m_slipBorderBottomOutlineSize(10.f) {
+          m_slipBorderBottomOutlineSize(10.f),
+          m_pWaveformWidgetFactory(WaveformWidgetFactory::instance()) {
     initForRectangles<RGBAMaterial>(0);
     setUsePreprocess(true);
 }
@@ -90,9 +91,8 @@ bool WaveformRendererSlipMode::preprocessInner() {
     const bool isStemTrack = pTrack && pTrack->hasStem() &&
             pTrack->getWaveform() && pTrack->getWaveform()->hasStem();
     // The factory singleton only exists in the QWidget UI; null in the QML UI.
-    WaveformWidgetFactory* pWaveformWidgetFactory = WaveformWidgetFactory::instance();
-    const bool splitStemTracks = isStemTrack && pWaveformWidgetFactory &&
-            pWaveformWidgetFactory->isStemSplitTracks();
+    const bool splitStemTracks = isStemTrack && m_pWaveformWidgetFactory &&
+            m_pWaveformWidgetFactory->isStemSplitTracks();
 
     const int elapsed = m_timer.elapsed().toIntegerMillis() % kBlinkingPeriodMillis;
 
