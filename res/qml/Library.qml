@@ -21,9 +21,17 @@ Item {
         }
     }
     function focusSearch() {
+        searchDebounce.stop();
         root.applySearch();
         searchField.forceActiveFocus(Qt.ShortcutFocusReason);
         searchField.selectAll();
+    }
+    function analyzeCurrentView() {
+        if (!root.sidebar || !root.sidebar.tracklist) {
+            analyzeToast.show(0);
+            return;
+        }
+        analyzeToast.show(root.sidebar.tracklist.analyzeAll());
     }
     // Smart crates are searches over the whole collection: show the first
     // source (all tracks) and then apply the saved query.
@@ -45,11 +53,99 @@ Item {
         id: searchField
 
         anchors.left: parent.left
+        anchors.right: rescanButton.left
+        anchors.rightMargin: 6
+        anchors.top: parent.top
+        anchors.topMargin: 4
+        height: 28
+        color: Theme.deckTextColor
+        font.pixelSize: 13
+        placeholderText: qsTranslate("WSearchLineEdit", "Search...")
+        placeholderTextColor: Theme.midGray
+
+        background: Rectangle {
+            border.color: searchField.activeFocus ? Theme.blue : Theme.midGray
+            border.width: 1
+            color: Theme.knobBackgroundColor
+            radius: 4
+        }
+
+        onTextChanged: searchDebounce.restart()
+
+        Timer {
+            id: searchDebounce
+
+            interval: 300
+            onTriggered: root.applySearch()
+        }
+    }
+    Skin.FormButton {
+        id: rescanButton
+
+        anchors.right: analyzeViewButton.left
+        anchors.rightMargin: 6
+        anchors.top: parent.top
+        anchors.topMargin: 4
+        enabled: !Mixxx.Library.libraryScanActive
+        height: 28
+        text: Mixxx.Library.libraryScanActive ? qsTr("Scanning…") : qsTr("↻ Rescan")
+        width: 90
+
+        onClicked: Mixxx.Library.rescanLibrary()
+    }
+    Skin.FormButton {
+        id: analyzeViewButton
+
         anchors.right: parent.right
         anchors.top: parent.top
-        placeholderText: qsTranslate("WSearchLineEdit", "Search...")
+        anchors.topMargin: 4
+        height: 28
+        text: qsTr("⚡ Analyze view")
+        width: 112
 
-        onTextChanged: root.applySearch()
+        onClicked: root.analyzeCurrentView()
+    }
+    Rectangle {
+        id: analyzeToast
+
+        function show(count) {
+            toastText.text = count > 0
+                    ? qsTr("Queued %n track(s) for analysis", "", count)
+                    : qsTr("Nothing to analyze in this view");
+            opacity = 1;
+            toastTimer.restart();
+        }
+
+        anchors.right: parent.right
+        anchors.top: analyzeViewButton.bottom
+        anchors.topMargin: 6
+        border.color: Theme.blue
+        border.width: 1
+        color: Theme.knobBackgroundColor
+        height: 26
+        opacity: 0
+        radius: 4
+        width: toastText.implicitWidth + 20
+        z: 20
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 150
+            }
+        }
+        Text {
+            id: toastText
+
+            anchors.centerIn: parent
+            color: Theme.deckTextColor
+            font.pixelSize: 11
+        }
+        Timer {
+            id: toastTimer
+
+            interval: 2400
+            onTriggered: analyzeToast.opacity = 0
+        }
     }
     SplitView {
         id: librarySplitView
@@ -58,6 +154,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: searchField.bottom
+        anchors.topMargin: 4
         orientation: Qt.Horizontal
 
         handle: Rectangle {

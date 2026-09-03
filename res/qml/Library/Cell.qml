@@ -15,7 +15,9 @@ Rectangle {
     }
     Drag.supportedActions: Qt.CopyAction
     anchors.fill: parent
-    color: selected ? Theme.accentColor : (row % 2 == 0 ? Theme.sunkenBackgroundColor : Theme.backgroundColor)
+    color: selected
+            ? Qt.rgba(0.004, 0.863, 0.988, 0.14)
+            : (row % 2 == 0 ? Theme.sunkenBackgroundColor : Theme.backgroundColor)
 
     Item {
         id: dragImageSource

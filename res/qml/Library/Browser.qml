@@ -24,7 +24,7 @@ Rectangle {
     }
 
     Rectangle {
-        anchors.bottomMargin: 40
+        anchors.bottomMargin: 7
         anchors.fill: parent
         anchors.leftMargin: 7
         anchors.rightMargin: 15
@@ -33,19 +33,46 @@ Rectangle {
 
         ColumnLayout {
             anchors.fill: parent
-            spacing: 0
+            spacing: 5
 
-            ScrollView {
+            Rectangle {
+                Layout.fillWidth: true
+                color: Theme.toolbarBackgroundColor
+                implicitHeight: 28
+                radius: 3
+
+                Label {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Theme.deckTextColor
+                    font.bold: true
+                    font.pixelSize: 11
+                    text: qsTr("BROWSE")
+                }
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    color: Theme.blue
+                    height: 1
+                    opacity: 0.35
+                }
+            }
+            Item {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
 
-                TreeView {
-                    id: featureView
+                ScrollView {
+                    anchors.fill: parent
 
-                    Layout.fillWidth: true
-                    clip: true
-                    model: root.model
-                    selectionModel: featureSelection
+                    TreeView {
+                        id: featureView
+
+                        clip: true
+                        model: root.model
+                        selectionModel: featureSelection
+                        width: parent.width
 
                     delegate: FocusScope {
                         required property int column
@@ -54,7 +81,7 @@ Rectangle {
                         required property bool expanded
                         required property int hasChildren
                         required property var icon
-                        readonly property real indentation: 40
+                        readonly property real indentation: 13
                         // FIXME The signature for that function has changed after Qt 6.4.2 (currently shipped on Ubuntu 24.04)
                         // See https://github.com/mixxxdj/mixxx/pull/14514#issuecomment-2770811094 for further details
                         readonly property var index: treeView.modelIndex(column, row)
@@ -85,11 +112,18 @@ Rectangle {
                             indicatorAnimation.start()
                         onExpandedChanged: indicator.rotation = expanded ? 90 : 0
 
+                        readonly property bool openParent: isTreeNode && hasChildren && expanded
+
                         Rectangle {
                             id: background
 
                             anchors.fill: parent
-                            color: depth == 0 ? Theme.midGray2 : 'transparent'
+                            color: current
+                                    ? Qt.rgba(0.004, 0.863, 0.988, 0.16)
+                                    : (rowMouseArea.containsMouse
+                                            ? Qt.rgba(1, 1, 1, 0.05)
+                                            : (openParent ? Qt.rgba(1, 1, 1, 0.03) : "transparent"))
+                            radius: 3
 
                             MouseArea {
                                 id: rowMouseArea
@@ -110,10 +144,10 @@ Rectangle {
                             Rectangle {
                                 anchors.bottom: parent.bottom
                                 anchors.left: parent.left
-                                anchors.leftMargin: 10 + 15 * depth
+                                anchors.leftMargin: 8 + 13 * depth
                                 anchors.right: parent.right
                                 anchors.top: parent.top
-                                color: current ? Theme.midGray : 'transparent'
+                                color: "transparent"
                                 width: 25
 
                                 Repeater {
@@ -134,13 +168,15 @@ Rectangle {
                                     id: indicator
 
                                     Layout.preferredWidth: indicator.implicitWidth
-                                    color: Theme.textColor
+                                    color: expanded ? Theme.blue : Theme.deckTextColor
+                                    font.bold: true
+                                    font.pixelSize: 12
                                     text: "▶"
                                     visible: isTreeNode && hasChildren
 
                                     anchors {
                                         left: parent.left
-                                        verticalCenter: lineIcon.bottom
+                                        verticalCenter: parent.verticalCenter
                                     }
                                 }
                                 Label {
@@ -150,9 +186,9 @@ Rectangle {
                                     anchors.leftMargin: depth == 0 && row == 0 ? 10 : 34
                                     anchors.verticalCenter: parent.verticalCenter
                                     clip: true
-                                    color: Theme.textColor
+                                    color: current ? Theme.white : (openParent ? Theme.midGray : Theme.deckTextColor)
                                     font.pixelSize: 14
-                                    font.weight: depth == 0 ? Font.Bold : Font.Medium
+                                    font.weight: hasChildren ? Font.Bold : Font.Medium
                                     text: label
                                 }
                                 Item {
@@ -238,6 +274,46 @@ Rectangle {
                         }
                     }
                 }
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    height: 16
+                    visible: !featureView.atYBeginning
+
+                    gradient: Gradient {
+                        GradientStop { color: Theme.sunkenBackgroundColor; position: 0 }
+                        GradientStop { color: "transparent"; position: 1 }
+                    }
+                }
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 20
+                    visible: !featureView.atYEnd
+
+                    gradient: Gradient {
+                        GradientStop { color: "transparent"; position: 0 }
+                        GradientStop { color: Theme.sunkenBackgroundColor; position: 1 }
+                    }
+                    Label {
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: -2
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        color: Theme.deckTextColor
+                        font.bold: true
+                        font.pixelSize: 14
+                        text: "⋯"
+                    }
+                }
+            }
+            Skin.FormButton {
+                Layout.fillWidth: true
+                implicitHeight: 24
+                text: qsTr("+ New Crate")
+
+                onClicked: Mixxx.Library.createCrate()
             }
         }
     }

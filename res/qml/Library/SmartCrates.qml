@@ -27,27 +27,45 @@ Rectangle {
         anchors.topMargin: 7
         spacing: 5
 
-        RowLayout {
+        Rectangle {
             Layout.fillWidth: true
-            spacing: 5
+            color: Theme.toolbarBackgroundColor
+            implicitHeight: 28
+            radius: 3
 
-            Label {
-                Layout.fillWidth: true
-                color: Theme.textColor
-                elide: Text.ElideRight
-                font.family: Theme.fontFamily
-                font.pixelSize: 14
-                font.weight: Font.Bold
-                text: qsTr("Smart crates")
-            }
-            Skin.FormButton {
-                enabled: root.searchText.trim().length > 0
-                text: qsTr("Save search")
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 8
+                anchors.rightMargin: 4
+                spacing: 5
 
-                onClicked: {
-                    const query = root.searchText.trim();
-                    Mixxx.Library.addSmartCrate(query, query);
+                Label {
+                    Layout.fillWidth: true
+                    color: Theme.deckTextColor
+                    elide: Text.ElideRight
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 11
+                    font.weight: Font.Bold
+                    text: qsTr("SMART CRATES")
                 }
+                Skin.FormButton {
+                    enabled: root.searchText.trim().length > 0
+                    implicitHeight: 22
+                    text: qsTr("+ Save search")
+
+                    onClicked: {
+                        const query = root.searchText.trim();
+                        Mixxx.Library.addSmartCrate(query, query);
+                    }
+                }
+            }
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                color: Theme.blue
+                height: 1
+                opacity: 0.35
             }
         }
         Rectangle {
@@ -80,8 +98,9 @@ Rectangle {
                     required property int index
                     required property var modelData
 
-                    color: rowMouseArea.containsMouse ? Theme.midGray : 'transparent'
-                    implicitHeight: 30
+                    color: rowMouseArea.containsMouse ? Theme.knobBackgroundColor : 'transparent'
+                    implicitHeight: 24
+                    radius: 3
                     width: smartCrateView.width
 
                     MouseArea {
@@ -100,8 +119,8 @@ Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
                         color: Theme.textColor
                         elide: Text.ElideRight
-                        font.pixelSize: 14
-                        text: row.modelData.name
+                        font.pixelSize: 12
+                        text: "⚙  " + row.modelData.name
                     }
                     Label {
                         id: removeButton

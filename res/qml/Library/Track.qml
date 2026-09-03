@@ -15,6 +15,49 @@ Item {
         return (root.capabilities & caps) == caps;
     }
 
+    component LibraryMenuItem: MenuItem {
+        id: libraryMenuItem
+
+        implicitHeight: 30
+        implicitWidth: 210
+
+        background: Rectangle {
+            color: libraryMenuItem.highlighted
+                    ? Qt.rgba(0.004, 0.863, 0.988, 0.18)
+                    : "transparent"
+            radius: 3
+        }
+        contentItem: Text {
+            color: libraryMenuItem.enabled ? Theme.deckTextColor : Theme.midGray
+            elide: Text.ElideRight
+            font.pixelSize: 12
+            leftPadding: 8
+            rightPadding: 20
+            text: libraryMenuItem.text
+            verticalAlignment: Text.AlignVCenter
+        }
+    }
+    component LibraryMenuSeparator: MenuSeparator {
+        contentItem: Rectangle {
+            color: Theme.midGray
+            implicitHeight: 1
+            opacity: 0.5
+        }
+    }
+    component LibraryMenu: Menu {
+        delegate: LibraryMenuItem {
+        }
+        padding: 4
+
+        background: Rectangle {
+            border.color: Theme.midGray
+            border.width: 1
+            color: Theme.darkGray2
+            implicitWidth: 210
+            radius: 4
+        }
+    }
+
     DragHandler {
         id: dragHandler
 
@@ -34,18 +77,18 @@ Item {
             }
         }
     }
-    Menu {
+    LibraryMenu {
         id: contextMenu
 
         title: qsTr("File")
 
-        Menu {
+        LibraryMenu {
             enabled: {
                 hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToDeck) || hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToSampler) || hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToPreviewDeck);
             }
             title: qsTr("Load to")
 
-            Menu {
+            LibraryMenu {
                 id: loadToDeckMenu
 
                 enabled: hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToDeck)
@@ -54,7 +97,7 @@ Item {
                 Instantiator {
                     model: 4
 
-                    delegate: MenuItem {
+                    delegate: LibraryMenuItem {
                         text: qsTr("Deck %1").arg(modelData + 1)
 
                         onTriggered: Mixxx.PlayerManager.getPlayer(`[Channel${modelData + 1}]`).loadTrack(track)
@@ -64,7 +107,7 @@ Item {
                     onObjectRemoved: (index, object) => loadToDeckMenu.removeItem(object)
                 }
             }
-            Menu {
+            LibraryMenu {
                 enabled: hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToSampler)
                 title: qsTr("Sampler")
             }
@@ -81,7 +124,7 @@ Item {
             //     onObjectRemoved: (index, object) => recentFilesMenu.removeItem(object)
             // }
         }
-        Menu {
+        LibraryMenu {
             id: addToPlaylistMenu
 
             enabled: {
@@ -89,14 +132,14 @@ Item {
             }
             title: qsTr("Add to playlists")
 
-            MenuSeparator {
+            LibraryMenuSeparator {
             }
-            MenuItem {
+            LibraryMenuItem {
                 enabled: false // TODO implement
                 text: qsTr("Create New Playlist")
             }
         }
-        Menu {
+        LibraryMenu {
             id: addToCrateMenu
 
             // Refreshed each time the submenu opens so new crates show up.
@@ -112,7 +155,7 @@ Item {
             Instantiator {
                 model: addToCrateMenu.crates
 
-                delegate: MenuItem {
+                delegate: LibraryMenuItem {
                     required property var modelData
 
                     enabled: !modelData.locked
@@ -124,14 +167,14 @@ Item {
                 onObjectAdded: (index, object) => addToCrateMenu.insertItem(index, object)
                 onObjectRemoved: (index, object) => addToCrateMenu.removeItem(object)
             }
-            MenuSeparator {
+            LibraryMenuSeparator {
             }
-            MenuItem {
+            LibraryMenuItem {
                 enabled: false // TODO implement
                 text: qsTr("Create New Crate")
             }
         }
-        Menu {
+        LibraryMenu {
             id: analyzeMenu
 
             enabled: {
@@ -139,29 +182,29 @@ Item {
             }
             title: qsTr("Analyze")
 
-            MenuItem {
+            LibraryMenuItem {
                 text: qsTr("Analyze")
 
                 onTriggered: {
                     library.analyze(track);
                 }
             }
-            MenuItem {
+            LibraryMenuItem {
                 text: qsTr("Analyze all in view")
 
                 onTriggered: {
                     tableView.model.analyzeAll();
                 }
             }
-            MenuItem {
+            LibraryMenuItem {
                 enabled: false // TODO implement
                 text: qsTr("Reanalyze")
             }
-            MenuItem {
+            LibraryMenuItem {
                 enabled: false // TODO implement
                 text: qsTr("Reanalyze (constant BPM)")
             }
-            MenuItem {
+            LibraryMenuItem {
                 enabled: false // TODO implement
                 text: qsTr("Reanalyze (variable BPM)")
             }

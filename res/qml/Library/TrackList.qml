@@ -36,6 +36,26 @@ Rectangle {
             view.selectionModel.moveSelectionVertical(offset);
         }
     }
+    Rectangle {
+        id: headerBackground
+
+        anchors.left: parent.left
+        anchors.margins: 5
+        anchors.right: parent.right
+        anchors.top: parent.top
+        color: Theme.toolbarBackgroundColor
+        height: horizontalHeader.height + 2
+        radius: 3
+
+        Rectangle {
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            color: Theme.blue
+            height: 1
+            opacity: 0.35
+        }
+    }
     HorizontalHeaderView {
         id: horizontalHeader
 
@@ -47,6 +67,7 @@ Rectangle {
         anchors.right: parent.right
         anchors.top: parent.top
         syncView: view
+        z: 1
 
         delegate: Item {
             id: column
