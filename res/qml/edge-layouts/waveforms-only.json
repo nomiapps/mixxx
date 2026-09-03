@@ -1,0 +1,31 @@
+{
+    "name": "Waveforms Only",
+    "canvas": [
+        2560,
+        688
+    ],
+    "elements": [
+        {
+            "type": "waveform",
+            "group": "[Channel1]",
+            "beatColor": "#dddddd",
+            "rect": [
+                0,
+                0,
+                2560,
+                342
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "[Channel2]",
+            "beatColor": "#dddddd",
+            "rect": [
+                0,
+                346,
+                2560,
+                342
+            ]
+        }
+    ]
+}

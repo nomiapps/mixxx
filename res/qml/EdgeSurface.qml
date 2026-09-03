@@ -18,16 +18,58 @@ Window {
     height: 720
     color: Theme.backgroundColor
     title: "Mixxx - Edge Surface"
+    flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus
+    opacity: 0
 
     property var layoutDef: null
+    property bool placementReady: false
 
-    // Same clamp as main.qml: never open with the title bar offscreen.
-    // Deferred, because the window manager assigns the real position after
-    // the visibility change.
-    function clampOntoScreen() {
-        const s = root.screen;
-        if (!s)
+    function revealIfReady() {
+        if (root.visible && root.placementReady && root.layoutDef)
+            revealTimer.restart();
+    }
+
+    // The strip display this surface is built for: a screen whose physical
+    // size is 2560x720 (any scaling), or failing that the widest-aspect
+    // screen (>= 3:1). Null when no such display is attached.
+    function edgeScreen() {
+        const screens = Qt.application.screens;
+        let best = null;
+        for (let i = 0; i < screens.length; ++i) {
+            const s = screens[i];
+            const pw = Math.round(s.width * s.devicePixelRatio);
+            const ph = Math.round(s.height * s.devicePixelRatio);
+            if (pw === 2560 && ph === 720)
+                return s;
+            if (s.width / s.height >= 3 && (!best || s.width > best.width))
+                best = s;
+        }
+        return best;
+    }
+
+    // Opening: put the surface ON the Edge, filling it, instead of wherever Qt
+    // cascades a new window (the top of the main monitor). With no Edge
+    // attached, clamp onto whatever screen we landed on so the title bar is
+    // never offscreen. Deferred, because the window manager assigns the real
+    // position after the visibility change.
+    function placeOnScreen() {
+        const edge = edgeScreen();
+        if (edge) {
+            root.screen = edge;
+            root.x = edge.virtualX;
+            root.y = edge.virtualY;
+            root.width = edge.width;
+            root.height = edge.height;
+            root.raise();
+            root.placementReady = true;
+            root.revealIfReady();
             return ;
+        }
+        const s = root.screen;
+        if (!s) {
+            root.opacity = 1;
+            return ;
+        }
 
         root.width = Math.min(root.width, s.desktopAvailableWidth);
         root.height = Math.min(root.height, s.desktopAvailableHeight);
@@ -35,18 +77,46 @@ Window {
                 s.virtualX + s.desktopAvailableWidth - root.width);
         root.y = Math.min(Math.max(root.y, s.virtualY),
                 s.virtualY + s.desktopAvailableHeight - root.height);
+        root.raise();
+        root.placementReady = true;
+        root.revealIfReady();
     }
 
     onVisibleChanged: {
-        if (visible)
+        if (visible) {
+            root.opacity = 0;
+            root.placementReady = false;
             clampTimer.start();
+        } else {
+            root.opacity = 0;
+        }
     }
 
     Timer {
         id: clampTimer
 
         interval: 250
-        onTriggered: root.clampOntoScreen()
+        onTriggered: root.placeOnScreen()
+    }
+
+    Timer {
+        id: revealTimer
+
+        interval: 0
+        onTriggered: {
+            root.raise();
+            root.opacity = 1;
+        }
+    }
+
+    Connections {
+        target: root.transientParent
+        ignoreUnknownSignals: true
+
+        function onActiveChanged() {
+            if (root.visible && root.transientParent && root.transientParent.active)
+                root.raise();
+        }
     }
 
     // Deck slots: layouts may write @left / @right anywhere a group appears
@@ -114,6 +184,7 @@ Window {
 
             try {
                 root.layoutDef = JSON.parse(xhr.responseText);
+                root.revealIfReady();
             } catch (e) {
                 console.warn("edge-layout: failed to parse", url, e);
             }
@@ -258,6 +329,11 @@ Window {
         readonly property real ui: Math.min(width / canvasW, height / canvasH)
         readonly property real xOff: (width - canvasW * ui) / 2
         readonly property real yOff: (height - canvasH * ui) / 2
+        readonly property real dpr: root.screen ? root.screen.devicePixelRatio : 1
+
+        function pixelAligned(value) {
+            return Math.round(value * dpr) / dpr;
+        }
 
         Repeater {
             model: root.layoutDef ? root.layoutDef.elements : []
@@ -265,10 +341,10 @@ Window {
             Loader {
                 required property var modelData
 
-                x: canvasArea.xOff + modelData.rect[0] * canvasArea.ui
-                y: canvasArea.yOff + modelData.rect[1] * canvasArea.ui
-                width: modelData.rect[2] * canvasArea.ui
-                height: modelData.rect[3] * canvasArea.ui
+                x: canvasArea.pixelAligned(canvasArea.xOff + modelData.rect[0] * canvasArea.ui)
+                y: canvasArea.pixelAligned(canvasArea.yOff + modelData.rect[1] * canvasArea.ui)
+                width: canvasArea.pixelAligned(canvasArea.xOff + (modelData.rect[0] + modelData.rect[2]) * canvasArea.ui) - x
+                height: canvasArea.pixelAligned(canvasArea.yOff + (modelData.rect[1] + modelData.rect[3]) * canvasArea.ui) - y
                 Component.onCompleted: {
                     const file = root.elementFile(modelData.type);
                     if (file)

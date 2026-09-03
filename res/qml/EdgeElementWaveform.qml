@@ -12,6 +12,7 @@ Item {
         anchors.fill: parent
         group: root.groupResolved
         splitStemTracks: root.spec.splitStems === true
+        beatColor: root.spec.beatColor ?? "#a1a1a1a1"
     }
 
     // Inner shadow frame: seats the waveform behind the surface plane.

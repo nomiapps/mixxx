@@ -101,7 +101,7 @@ Item {
         border.color: "#2a2a2a"
         border.width: 2
         // 33 1/3 rpm = 200 degrees per second
-        rotation: (root.positionSeconds * 200) % 360
+        rotation: (root.displaySeconds * 200) % 360
 
         // grooves
         Repeater {

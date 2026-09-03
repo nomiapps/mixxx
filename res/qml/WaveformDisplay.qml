@@ -9,6 +9,7 @@ Item {
 
     required property string group
     property bool splitStemTracks: false
+    property color beatColor: "#a1a1a1a1"
 
     enum MouseStatus {
         Normal,
@@ -80,7 +81,7 @@ Item {
         }
 
         Mixxx.WaveformRendererBeat {
-            color: '#a1a1a1a1'
+            color: root.beatColor
         }
 
         Mixxx.WaveformRendererMark {
