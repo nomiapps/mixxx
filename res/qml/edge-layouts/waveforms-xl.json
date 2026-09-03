@@ -31,7 +31,7 @@
             "rect": [
                 150,
                 44,
-                2400,
+                2120,
                 300
             ]
         },
@@ -41,7 +41,7 @@
             "rect": [
                 150,
                 372,
-                2400,
+                2120,
                 300
             ]
         },
@@ -122,23 +122,166 @@
             ]
         },
         {
-            "type": "slider",
-            "style": "crossfader",
-            "group": "[Master]",
-            "key": "crossfader",
+            "type": "knob",
+            "group": "[EqualizerRack1_[Channel1]_Effect1]",
+            "key": "parameter3",
+            "label": "HI",
             "rect": [
-                1030,
+                2445,
+                44,
+                100,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "group": "[EqualizerRack1_[Channel1]_Effect1]",
+            "key": "parameter2",
+            "label": "MID",
+            "rect": [
+                2445,
+                118,
+                100,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "group": "[EqualizerRack1_[Channel1]_Effect1]",
+            "key": "parameter1",
+            "label": "LOW",
+            "rect": [
+                2445,
+                192,
+                100,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "group": "[QuickEffectRack1_[Channel1]]",
+            "key": "super1",
+            "label": "CFX",
+            "color": "#ea2a4e",
+            "rect": [
+                2445,
+                266,
+                100,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "group": "[EqualizerRack1_[Channel2]_Effect1]",
+            "key": "parameter3",
+            "label": "HI",
+            "rect": [
+                2445,
+                372,
+                100,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "group": "[EqualizerRack1_[Channel2]_Effect1]",
+            "key": "parameter2",
+            "label": "MID",
+            "rect": [
+                2445,
+                446,
+                100,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "group": "[EqualizerRack1_[Channel2]_Effect1]",
+            "key": "parameter1",
+            "label": "LOW",
+            "rect": [
+                2445,
+                520,
+                100,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "group": "[QuickEffectRack1_[Channel2]]",
+            "key": "super1",
+            "label": "CFX",
+            "color": "#ea2a4e",
+            "rect": [
+                2445,
+                594,
+                100,
+                70
+            ]
+        },
+        {
+            "type": "slider",
+            "group": "[Channel1]",
+            "key": "volume",
+            "rect": [
+                2285,
+                44,
+                60,
+                300
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "tempo",
+            "group": "[Channel1]",
+            "key": "rate",
+            "rect": [
+                2360,
+                44,
+                60,
+                300
+            ]
+        },
+        {
+            "type": "slider",
+            "group": "[Channel2]",
+            "key": "volume",
+            "rect": [
+                2285,
+                372,
+                60,
+                300
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "tempo",
+            "group": "[Channel2]",
+            "key": "rate",
+            "rect": [
+                2360,
+                372,
+                60,
+                300
+            ]
+        },
+        {
+            "type": "text",
+            "field": "deckinfo",
+            "group": "[Channel1]",
+            "rect": [
+                150,
                 684,
-                500,
+                1020,
                 32
             ]
         },
         {
             "type": "vumeter",
-            "group": "[Master]",
+            "group": "[Main]",
             "key": "vu_meter_left",
             "rect": [
-                980,
+                1192,
                 686,
                 12,
                 28
@@ -146,13 +289,24 @@
         },
         {
             "type": "vumeter",
-            "group": "[Master]",
+            "group": "[Main]",
             "key": "vu_meter_right",
             "rect": [
-                1550,
+                1216,
                 686,
                 12,
                 28
+            ]
+        },
+        {
+            "type": "text",
+            "field": "deckinfo",
+            "group": "[Channel2]",
+            "rect": [
+                1250,
+                684,
+                1020,
+                32
             ]
         }
     ]
