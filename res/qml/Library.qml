@@ -420,7 +420,7 @@ Item {
 
             anchors.top: parent.top
             anchors.left: sidebarTree.right
-            anchors.right: analyzeViewButton.left
+            anchors.right: rescanButton.left
             anchors.topMargin: 10
             anchors.leftMargin: 10
             anchors.rightMargin: 6
@@ -461,6 +461,20 @@ Item {
                 interval: 300
                 onTriggered: Mixxx.Library.search(searchField.text)
             }
+        }
+
+        LibButton {
+            id: rescanButton
+
+            anchors.top: parent.top
+            anchors.right: analyzeViewButton.left
+            anchors.topMargin: 10
+            anchors.rightMargin: 6
+            width: 90
+            height: 28
+            text: Mixxx.Library.scanActive ? "Scanning…" : "↻ Rescan"
+            enabled: !Mixxx.Library.scanActive
+            onClicked: Mixxx.Library.rescanLibrary()
         }
 
         LibButton {
@@ -551,9 +565,9 @@ Item {
             // Header bar behind the column labels, with a divider under it.
             anchors.top: columnHeader.top
             anchors.left: sidebarTree.right
-            anchors.right: parent.right
+            anchors.right: libraryVScroll.left
             anchors.leftMargin: 10
-            anchors.rightMargin: 10
+            anchors.rightMargin: 4
             height: columnHeader.height + 2
             color: Theme.toolbarBackgroundColor
             radius: 3
@@ -621,10 +635,10 @@ Item {
 
             anchors.top: searchField.bottom
             anchors.left: sidebarTree.right
-            anchors.right: parent.right
+            anchors.right: libraryVScroll.left
             anchors.topMargin: 4
             anchors.leftMargin: 10
-            anchors.rightMargin: 10
+            anchors.rightMargin: 4
             height: 22
 
             component HeaderCell: Item {
@@ -699,8 +713,61 @@ Item {
             HeaderCell { role: "genre"; title: "GENRE"; cellWidth: columnHeader.colGenre }
         }
 
+        // Track-table scrollbar sits in a gutter, not over the rows: each
+        // delegate MouseArea fills the row and would steal handle clicks.
+        // Do not use ScrollBar.onMoved — this Qt build has no `moved` signal,
+        // and a missing handler fails the whole QML load (no window).
+        ScrollBar {
+            id: libraryVScroll
+
+            anchors.top: listView.top
+            anchors.bottom: listView.bottom
+            anchors.right: parent.right
+            anchors.rightMargin: 10
+            width: 10
+            orientation: Qt.Vertical
+            policy: ScrollBar.AlwaysOn
+            hoverEnabled: true
+            minimumSize: 0.06
+            size: listView.visibleArea.heightRatio
+            onPositionChanged: {
+                if (pressed)
+                    listView.scrollTo(position * listView.contentHeight);
+            }
+
+            Binding {
+                target: libraryVScroll
+                property: "position"
+                value: listView.visibleArea.yPosition
+                when: !libraryVScroll.pressed
+            }
+
+            contentItem: Rectangle {
+                implicitWidth: 8
+                radius: 3
+                color: libraryVScroll.pressed ? Theme.blue
+                        : (libraryVScroll.hovered ? Theme.lightGray2 : Theme.midGray)
+            }
+            background: Rectangle {
+                implicitWidth: 10
+                radius: 3
+                color: Theme.knobBackgroundColor
+                border.color: Theme.midGray
+                border.width: 1
+            }
+        }
+
         ListView {
             id: listView
+
+            function scrollTo(y) {
+                const maxY = Math.max(0, contentHeight - height);
+                contentY = Math.max(0, Math.min(maxY, y));
+            }
+
+            function scrollBy(dy) {
+                scrollTo(contentY - dy);
+            }
 
             function moveSelectionVertical(value) {
                 if (value == 0)
@@ -736,13 +803,46 @@ Item {
             anchors.top: columnHeader.bottom
             anchors.bottom: parent.bottom
             anchors.left: sidebarTree.right
-            anchors.right: parent.right
-            anchors.margins: 10
+            anchors.right: libraryVScroll.left
+            anchors.topMargin: 10
+            anchors.bottomMargin: 10
+            anchors.leftMargin: 10
+            anchors.rightMargin: 4
             clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            flickableDirection: Flickable.VerticalFlick
             keyNavigationWraps: true
             highlightMoveDuration: 250
             highlightResizeDuration: 50
             model: Mixxx.Library.model
+
+            // Row delegates cover the viewport, so default ListView wheel/flick
+            // is unreliable. Wheel steps the view; middle-button drag pans it.
+            WheelHandler {
+                acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                onWheel: (event) => {
+                    const dy = event.pixelDelta.y !== 0
+                            ? event.pixelDelta.y
+                            : event.angleDelta.y / 120 * 78;
+                    listView.scrollBy(dy);
+                    event.accepted = true;
+                }
+            }
+
+            DragHandler {
+                acceptedButtons: Qt.MiddleButton
+                target: null
+                property real originContentY: 0
+                onActiveChanged: {
+                    if (active)
+                        originContentY = listView.contentY;
+                }
+                onTranslationChanged: {
+                    if (active)
+                        listView.scrollTo(originContentY - translation.y);
+                }
+            }
+
             Keys.onPressed: (event) => {
                 switch (event.key) {
                     case Qt.Key_Enter:

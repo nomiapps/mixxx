@@ -40,6 +40,26 @@ QmlLibraryProxy::QmlLibraryProxy(std::shared_ptr<Library> pLibrary, QObject* par
         : QObject(parent),
           m_pLibrary(pLibrary),
           m_pModelProperty(new QmlLibraryTrackListModel(m_pLibrary->trackTableModel(), this)) {
+    auto* pTrackCollectionManager = m_pLibrary->trackCollectionManager();
+    connect(pTrackCollectionManager,
+            &TrackCollectionManager::libraryScanStarted,
+            this,
+            [this]() {
+                if (!m_scanActive) {
+                    m_scanActive = true;
+                    emit scanActiveChanged();
+                }
+            });
+    connect(pTrackCollectionManager,
+            &TrackCollectionManager::libraryScanFinished,
+            this,
+            [this]() {
+                if (m_scanActive) {
+                    m_scanActive = false;
+                    emit scanActiveChanged();
+                }
+            });
+
     // Follow the active feature: when the sidebar activates a crate,
     // playlist, history etc., swap the QML track list onto its model.
     connect(m_pLibrary.get(),
@@ -176,6 +196,15 @@ int QmlLibraryProxy::analyzeCurrentView() {
         m_pLibrary->analyzeTracks(tracks);
     }
     return tracks.size();
+}
+
+void QmlLibraryProxy::rescanLibrary() {
+    if (m_scanActive) {
+        return;
+    }
+    m_scanActive = true;
+    emit scanActiveChanged();
+    m_pLibrary->trackCollectionManager()->startLibraryScan();
 }
 
 QStringList QmlLibraryProxy::crateNames() const {

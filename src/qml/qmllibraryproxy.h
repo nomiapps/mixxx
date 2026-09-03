@@ -19,6 +19,7 @@ class QmlLibraryProxy : public QObject {
     Q_PROPERTY(mixxx::qml::QmlLibraryTrackListModel* model MEMBER m_pModelProperty CONSTANT)
     Q_PROPERTY(QAbstractItemModel* sidebarModel READ sidebarModel CONSTANT)
     Q_PROPERTY(QVariantList smartCrates READ smartCrates NOTIFY smartCratesChanged)
+    Q_PROPERTY(bool scanActive READ scanActive NOTIFY scanActiveChanged)
     QML_NAMED_ELEMENT(Library)
     QML_SINGLETON
 
@@ -63,6 +64,12 @@ class QmlLibraryProxy : public QObject {
     /// first-load waveform-generation stall.
     Q_INVOKABLE int analyzeCurrentView();
 
+    /// Rescan configured library folders for added, changed, or removed tracks.
+    Q_INVOKABLE void rescanLibrary();
+    bool scanActive() const {
+        return m_scanActive;
+    }
+
     /// Names of all (real) crates, for building an "Add to crate" menu.
     Q_INVOKABLE QStringList crateNames() const;
     /// Add the track at the given file URL to the named crate.
@@ -75,6 +82,7 @@ class QmlLibraryProxy : public QObject {
 
   signals:
     void smartCratesChanged();
+    void scanActiveChanged();
 
   public:
     static QmlLibraryProxy* create(QQmlEngine* pQmlEngine, QJSEngine* pJsEngine);
@@ -90,6 +98,7 @@ class QmlLibraryProxy : public QObject {
     QVariantList m_smartCrates;
 
     std::shared_ptr<Library> m_pLibrary;
+    bool m_scanActive{false};
 
     /// This needs to be a plain pointer because it's used as a `Q_PROPERTY` member variable.
     QmlLibraryTrackListModel* m_pModelProperty;
