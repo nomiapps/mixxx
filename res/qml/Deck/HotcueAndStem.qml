@@ -167,7 +167,6 @@ Item {
                                     visible: activator.pressed
                                 }
                             }
-
                             Rectangle {
                                 anchors.bottom: parent.bottom
                                 anchors.bottomMargin: 2
@@ -227,13 +226,25 @@ Item {
                         id: stem
 
                         required property color color
-                        readonly property string fxGroup: `[QuickEffectRack1_${group}]`
-                        readonly property string group: `${root.group.substr(0, root.group.length - 1)}_Stem${index + 1}]`
+                        // The Repeater sets index to -1 on delegates it is tearing
+                        // down (the stems model is swapped on every track load), so
+                        // group would briefly become "[ChannelN_Stem0]" and the
+                        // proxies below would chase a CO that does not exist.
+                        // Freeze the last valid group instead.
+                        property string frozenGroup: ""
+                        readonly property string fxGroup: `[QuickEffectRack1_${stem.group}]`
+                        readonly property string group: stem.index >= 0 ? `${root.group.substr(0, root.group.length - 1)}_Stem${stem.index + 1}]` : stem.frozenGroup
                         required property int index
                         required property string label
 
                         Layout.fillHeight: true
                         Layout.fillWidth: true
+
+                        Component.onCompleted: stem.frozenGroup = stem.group
+                        onGroupChanged: {
+                            if (stem.index >= 0)
+                                stem.frozenGroup = stem.group;
+                        }
 
                         Rectangle {
                             anchors.fill: parent
@@ -442,7 +453,6 @@ Item {
                 color: hotcueTabButton.checked ? "#203b78" : (hotcueTabButton.pressed ? "#252b36" : "#17181b")
                 radius: 4
             }
-
             contentItem: Shape {
                 anchors.fill: parent
                 antialiasing: true
@@ -500,7 +510,6 @@ Item {
                 color: stemTabButton.checked ? "#203b78" : (stemTabButton.pressed ? "#252b36" : "#17181b")
                 radius: 4
             }
-
             contentItem: Item {
                 Rectangle {
                     color: stemTabButton.checked ? Theme.white : Theme.lightGray3
