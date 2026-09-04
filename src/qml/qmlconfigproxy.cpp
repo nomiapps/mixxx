@@ -60,6 +60,7 @@ const QString kSeratoEnabled = QStringLiteral("ShowSeratoLibrary");
 // Waveform group
 const QString kZoomSynchronizationKey = QStringLiteral("ZoomSynchronization");
 const QString kOverviewNormalizedKey = QStringLiteral("OverviewNormalized");
+const QString kShowStemStripsKey = QStringLiteral("ShowStemStrips");
 const QString kDefaultZoomKey = QStringLiteral("DefaultZoom");
 const QString kPlayMarkerPositionKey = QStringLiteral("PlayMarkerPosition");
 const QString kUntilMarkShowBeatsKey = QStringLiteral("UntilMarkShowBeats");
@@ -226,6 +227,7 @@ void QmlConfigProxy::set_useAcceleration(bool value) {
 
 PROPERTY_IMPL(kWaveformGroup, kZoomSynchronizationKey, bool, waveformZoomSynchronization, true);
 PROPERTY_IMPL(kWaveformGroup, kOverviewNormalizedKey, bool, waveformOverviewNormalized, true);
+PROPERTY_IMPL(kWaveformGroup, kShowStemStripsKey, bool, waveformShowStemStrips, true);
 PROPERTY_IMPL(kWaveformGroup, kDefaultZoomKey, double, waveformDefaultZoom, 3);
 PROPERTY_IMPL(kWaveformGroup, kPlayMarkerPositionKey, double, waveformPlayMarkerPosition, 0.5);
 PROPERTY_IMPL(kWaveformGroup, kUntilMarkShowBeatsKey, bool, waveformUntilMarkShowBeats, false);

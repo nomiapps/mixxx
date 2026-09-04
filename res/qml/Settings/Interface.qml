@@ -22,6 +22,7 @@ Category {
         // Decks tab
         cueModeInput.currentIndex = Mixxx.Config.controlCueDefault;
         setIntroStartToMainCueInput.selected = Mixxx.Config.controlSetIntroStartAtMainCue ? "on" : "off";
+        showStemStripsInput.selected = Mixxx.Config.waveformShowStemStrips ? "on" : "off";
         trackTimeDisplayInput.selected = trackTimeDisplayInput.options[Mixxx.Config.controlPositionDisplay];
         timeMode.currentIndex = Mixxx.Config.controlTimeFormat;
         doublePressLoadToCloneInput.selected = Mixxx.Config.controlCloneDeckOnLoadDoubleTap ? "on" : "off";
@@ -87,6 +88,7 @@ Category {
     function saveDeck() {
         Mixxx.Config.controlCueDefault = cueModeInput.currentIndex;
         Mixxx.Config.controlSetIntroStartAtMainCue = setIntroStartToMainCueInput.selected === "on";
+        Mixxx.Config.waveformShowStemStrips = showStemStripsInput.selected === "on";
         Mixxx.Config.controlPositionDisplay = trackTimeDisplayInput.options.indexOf(trackTimeDisplayInput.selected);
         Mixxx.Config.controlTimeFormat = timeMode.currentIndex;
         Mixxx.Config.controlCloneDeckOnLoadDoubleTap = doublePressLoadToCloneInput.selected === "on";
@@ -1026,6 +1028,35 @@ Category {
                         }
                         RatioChoice {
                             id: setIntroStartToMainCueInput
+
+                            readonly property bool enabled: selected == "on"
+
+                            options: ["on", "off"]
+
+                            onSelectedChanged: decksTab.dirty = true
+                        }
+                    }
+                    RowLayout {
+                        Layout.leftMargin: 14
+                        Layout.preferredWidth: (deckPane.width - 56) * 0.5
+                        Layout.rightMargin: 14
+
+                        Mixxx.SettingParameter {
+                            Layout.fillWidth: true
+                            label: "Show stem strips under waveforms"
+
+                            Text {
+                                anchors.fill: parent
+                                color: Theme.white
+                                font.pixelSize: 14
+                                font.weight: Font.Medium
+                                horizontalAlignment: Text.AlignLeft
+                                text: parent.label
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                        }
+                        RatioChoice {
+                            id: showStemStripsInput
 
                             readonly property bool enabled: selected == "on"
 

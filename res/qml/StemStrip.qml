@@ -39,7 +39,7 @@ Item {
     }
 
     implicitHeight: visible ? 52 : 0
-    visible: root.active && root.hasStems
+    visible: root.active && root.hasStems && Mixxx.Config.waveformShowStemStrips
     z: 1
 
     // A solo must not outlive the track it was set on.
