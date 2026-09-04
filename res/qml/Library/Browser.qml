@@ -159,7 +159,12 @@ Rectangle {
 
                                     Image {
                                         height: 25
-                                        source: icon
+                                        // The model supplies LibraryFeature::iconName() -- a
+                                        // bare name like "tracks", not a URL. Binding it
+                                        // straight to source resolved it against
+                                        // res/qml/Library/, so every feature icon failed with
+                                        // "Cannot open .../res/qml/Library/tracks".
+                                        source: icon ? Qt.resolvedUrl("../../images/library/ic_library_" + icon + ".svg") : ""
                                         visible: depth == 0 && icon
                                         width: 25
                                     }
