@@ -36,21 +36,25 @@ QtObject {
     property string fontFamily: "Open Sans"
     property color gainKnobColor: blue
     property color green: "#85c85b"
-    property string imgBpmSliderBackground: "images/slider_bpm.svg"
-    property string imgButton: "images/button.svg"
-    property string imgButtonPressed: "images/button_pressed.svg"
-    property string imgCrossfaderBackground: "images/slider_crossfader.svg"
-    property string imgCrossfaderHandle: "images/slider_handle_crossfader.svg"
-    property string imgKnob: "images/knob.svg"
-    property string imgKnobMini: "images/miniknob.svg"
-    property string imgKnobMiniShadow: "images/miniknob_shadow.svg"
-    property string imgKnobShadow: "images/knob_shadow.svg"
-    property string imgMicDuckingSlider: "images/slider_micducking.svg"
-    property string imgMicDuckingSliderHandle: "images/slider_handle_micducking.svg"
+    // Resolved against THIS file (res/qml/Theme/) rather than left relative:
+    // a bare "images/x.svg" is resolved by whichever component uses it, so
+    // consumers in subdirectories (res/qml/Deck/...) looked for
+    // res/qml/Deck/images/x.svg and got "QML BorderImage: Cannot open".
+    property string imgBpmSliderBackground: Qt.resolvedUrl("../images/slider_bpm.svg")
+    property string imgButton: Qt.resolvedUrl("../images/button.svg")
+    property string imgButtonPressed: Qt.resolvedUrl("../images/button_pressed.svg")
+    property string imgCrossfaderBackground: Qt.resolvedUrl("../images/slider_crossfader.svg")
+    property string imgCrossfaderHandle: Qt.resolvedUrl("../images/slider_handle_crossfader.svg")
+    property string imgKnob: Qt.resolvedUrl("../images/knob.svg")
+    property string imgKnobMini: Qt.resolvedUrl("../images/miniknob.svg")
+    property string imgKnobMiniShadow: Qt.resolvedUrl("../images/miniknob_shadow.svg")
+    property string imgKnobShadow: Qt.resolvedUrl("../images/knob_shadow.svg")
+    property string imgMicDuckingSlider: Qt.resolvedUrl("../images/slider_micducking.svg")
+    property string imgMicDuckingSliderHandle: Qt.resolvedUrl("../images/slider_handle_micducking.svg")
     property string imgPopupBackground: imgButton
-    property string imgSectionBackground: "images/section.svg"
-    property string imgSliderHandle: "images/slider_handle.svg"
-    property string imgVolumeSliderBackground: "images/slider_volume.svg"
+    property string imgSectionBackground: Qt.resolvedUrl("../images/section.svg")
+    property string imgSliderHandle: Qt.resolvedUrl("../images/slider_handle.svg")
+    property string imgVolumeSliderBackground: Qt.resolvedUrl("../images/slider_volume.svg")
     property color knobBackgroundColor: "#262626"
     property color libraryPanelSplitterBackground: "#1e1e1e"
     property color libraryPanelSplitterHandle: "#5f5f5f"
