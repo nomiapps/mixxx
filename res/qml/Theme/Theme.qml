@@ -96,4 +96,8 @@ QtObject {
     property color purple: "#b060e0"
     property color offWhite: "#e8e8e8"
     property color pureWhite: "#ffffff"
+    // The hairline that separates chrome panels. The deck/mixer restyle used
+    // #303034 and #30343d for one concept; this names the dominant value so new
+    // chrome stops adding another near-identical grey.
+    property color panelBorderColor: "#303034"
 }

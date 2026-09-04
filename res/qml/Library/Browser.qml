@@ -29,7 +29,10 @@ Rectangle {
         anchors.leftMargin: 7
         anchors.rightMargin: 15
         anchors.topMargin: 7
+        border.color: Theme.panelBorderColor
+        border.width: 1
         color: Theme.sunkenBackgroundColor
+        radius: 4
 
         ColumnLayout {
             anchors.fill: parent
@@ -39,7 +42,7 @@ Rectangle {
                 Layout.fillWidth: true
                 color: Theme.toolbarBackgroundColor
                 implicitHeight: 28
-                radius: 3
+                radius: 4
 
                 Label {
                     anchors.left: parent.left
@@ -118,12 +121,12 @@ Rectangle {
                             id: background
 
                             anchors.fill: parent
+                            radius: 4
                             color: current
                                     ? Qt.rgba(0.004, 0.863, 0.988, 0.16)
                                     : (rowMouseArea.containsMouse
                                             ? Qt.rgba(1, 1, 1, 0.05)
                                             : (openParent ? Qt.rgba(1, 1, 1, 0.03) : "transparent"))
-                            radius: 3
 
                             MouseArea {
                                 id: rowMouseArea
@@ -158,6 +161,11 @@ Rectangle {
                                     model: !!icon ? 1 : 0
 
                                     Image {
+                                        // Chrome treatment: secondary elements sit back at
+                                        // ~0.7 and come forward when active, as in the deck
+                                        // and mixer restyle. Without this every feature icon
+                                        // shouts equally and the selected row does not read.
+                                        opacity: current ? 1 : (rowMouseArea.containsMouse ? 0.85 : 0.7)
                                         height: 25
                                         // The model supplies LibraryFeature::iconName() -- a
                                         // bare name like "tracks", not a URL. Binding it
