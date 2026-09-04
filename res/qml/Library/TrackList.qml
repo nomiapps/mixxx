@@ -21,6 +21,10 @@ Rectangle {
 
     readonly property string layoutSettingName: "qml_header_state_v1"
 
+    // Floor for a user-dragged column width. Hidden and auto-hidden columns
+    // bypass this deliberately -- they return 0 earlier in columnWidthProvider.
+    readonly property int minimumColumnWidth: 40
+
     component ColumnMenuItem: MenuItem {
         id: menuItem
 
@@ -433,13 +437,20 @@ Rectangle {
             Rectangle {
                 id: columnResizer
 
-                color: Theme.darkGray2
+                // Was Theme.darkGray2 -- but toolbarBackgroundColor IS darkGray2,
+                // so the divider was drawn in the header's own colour at 1.00:1
+                // contrast and no column separators were visible. Inset top and
+                // bottom so it reads as a separator rather than a full-height rule.
+                color: Theme.midGray
+                opacity: 0.45
                 width: 1
 
                 anchors {
                     bottom: parent.bottom
+                    bottomMargin: 4
                     right: parent.right
                     top: parent.top
+                    topMargin: 4
                 }
             }
         }
@@ -574,7 +585,11 @@ Rectangle {
             }
             const explicitWidth = view.explicitColumnWidth(column);
             if (explicitWidth >= 0) {
-                return explicitWidth;
+                // A resize drag can set an explicit width of 0, collapsing the
+                // column completely -- with no handle left to grab, and no way
+                // to bring it back. Hiding a column is what the header menu is
+                // for; a drag must never make a visible column unreachable.
+                return Math.max(explicitWidth, root.minimumColumnWidth);
             }
             if (columnDef.preferredWidth >= 0) {
                 return columnDef.preferredWidth;
