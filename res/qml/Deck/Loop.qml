@@ -172,7 +172,7 @@ Rectangle {
             id: loopSizeRepeater
 
             property int selectedIndex: 0
-            property int valueCount: Math.min(Math.max(1, parseInt((root.width - 56) / 40)), 4)
+            property int valueCount: Math.min(Math.max(1, Math.floor((root.width - 61) / 38)), 4)
             property list<double> values: beatloopSize.beatSizes
 
             function adjustSelectedIndex(delta) {

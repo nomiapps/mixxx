@@ -20,11 +20,13 @@ Rectangle {
     Skin.ControlKnob {
         id: knob
 
+        anchors.bottom: root.showPreset ? undefined : root.bottom
+        anchors.bottomMargin: root.showPreset ? 0 : 2
         anchors.horizontalCenter: root.horizontalCenter
-        anchors.top: root.top
-        anchors.topMargin: 1
+        anchors.top: root.showPreset ? root.top : undefined
+        anchors.topMargin: root.showPreset ? 1 : 0
         group: root.group
-        height: showPreset ? 30 : 32
+        height: root.showPreset ? 30 : Math.max(16, Math.min(root.width - 4, root.height - statusButton.height - 6))
         key: "super1"
         // Dim only the knob when the effect is off so the power button stays
         // fully legible.
@@ -56,10 +58,13 @@ Rectangle {
     Rectangle {
         id: statusButton
 
-        anchors.bottom: root.bottom
+        anchors.bottom: root.showPreset ? root.bottom : knob.top
         anchors.bottomMargin: 2
-        anchors.left: root.left
-        anchors.leftMargin: 3
+        anchors.left: root.showPreset ? root.left : undefined
+        anchors.leftMargin: root.showPreset ? 3 : 0
+        anchors.horizontalCenter: root.showPreset ? undefined : root.horizontalCenter
+        anchors.right: undefined
+        anchors.rightMargin: 0
         border.color: statusControl.value || statusMouse.containsMouse ? knob.color : Theme.buttonNormalColor
         border.width: 1
         color: statusControl.value || statusMouse.pressed ? knob.color : (statusMouse.containsMouse ? Theme.darkGray2 : "transparent")
@@ -70,6 +75,7 @@ Rectangle {
         Text {
             anchors.centerIn: parent
             color: statusControl.value ? Theme.knobBackgroundColor : Theme.buttonNormalColor
+            font.family: Theme.fontFamily
             font.pixelSize: showPreset ? 8 : 7
             text: "⏻"
         }
@@ -94,6 +100,7 @@ Rectangle {
         anchors.rightMargin: 2
         clip: true
         currentIndex: fxSelect.value === -1 ? 0 : fxSelect.value
+        font.family: Theme.fontFamily
         font.pixelSize: 8
         height: 16
         model: Mixxx.EffectsManager.quickChainPresetModel
@@ -116,11 +123,13 @@ Rectangle {
         anchors.rightMargin: 2
         color: statusControl.value ? Theme.eqFxColor : Theme.lightGray3
         font.bold: true
-        font.pixelSize: 7
+        font.capitalization: Font.AllUppercase
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.buttonFontPixelSize
         height: statusButton.height
         horizontalAlignment: Text.AlignHCenter
         text: qsTr("FILTER")
         verticalAlignment: Text.AlignVCenter
-        visible: !root.showPreset
+        visible: false
     }
 }

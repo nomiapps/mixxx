@@ -137,6 +137,7 @@ Item {
                             readonly property var label: isSet ? root.currentTrack.hotcuesModel.get(index).label : null
 
                             activate: activator.pressedButtons == Qt.LeftButton
+                            clear: activator.pressedButtons == Qt.RightButton
                             // onIsSetChanged: {
                             //     if (!isSet)
                             //         popup.close();
@@ -246,7 +247,7 @@ Item {
                             id: stemButton
 
                             height: parent.height / 3 * 2
-                            width: parent.width / 3 * 2
+                            width: parent.width * 0.60
 
                             anchors {
                                 bottom: stemFxSelector.top
@@ -268,28 +269,22 @@ Item {
                                 Label {
                                     id: stemLabel
 
-                                    readonly property bool rotated: fontMetrics.advanceWidth > parent.width && parent.height >= parent.width
-
                                     anchors.centerIn: parent
-                                    color: stemMute.value ? Theme.lightGray3 : Theme.white
+                                    color: stemMute.value ? Theme.midGray : Theme.deckTextColor
                                     elide: Text.ElideRight
+                                    font.capitalization: Font.AllUppercase
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: Theme.buttonFontPixelSize
                                     font.weight: Font.Bold
                                     height: font.pixelSize
-                                    horizontalAlignment: rotated ? Text.AlignLeft : Text.AlignHCenter
+                                    horizontalAlignment: Text.AlignLeft
                                     text: stem.label
-                                    width: rotated ? parent.height : parent.width
+                                    width: parent.height
 
                                     transform: Rotation {
-                                        angle: stemLabel.rotated ? 90 : 0
+                                        angle: 90
                                         origin.x: stemLabel.width / 2
                                         origin.y: stemLabel.height / 2
-                                    }
-
-                                    TextMetrics {
-                                        id: fontMetrics
-
-                                        font: stemLabel.font
-                                        text: stem.label
                                     }
                                 }
                             }
@@ -308,7 +303,8 @@ Item {
 
                             clip: true
                             currentIndex: fxSelect.value == -1 ? 0 : fxSelect.value
-                            font.pixelSize: 10
+                            font.family: Theme.fontFamily
+                            font.pixelSize: Theme.buttonFontPixelSize
                             height: Math.min(parent.width, parent.height) / 3
                             indicator.width: 0
                             model: Mixxx.EffectsManager.quickChainPresetModel
@@ -316,7 +312,7 @@ Item {
                             popupWidth: 100
                             spacing: 2
                             textRole: "display"
-                            width: parent.width / 3 * 2
+                            width: parent.width * 0.60
 
                             onActivated: index => {
                                 fxSelect.value = index;
@@ -336,12 +332,10 @@ Item {
                         Item {
                             id: stemVolume
 
-                            width: parent.width / 3
-
                             anchors {
                                 bottom: stemFxKnob.top
-                                bottomMargin: 3
-                                left: stemButton.right
+                                bottomMargin: 2
+                                left: stemFxKnob.left
                                 right: parent.right
                                 top: parent.top
                             }
@@ -382,27 +376,20 @@ Item {
                         Item {
                             id: stemFxKnob
 
-                            height: stemFxSelector.height
-                            width: parent.width / 3
+                            height: Math.min(parent.height * 0.70, width + 18)
+                            width: parent.width * 0.40
 
                             anchors {
                                 bottom: parent.bottom
                                 right: parent.right
                             }
                             Skin.QuickFxKnob {
-                                anchors.centerIn: parent
+                                anchors.fill: parent
                                 group: stem.fxGroup
-                                height: width
                                 knob.arcStyle: ShapePath.DashLine
                                 knob.arcStylePattern: [2, 2]
                                 knob.color: Theme.eqFxColor
                                 showPreset: false
-                                width: Math.min(parent.width, parent.height)
-
-                                knob {
-                                    height: width * 0.8
-                                    width: width * 0.8
-                                }
                             }
                         }
                     }

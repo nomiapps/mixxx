@@ -40,6 +40,7 @@ Item {
 
     implicitHeight: visible ? 52 : 0
     visible: root.active && root.hasStems
+    z: 1
 
     // A solo must not outlive the track it was set on.
     onStemsModelChanged: root.soloedStem = -1
@@ -122,10 +123,12 @@ Item {
                     }
                     Text {
                         Layout.preferredWidth: 46
-                        color: Theme.white
+                        color: muteControl.value > 0 ? Theme.midGray : Theme.deckTextColor
                         elide: Text.ElideRight
                         font.bold: true
-                        font.pixelSize: 11
+                        font.capitalization: Font.AllUppercase
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.buttonFontPixelSize
                         text: cell.label
                     }
                     StemToggle {
@@ -178,6 +181,7 @@ Item {
                         Layout.preferredHeight: 22
                         clip: true
                         currentIndex: fxPresetControl.value === -1 ? 0 : fxPresetControl.value
+                        font.family: Theme.fontFamily
                         font.pixelSize: 10
                         model: Mixxx.EffectsManager.quickChainPresetModel
                         opacity: fxEnabledControl.value ? 1 : 0.6
@@ -214,7 +218,8 @@ Item {
             anchors.centerIn: parent
             color: tgl.on ? Theme.knobBackgroundColor : Theme.deckTextColor
             font.bold: true
-            font.pixelSize: 10
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.buttonFontPixelSize
             text: tgl.glyph
         }
         MouseArea {

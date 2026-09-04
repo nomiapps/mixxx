@@ -64,8 +64,12 @@ Rectangle {
         anchors.leftMargin: 3
         anchors.rightMargin: 2
         elide: Text.ElideRight
+        color: statusControl.value ? Theme.midGray : Theme.deckTextColor
+        font.bold: true
+        font.capitalization: Font.AllUppercase
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.buttonFontPixelSize
         text: root.label
-        font.pixelSize: 10
     }
 
     // middle row: volume knob left, quick-effect knob + its enable dot right
@@ -140,7 +144,8 @@ Rectangle {
         clip: true
         opacity: fxControl.value ? 1 : 0.5
         textRole: "display"
-        font.pixelSize: 10
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.buttonFontPixelSize
         model: Mixxx.EffectsManager.quickChainPresetModel
         currentIndex: fxSelect.value == -1 ? 0 : fxSelect.value
         onActivated: (index) => {

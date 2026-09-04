@@ -58,6 +58,7 @@ Item {
         return data;
     }
     Drag.supportedActions: Qt.CopyAction
+    clip: true
 
     Component.onCompleted: {
         itemModel.append({
@@ -100,11 +101,11 @@ Item {
                                                     "items": [
                                                         {
                                                             "type": "hotcueAndStem",
-                                                            "minWidth": 520
+                                                            "minWidth": 570
                                                         },
                                                         {
                                                             "type": "beatjump",
-                                                            "minWidth": 650
+                                                            "minWidth": 690
                                                         },
                                                         {
                                                             "type": "loop"
@@ -119,7 +120,7 @@ Item {
                         },
                         {
                             "type": "column",
-                            "minWidth": 700,
+                            "minWidth": 830,
                             "items": [
                                 {
                                     "type": "spinny"
@@ -131,7 +132,7 @@ Item {
                         },
                         {
                             "type": "tempo",
-                            "minWidth": 270
+                            "minWidth": 290
                         }
                     ]
                 }
@@ -232,7 +233,7 @@ Item {
             LayoutItem {
                 Layout.fillWidth: true
                 Layout.maximumWidth: 195
-                Layout.minimumWidth: 120
+                Layout.minimumWidth: 136
                 editLabel.color: Theme.white
                 editLabel.font.capitalization: Font.AllUppercase
                 editLabel.text: "Loop"
