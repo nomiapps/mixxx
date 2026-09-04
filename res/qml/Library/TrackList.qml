@@ -339,14 +339,18 @@ Rectangle {
 
         // The header view only has delegates where columns actually are, so a
         // right-click past the last column landed on nothing and no menu opened.
-        // Handle it on the background strip underneath: the menu opens with no
-        // column context (columnIndex -1), which leaves "Move column left/right"
-        // disabled -- visualIndexForColumn(-1) returns -1 -- while the Columns
-        // visibility submenu stays usable, which is the point of asking here.
+        // Handle it on the background strip underneath, which spans the FULL
+        // width -- so it must ignore taps that fall over a column. Both handlers
+        // otherwise fire for the same press and this one lands last, clearing
+        // the column context the delegate just set and disabling the move
+        // actions everywhere.
         TapHandler {
             acceptedButtons: Qt.RightButton
 
-            onTapped: {
+            onTapped: eventPoint => {
+                if (eventPoint.position.x <= horizontalHeader.contentWidth) {
+                    return;
+                }
                 headerMenu.columnIndex = -1;
                 headerMenu.popup();
             }
