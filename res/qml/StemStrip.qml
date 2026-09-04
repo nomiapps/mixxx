@@ -13,10 +13,10 @@ import "Theme"
 Item {
     id: root
 
-    required property string group
     // Whether the host wants the strip shown at all (e.g. hidden when the
     // library is maximized). Combined with the actual stem count.
     property bool active: true
+    required property string group
     readonly property bool hasStems: stemCountControl.value > 0
     // Minimum width a stem cell needs so its controls never overlap. Cells
     // fill the strip evenly when there's room, but never shrink below this;
@@ -67,13 +67,26 @@ Item {
                 id: cell
 
                 required property color color
+                // The Repeater sets index to -1 on delegates it is tearing down
+                // (the stems model is swapped on every track load). Every
+                // binding on index re-evaluates then, so without this guard the
+                // group briefly becomes "[ChannelN_Stem0]" and each ControlProxy
+                // below chases a CO that does not exist. Freeze the last valid
+                // group instead; the item is destroyed moments later anyway.
+                property string frozenStemGroup: ""
                 readonly property string fxGroup: `[QuickEffectRack1_${cell.stemGroup}]`
                 required property int index
                 required property string label
-                readonly property string stemGroup: root.stemGroup(cell.index)
+                readonly property string stemGroup: cell.index >= 0 ? root.stemGroup(cell.index) : cell.frozenStemGroup
 
                 height: parent.height
                 width: Math.max(root.minCellWidth, (root.width - 10 - 3 * 5) / 4)
+
+                Component.onCompleted: cell.frozenStemGroup = cell.stemGroup
+                onStemGroupChanged: {
+                    if (cell.index >= 0)
+                        cell.frozenStemGroup = cell.stemGroup;
+                }
 
                 Mixxx.ControlProxy {
                     id: muteControl
