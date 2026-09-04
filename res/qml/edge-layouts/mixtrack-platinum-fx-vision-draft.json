@@ -115,7 +115,7 @@
     },
     {
       "activeKey": "loop_enabled",
-      "color": "amber",
+      "color": "edgeLoopColor",
       "group": "@left",
       "rect": [
         773,
@@ -298,7 +298,7 @@
     },
     {
       "activeKey": "loop_enabled",
-      "color": "amber",
+      "color": "edgeLoopColor",
       "group": "@right",
       "rect": [
         2357,
@@ -515,7 +515,7 @@
       "type": "knob"
     },
     {
-      "color": "amber",
+      "color": "edgeEffectColor",
       "group": "[EffectRack1_EffectUnit1_Effect1]",
       "rect": [
         1247,

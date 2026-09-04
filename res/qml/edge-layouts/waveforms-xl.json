@@ -166,7 +166,7 @@
             "group": "[QuickEffectRack1_[Channel1]]",
             "key": "super1",
             "label": "CFX",
-            "color": "red",
+            "color": "edgeQuickFxColor",
             "rect": [
                 2465,
                 228,
@@ -215,7 +215,7 @@
             "group": "[QuickEffectRack1_[Channel2]]",
             "key": "super1",
             "label": "CFX",
-            "color": "red",
+            "color": "edgeQuickFxColor",
             "rect": [
                 2465,
                 605,

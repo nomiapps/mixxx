@@ -100,4 +100,13 @@ QtObject {
     // #303034 and #30343d for one concept; this names the dominant value so new
     // chrome stops adding another near-identical grey.
     property color panelBorderColor: "#303034"
+    // Edge surface roles. Each DEFAULTS to the main-window token for the same
+    // concept, so both surfaces match. This alias layer is the override point: give
+    // any of these its own value (or a primitive like amber/purple) and the Edge
+    // themes separately without touching the main window.
+    property color edgeGainColor: gainKnobColor
+    property color edgeLoopColor: deckActiveColor
+    property color edgeEffectColor: effectColor
+    property color edgeEffectUnitColor: effectUnitColor
+    property color edgeQuickFxColor: eqFxColor
 }

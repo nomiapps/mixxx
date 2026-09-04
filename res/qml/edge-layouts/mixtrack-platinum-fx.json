@@ -97,7 +97,7 @@
         {
             "type": "knob",
             "label": "GAIN",
-            "color": "offWhite",
+            "color": "edgeGainColor",
             "group": "@left",
             "key": "pregain",
             "rect": [
@@ -146,7 +146,7 @@
         {
             "type": "knob",
             "label": "FILTER",
-            "color": "amber",
+            "color": "edgeQuickFxColor",
             "group": "[QuickEffectRack1_@left]",
             "key": "super1",
             "rect": [
@@ -184,7 +184,7 @@
         {
             "type": "knob",
             "label": "GAIN",
-            "color": "offWhite",
+            "color": "edgeGainColor",
             "group": "@right",
             "key": "pregain",
             "rect": [
@@ -233,7 +233,7 @@
         {
             "type": "knob",
             "label": "FILTER",
-            "color": "amber",
+            "color": "edgeQuickFxColor",
             "group": "[QuickEffectRack1_@right]",
             "key": "super1",
             "rect": [
@@ -417,7 +417,7 @@
         {
             "type": "knob",
             "label": "PH MIX",
-            "color": "offWhite",
+            "color": "edgeGainColor",
             "group": "[Master]",
             "key": "headMix",
             "rect": [
@@ -430,7 +430,7 @@
         {
             "type": "knob",
             "label": "PH VOL",
-            "color": "offWhite",
+            "color": "edgeGainColor",
             "group": "[Master]",
             "key": "headGain",
             "rect": [

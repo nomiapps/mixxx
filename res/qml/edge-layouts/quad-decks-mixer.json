@@ -164,7 +164,7 @@
         {
             "type": "knob",
             "label": "GAIN 1",
-            "color": "offWhite",
+            "color": "edgeGainColor",
             "group": "[Channel1]",
             "key": "pregain",
             "rect": [
@@ -249,7 +249,7 @@
         {
             "type": "knob",
             "label": "GAIN 2",
-            "color": "offWhite",
+            "color": "edgeGainColor",
             "group": "[Channel2]",
             "key": "pregain",
             "rect": [
@@ -334,7 +334,7 @@
         {
             "type": "knob",
             "label": "GAIN 3",
-            "color": "offWhite",
+            "color": "edgeGainColor",
             "group": "[Channel3]",
             "key": "pregain",
             "rect": [
@@ -419,7 +419,7 @@
         {
             "type": "knob",
             "label": "GAIN 4",
-            "color": "offWhite",
+            "color": "edgeGainColor",
             "group": "[Channel4]",
             "key": "pregain",
             "rect": [

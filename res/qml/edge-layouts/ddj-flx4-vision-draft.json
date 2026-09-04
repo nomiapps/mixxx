@@ -123,7 +123,7 @@
       "group": "@left",
       "label": "4 BEAT",
       "activeKey": "beatloop_4_enabled",
-      "color": "amber"
+      "color": "edgeLoopColor"
     },
     {
       "type": "button",
@@ -293,7 +293,7 @@
       "group": "@right",
       "label": "4 BEAT",
       "activeKey": "beatloop_4_enabled",
-      "color": "amber"
+      "color": "edgeLoopColor"
     },
     {
       "type": "button",
@@ -680,7 +680,7 @@
       "group": "[EffectRack1_EffectUnit1_Effect1]",
       "label": "FX ON",
       "toggle": true,
-      "color": "amber"
+      "color": "edgeEffectColor"
     },
     {
       "type": "button",

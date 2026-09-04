@@ -81,7 +81,7 @@
             "key": "beatloop_4_toggle",
             "label": "4 BEAT",
             "activeKey": "beatloop_4_enabled",
-            "color": "amber"
+            "color": "edgeLoopColor"
         },
         {
             "type": "button",
@@ -95,7 +95,7 @@
             "key": "reloop_toggle",
             "label": "RELOOP",
             "activeKey": "loop_enabled",
-            "color": "amber"
+            "color": "edgeLoopColor"
         },
         {
             "type": "button",
@@ -288,7 +288,7 @@
             "key": "beatloop_4_toggle",
             "label": "4 BEAT",
             "activeKey": "beatloop_4_enabled",
-            "color": "amber"
+            "color": "edgeLoopColor"
         },
         {
             "type": "button",
@@ -302,7 +302,7 @@
             "key": "reloop_toggle",
             "label": "RELOOP",
             "activeKey": "loop_enabled",
-            "color": "amber"
+            "color": "edgeLoopColor"
         },
         {
             "type": "button",
@@ -522,7 +522,7 @@
             "key": "group_[Channel1]_enable",
             "label": "FX1",
             "toggle": true,
-            "color": "purple"
+            "color": "edgeEffectUnitColor"
         },
         {
             "type": "button",
@@ -536,7 +536,7 @@
             "key": "group_[Channel1]_enable",
             "label": "FX2",
             "toggle": true,
-            "color": "purple"
+            "color": "edgeEffectUnitColor"
         },
         {
             "type": "slider",
@@ -633,7 +633,7 @@
             "key": "group_[Channel2]_enable",
             "label": "FX1",
             "toggle": true,
-            "color": "purple"
+            "color": "edgeEffectUnitColor"
         },
         {
             "type": "button",
@@ -647,7 +647,7 @@
             "key": "group_[Channel2]_enable",
             "label": "FX2",
             "toggle": true,
-            "color": "purple"
+            "color": "edgeEffectUnitColor"
         },
         {
             "type": "slider",
@@ -776,7 +776,7 @@
             "key": "enabled",
             "label": "FX1 ON",
             "toggle": true,
-            "color": "amber"
+            "color": "edgeEffectColor"
         },
         {
             "type": "button",
@@ -790,7 +790,7 @@
             "key": "enabled",
             "label": "FX2 ON",
             "toggle": true,
-            "color": "amber"
+            "color": "edgeEffectColor"
         },
         {
             "type": "button",
