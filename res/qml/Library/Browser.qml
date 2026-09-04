@@ -188,7 +188,11 @@ Rectangle {
                                     id: labelItem
 
                                     anchors.left: parent.left
-                                    anchors.leftMargin: depth == 0 && row == 0 ? 10 : 34
+                                    // Reserve room for the feature icon only where one
+                                    // actually draws (see visible: depth == 0 && icon above).
+                                    // Keying this on row == 0 instead put the first top-level
+                                    // label at 10px on top of its own 25px icon.
+                                    anchors.leftMargin: depth == 0 && !icon ? 10 : 34
                                     anchors.verticalCenter: parent.verticalCenter
                                     clip: true
                                     color: current ? Theme.white : (openParent ? Theme.midGray : Theme.deckTextColor)
