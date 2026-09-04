@@ -1,5 +1,6 @@
 import QtQuick 2.12
 import QtQuick.Controls 2.12
+import QtQuick.Window 2.12
 import "Theme"
 
 // Compact opaque dropdown for mixer/Edge/stem use. Skin.ComboBox is the
@@ -8,7 +9,10 @@ import "Theme"
 ComboBox {
     id: root
 
-    property int popupMaxHeight: 320
+    // Sized to the list where the window allows it. A flat 320 showed about
+    // eight of the ten quick-effect presets and forced a scrollbar for the sake
+    // of the last two. Falls back to 320 before the window is known.
+    property int popupMaxHeight: Math.max(320, Math.round((root.Window.height || 0) * 0.6))
     property real popupWidth: Math.max(width, 150)
     property bool showIndicator: true
 

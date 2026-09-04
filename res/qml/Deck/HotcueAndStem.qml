@@ -309,7 +309,7 @@ Item {
                                 onTapped: stemMute.value = !stemMute.value
                             }
                         }
-                        Skin.ComboBox {
+                        Skin.OpaqueComboBox {
                             id: stemFxSelector
 
                             clip: true
@@ -317,9 +317,8 @@ Item {
                             font.family: Theme.fontFamily
                             font.pixelSize: Theme.buttonFontPixelSize
                             height: Math.min(parent.width, parent.height) / 3
-                            indicator.width: 0
+                            showIndicator: false
                             model: Mixxx.EffectsManager.quickChainPresetModel
-                            popupMaxItem: 8
                             popupWidth: 100
                             spacing: 2
                             textRole: "display"

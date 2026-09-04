@@ -130,7 +130,7 @@ Rectangle {
     }
 
     // bottom row: effect preset selector on its own band
-    Skin.ComboBox {
+    Skin.OpaqueComboBox {
         id: effectSelector
 
         anchors.left: root.left
@@ -139,7 +139,7 @@ Rectangle {
         anchors.margins: 1
         height: 16
         spacing: 2
-        indicator.width: 0
+        showIndicator: false
         popupWidth: 150
         clip: true
         opacity: fxControl.value ? 1 : 0.5
