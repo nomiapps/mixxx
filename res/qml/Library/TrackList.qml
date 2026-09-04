@@ -337,6 +337,20 @@ Rectangle {
         height: horizontalHeader.height + 2
         radius: 3
 
+        // The header view only has delegates where columns actually are, so a
+        // right-click past the last column landed on nothing and no menu opened.
+        // Handle it on the background strip underneath: the menu opens with no
+        // column context (columnIndex -1), which leaves "Move column left/right"
+        // disabled -- visualIndexForColumn(-1) returns -1 -- while the Columns
+        // visibility submenu stays usable, which is the point of asking here.
+        TapHandler {
+            acceptedButtons: Qt.RightButton
+
+            onTapped: {
+                headerMenu.columnIndex = -1;
+                headerMenu.popup();
+            }
+        }
         Rectangle {
             anchors.bottom: parent.bottom
             anchors.left: parent.left
