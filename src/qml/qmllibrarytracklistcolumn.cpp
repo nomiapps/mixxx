@@ -6,6 +6,7 @@ namespace mixxx {
 namespace qml {
 
 QmlLibraryTrackListColumn::QmlLibraryTrackListColumn(QObject* parent,
+        const QString& layoutId,
         const QString& label,
         int fillSpan,
         int columnIdx,
@@ -14,6 +15,7 @@ QmlLibraryTrackListColumn::QmlLibraryTrackListColumn(QObject* parent,
         QQmlComponent* pDelegate,
         Role role)
         : QObject(parent),
+          m_layoutId(layoutId),
           m_label(label),
           m_role(role),
           m_fillSpan(fillSpan),

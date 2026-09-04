@@ -8,6 +8,7 @@ Mixxx.LibrarySourceTree {
 
     defaultColumns: [
         Mixxx.TrackListColumn {
+            layoutId: "cover"
             autoHideWidth: 750
             columnIdx: Mixxx.TrackListColumn.SQLColumns.Album
             preferredWidth: 100
@@ -89,6 +90,7 @@ Mixxx.LibrarySourceTree {
 
         // },
         Mixxx.TrackListColumn {
+            layoutId: "title"
             columnIdx: Mixxx.TrackListColumn.SQLColumns.Title
             fillSpan: 3
             label: qsTr("Title")
@@ -97,6 +99,7 @@ Mixxx.LibrarySourceTree {
             }
         },
         Mixxx.TrackListColumn {
+            layoutId: "artist"
             columnIdx: Mixxx.TrackListColumn.SQLColumns.Artist
             fillSpan: 2
             label: qsTr("Artist")
@@ -105,6 +108,7 @@ Mixxx.LibrarySourceTree {
             }
         },
         Mixxx.TrackListColumn {
+            layoutId: "album"
             autoHideWidth: 690
             columnIdx: Mixxx.TrackListColumn.SQLColumns.Album
             fillSpan: 1
@@ -114,6 +118,7 @@ Mixxx.LibrarySourceTree {
             }
         },
         Mixxx.TrackListColumn {
+            layoutId: "year"
             autoHideWidth: 750
             columnIdx: Mixxx.TrackListColumn.SQLColumns.Year
             label: qsTr("Year")
@@ -123,6 +128,7 @@ Mixxx.LibrarySourceTree {
             }
         },
         Mixxx.TrackListColumn {
+            layoutId: "bpm"
             columnIdx: Mixxx.TrackListColumn.SQLColumns.Bpm
             label: qsTr("Bpm")
             preferredWidth: 60
@@ -131,6 +137,7 @@ Mixxx.LibrarySourceTree {
             }
         },
         Mixxx.TrackListColumn {
+            layoutId: "key"
             columnIdx: Mixxx.TrackListColumn.SQLColumns.Key
             label: qsTr("Key")
             preferredWidth: 70
@@ -139,6 +146,7 @@ Mixxx.LibrarySourceTree {
             }
         },
         Mixxx.TrackListColumn {
+            layoutId: "file-type"
             autoHideWidth: 900
             columnIdx: Mixxx.TrackListColumn.SQLColumns.FileType
             label: qsTr("File Type")
@@ -148,6 +156,7 @@ Mixxx.LibrarySourceTree {
             }
         },
         Mixxx.TrackListColumn {
+            layoutId: "bitrate"
             autoHideWidth: 1200
             columnIdx: Mixxx.TrackListColumn.SQLColumns.Bitrate
             label: qsTr("Bitrate")

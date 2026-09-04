@@ -16,11 +16,13 @@ namespace qml {
 
 class QmlLibraryTrackListColumn : public QObject {
     Q_OBJECT
+    Q_PROPERTY(QString layoutId MEMBER m_layoutId FINAL)
     Q_PROPERTY(QString label MEMBER m_label FINAL)
     Q_PROPERTY(int fillSpan MEMBER m_fillSpan FINAL)
     Q_PROPERTY(int columnIdx MEMBER m_columnIdx FINAL)
     Q_PROPERTY(double preferredWidth MEMBER m_preferredWidth FINAL)
     Q_PROPERTY(double autoHideWidth MEMBER m_autoHideWidth FINAL)
+    Q_PROPERTY(bool hidden READ hidden WRITE setHidden NOTIFY hiddenChanged FINAL)
     Q_PROPERTY(QQmlComponent* delegate READ delegate WRITE setDelegate FINAL)
     Q_PROPERTY(Role role MEMBER m_role FINAL)
     QML_NAMED_ELEMENT(TrackListColumn)
@@ -47,6 +49,7 @@ class QmlLibraryTrackListColumn : public QObject {
             : QObject(parent) {
     }
     explicit QmlLibraryTrackListColumn(QObject* parent,
+            const QString& layoutId,
             const QString& label,
             int fillSpan,
             int columnIdx,
@@ -54,6 +57,9 @@ class QmlLibraryTrackListColumn : public QObject {
             double autoHideWidth,
             QQmlComponent* delegate,
             Role role);
+    const QString& layoutId() const {
+        return m_layoutId;
+    }
     const QString& label() const {
         return m_label;
     }
@@ -72,6 +78,16 @@ class QmlLibraryTrackListColumn : public QObject {
     double autoHideWidth() const {
         return m_autoHideWidth;
     }
+    bool hidden() const {
+        return m_hidden;
+    }
+    void setHidden(bool hidden) {
+        if (m_hidden == hidden) {
+            return;
+        }
+        m_hidden = hidden;
+        emit hiddenChanged();
+    }
     QQmlComponent* delegate() const {
         return m_pDelegate;
     }
@@ -79,13 +95,18 @@ class QmlLibraryTrackListColumn : public QObject {
         m_pDelegate = qml_owned_ptr(delegate);
     }
 
+  signals:
+    void hiddenChanged();
+
   private:
+    QString m_layoutId;
     QString m_label;
     Role m_role;
     int m_fillSpan{0};
     int m_columnIdx{-1};
     double m_preferredWidth{-1};
     double m_autoHideWidth{-1};
+    bool m_hidden{false};
     qml_owned_ptr<QQmlComponent> m_pDelegate;
 };
 } // namespace qml

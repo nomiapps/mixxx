@@ -13,8 +13,227 @@ Rectangle {
     id: root
 
     required property var model
+    property int columnCount: 0
+    property var defaultColumnLayout: []
+    property var initializedModel: null
+    property bool restoringLayout: false
+    property var visualColumnOrder: []
+
+    readonly property string layoutSettingName: "qml_header_state_v1"
+
+    function captureDefaultLayout() {
+        const result = [];
+        if (!root.model) {
+            return result;
+        }
+        for (let index = 0; index < root.model.columns.length; ++index) {
+            const column = root.model.columns[index];
+            result.push({
+                "id": column.layoutId,
+                "preferredWidth": column.preferredWidth,
+                "hidden": column.hidden
+            });
+        }
+        return result;
+    }
+    function columnMenuLabel(column) {
+        return column.label.length > 0 ? column.label : qsTr("Cover");
+    }
+    function initializeVisualColumnOrder() {
+        const order = [];
+        for (let index = 0; index < root.columnCount; ++index) {
+            order.push(index);
+        }
+        root.visualColumnOrder = order;
+    }
+    function visualIndexForColumn(logicalIndex) {
+        return root.visualColumnOrder.indexOf(logicalIndex);
+    }
+    function handleColumnMoved(logicalIndex, oldVisualIndex, newVisualIndex) {
+        const order = root.visualColumnOrder.slice();
+        const currentIndex = order.indexOf(logicalIndex);
+        if (currentIndex < 0) {
+            return;
+        }
+        order.splice(currentIndex, 1);
+        order.splice(newVisualIndex, 0, logicalIndex);
+        root.visualColumnOrder = order;
+        root.saveLayout();
+    }
+    function captureExplicitColumnWidths() {
+        if (root.restoringLayout || !root.model) {
+            return;
+        }
+        let changed = false;
+        for (let index = 0; index < root.model.columns.length; ++index) {
+            const explicitWidth = view.explicitColumnWidth(index);
+            if (explicitWidth >= 0 && Math.abs(root.model.columns[index].preferredWidth - explicitWidth) >= 0.5) {
+                root.model.columns[index].preferredWidth = explicitWidth;
+                changed = true;
+            }
+        }
+        if (changed) {
+            widthSaveTimer.restart();
+        }
+    }
+    function visibleColumnCount() {
+        let count = 0;
+        if (!root.model) {
+            return count;
+        }
+        for (let index = 0; index < root.model.columns.length; ++index) {
+            if (!root.model.columns[index].hidden) {
+                ++count;
+            }
+        }
+        return count;
+    }
+    function saveLayout() {
+        if (root.restoringLayout || !root.model) {
+            return;
+        }
+        const order = [];
+        const columns = {};
+        for (let visualIndex = 0; visualIndex < root.visualColumnOrder.length; ++visualIndex) {
+            order.push(root.model.columns[root.visualColumnOrder[visualIndex]].layoutId);
+        }
+        for (let index = 0; index < root.model.columns.length; ++index) {
+            const column = root.model.columns[index];
+            columns[column.layoutId] = {
+                "preferredWidth": column.preferredWidth,
+                "hidden": column.hidden
+            };
+        }
+        const sortColumn = horizontalHeader.sortingColumn;
+        const state = {
+            "version": 1,
+            "order": order,
+            "columns": columns,
+            "sort": sortColumn >= 0 ? {
+                "id": root.model.columns[sortColumn].layoutId,
+                "order": horizontalHeader.sortingOrder
+            } : null
+        };
+        root.model.setModelSetting(root.layoutSettingName, JSON.stringify(state));
+    }
+    function restoreLayout() {
+        if (!root.model || root.initializedModel === root.model) {
+            return;
+        }
+        root.initializedModel = root.model;
+        root.restoringLayout = true;
+        view.clearColumnReordering();
+        view.clearColumnWidths();
+        root.columnCount = root.model.columns.length;
+        root.initializeVisualColumnOrder();
+        root.defaultColumnLayout = root.captureDefaultLayout();
+
+        let state = null;
+        const storedState = root.model.getModelSetting(root.layoutSettingName);
+        if (storedState.length > 0) {
+            try {
+                state = JSON.parse(storedState);
+            } catch (error) {
+                console.warn("Ignoring invalid QML library layout:", error);
+            }
+        }
+
+        if (state && state.version === 1) {
+            if (Array.isArray(state.order)) {
+                for (let target = 0; target < state.order.length; ++target) {
+                    const logicalIndex = root.model.columnIndexByLayoutId(state.order[target]);
+                    const source = root.visualIndexForColumn(logicalIndex);
+                    if (source >= 0 && source !== target) {
+                        view.moveColumn(source, target);
+                    }
+                }
+            }
+            if (state.columns) {
+                for (let index = 0; index < root.model.columns.length; ++index) {
+                    const column = root.model.columns[index];
+                    const savedColumn = state.columns[column.layoutId];
+                    if (!savedColumn) {
+                        continue;
+                    }
+                    if (typeof savedColumn.preferredWidth === "number") {
+                        column.preferredWidth = savedColumn.preferredWidth;
+                    }
+                    if (typeof savedColumn.hidden === "boolean") {
+                        column.hidden = savedColumn.hidden;
+                    }
+                }
+            }
+            if (state.sort && typeof state.sort.id === "string") {
+                const sortColumn = root.model.columnIndexByLayoutId(state.sort.id);
+                if (sortColumn >= 0) {
+                    horizontalHeader.sortingColumn = sortColumn;
+                    horizontalHeader.sortingOrder = state.sort.order === Qt.DescendingOrder ? Qt.DescendingOrder : Qt.AscendingOrder;
+                    root.model.sort(sortColumn, horizontalHeader.sortingOrder);
+                }
+            }
+        }
+
+        if (root.visibleColumnCount() === 0) {
+            for (let index = 0; index < root.model.columns.length; ++index) {
+                root.model.columns[index].hidden = false;
+            }
+        }
+        root.restoringLayout = false;
+        view.updateColumnSize();
+        view.forceLayout();
+    }
+    function setColumnVisible(index, visible) {
+        if (!root.model || index < 0 || index >= root.model.columns.length) {
+            return;
+        }
+        if (!visible && root.visibleColumnCount() <= 1) {
+            return;
+        }
+        root.model.columns[index].hidden = !visible;
+        view.updateColumnSize();
+        view.forceLayout();
+        root.saveLayout();
+    }
+    function moveColumn(logicalIndex, direction) {
+        const source = root.visualIndexForColumn(logicalIndex);
+        const destination = source + direction;
+        if (source < 0 || destination < 0 || destination >= root.columnCount) {
+            return;
+        }
+        view.moveColumn(source, destination);
+    }
+    function resetColumnLayout() {
+        if (!root.model || root.defaultColumnLayout.length === 0) {
+            return;
+        }
+        root.restoringLayout = true;
+        view.clearColumnReordering();
+        view.clearColumnWidths();
+        root.initializeVisualColumnOrder();
+        for (let index = 0; index < root.defaultColumnLayout.length; ++index) {
+            const savedColumn = root.defaultColumnLayout[index];
+            const columnIndex = root.model.columnIndexByLayoutId(savedColumn.id);
+            if (columnIndex >= 0) {
+                root.model.columns[columnIndex].preferredWidth = savedColumn.preferredWidth;
+                root.model.columns[columnIndex].hidden = savedColumn.hidden;
+            }
+        }
+        view.updateColumnSize();
+        view.forceLayout();
+        root.restoringLayout = false;
+        root.saveLayout();
+    }
 
     color: Theme.darkGray
+
+    Timer {
+        id: widthSaveTimer
+
+        interval: 250
+        repeat: false
+
+        onTriggered: root.saveLayout()
+    }
 
     LibraryComponent.Control {
         id: libraryControl
@@ -60,12 +279,14 @@ Rectangle {
         id: horizontalHeader
 
         property int sortingColumn: -1
-        property var sortingOrder: Qt.Descending
+        property var sortingOrder: Qt.DescendingOrder
 
         anchors.left: parent.left
         anchors.margins: 5
         anchors.right: parent.right
         anchors.top: parent.top
+        movableColumns: true
+        resizableColumns: true
         syncView: view
         z: 1
 
@@ -78,13 +299,17 @@ Rectangle {
             implicitHeight: columnName.contentHeight + 5
             implicitWidth: columnName.contentWidth + 5
 
-            MouseArea {
+            TapHandler {
                 id: columnMouseHandler
 
-                acceptedButtons: Qt.LeftButton
-                anchors.fill: parent
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
 
-                onClicked: {
+                onTapped: (eventPoint, button) => {
+                    if (button === Qt.RightButton) {
+                        headerMenu.columnIndex = index;
+                        headerMenu.popup();
+                        return;
+                    }
                     if (horizontalHeader.sortingColumn == index) {
                         horizontalHeader.sortingOrder = horizontalHeader.sortingOrder == Qt.DescendingOrder ? Qt.AscendingOrder : Qt.DescendingOrder;
                     } else {
@@ -92,6 +317,11 @@ Rectangle {
                         horizontalHeader.sortingOrder = Qt.AscendingOrder;
                     }
                     view.model.sort(horizontalHeader.sortingColumn, horizontalHeader.sortingOrder);
+                    root.saveLayout();
+                }
+                onLongPressed: eventPoint => {
+                    headerMenu.columnIndex = index;
+                    headerMenu.popup();
                 }
             }
             Text {
@@ -144,38 +374,93 @@ Rectangle {
                     right: parent.right
                     top: parent.top
                 }
-                MouseArea {
-                    id: columnResizeHandler
+            }
+        }
+    }
+    Menu {
+        id: headerMenu
 
-                    property int sizeOffset: 0
+        property int columnIndex: -1
 
-                    anchors.fill: parent
-                    cursorShape: Qt.SizeHorCursor
-                    preventStealing: true
+        delegate: MenuItem {
+        }
+        padding: 4
 
-                    onMouseXChanged: {
-                        if (drag.active) {
-                            column.width += mouseX;
-                            sizeOffset += mouseX;
-                        }
-                    }
+        background: Rectangle {
+            border.color: Theme.midGray
+            border.width: 1
+            color: Theme.darkGray2
+            implicitWidth: 220
+            radius: 4
+        }
 
-                    drag {
-                        axis: Drag.XAxis
-                        target: parent
-                        threshold: 2
+        MenuItem {
+            enabled: root.visualIndexForColumn(headerMenu.columnIndex) > 0
+            text: qsTr("Move column left")
 
-                        onActiveChanged: {
-                            if (!drag.active && columnResizeHandler.sizeOffset !== 0) {
-                                view.model.columns[index].preferredWidth = column.width;
-                                columnResizeHandler.sizeOffset = 0;
-                                view.updateColumnSize();
-                                view.forceLayout();
-                            }
-                        }
+            onTriggered: root.moveColumn(headerMenu.columnIndex, -1)
+        }
+        MenuItem {
+            enabled: {
+                const visualIndex = root.visualIndexForColumn(headerMenu.columnIndex);
+                return visualIndex >= 0 && visualIndex < root.columnCount - 1;
+            }
+            text: qsTr("Move column right")
+
+            onTriggered: root.moveColumn(headerMenu.columnIndex, 1)
+        }
+        MenuSeparator {
+        }
+        Menu {
+            id: columnsMenu
+
+            property var columnSnapshot: []
+
+            function refresh() {
+                const snapshot = [];
+                const visibleCount = root.visibleColumnCount();
+                if (root.model) {
+                    for (let index = 0; index < root.model.columns.length; ++index) {
+                        const column = root.model.columns[index];
+                        snapshot.push({
+                            "index": index,
+                            "label": root.columnMenuLabel(column),
+                            "visible": !column.hidden,
+                            "canToggle": column.hidden || visibleCount > 1
+                        });
                     }
                 }
+                columnSnapshot = snapshot;
             }
+
+            title: qsTr("Visible columns")
+
+            onAboutToShow: refresh()
+
+            Instantiator {
+                model: columnsMenu.columnSnapshot
+
+                delegate: MenuItem {
+                    required property var modelData
+
+                    checkable: true
+                    checked: modelData.visible
+                    enabled: modelData.canToggle
+                    text: modelData.label
+
+                    onTriggered: root.setColumnVisible(modelData.index, checked)
+                }
+
+                onObjectAdded: (index, object) => columnsMenu.insertItem(index, object)
+                onObjectRemoved: (index, object) => columnsMenu.removeItem(object)
+            }
+        }
+        MenuSeparator {
+        }
+        MenuItem {
+            text: qsTr("Reset column layout")
+
+            onTriggered: root.resetColumnLayout()
         }
     }
     TableView {
@@ -232,6 +517,10 @@ Rectangle {
             if (columnDef.autoHideWidth > 0 && columnDef.autoHideWidth > view.width) {
                 return 0;
             }
+            const explicitWidth = view.explicitColumnWidth(column);
+            if (explicitWidth >= 0) {
+                return explicitWidth;
+            }
             if (columnDef.preferredWidth >= 0) {
                 return columnDef.preferredWidth;
             }
@@ -257,7 +546,7 @@ Rectangle {
             required property bool selected
             required property var track
 
-            implicitHeight: 30
+            implicitHeight: Mixxx.Config.libraryRowHeight
 
             Loader {
                 id: loader
@@ -315,12 +604,14 @@ Rectangle {
             model: view.model
         }
 
-        Component.onCompleted: this.updateColumnSize()
+        Component.onCompleted: Qt.callLater(root.restoreLayout)
         Keys.onDownPressed: this.selectionModel.moveSelectionVertical(1)
         Keys.onEnterPressed: this.loadSelectedTrackIntoNextAvailableDeck(false)
         Keys.onReturnPressed: this.loadSelectedTrackIntoNextAvailableDeck(false)
         Keys.onUpPressed: this.selectionModel.moveSelectionVertical(-1)
-        onModelChanged: this.updateColumnSize()
+        onModelChanged: Qt.callLater(root.restoreLayout)
+        onColumnMoved: (logicalIndex, oldVisualIndex, newVisualIndex) => root.handleColumnMoved(logicalIndex, oldVisualIndex, newVisualIndex)
+        onLayoutChanged: root.captureExplicitColumnWidths()
         onWidthChanged: {
             if (view.updateColumnSize()) {
                 // forceLayout is costly - only invoke if there was a change in the column layouts

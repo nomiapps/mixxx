@@ -7,6 +7,7 @@
 #include <QSortFilterProxyModel>
 #include <QStandardItemModel>
 #include <QVariant>
+#include <cstddef>
 
 #include "analyzer/analyzerscheduledtrack.h"
 #include "library/basetracktablemodel.h"
@@ -53,6 +54,7 @@ QmlLibraryTrackListModel::QmlLibraryTrackListModel(
     m_columns.reserve(librarySource.size());
     for (const auto* pColumn : std::as_const(librarySource)) {
         m_columns.emplace_back(make_parented<QmlLibraryTrackListColumn>(this,
+                pColumn->layoutId(),
                 pColumn->label(),
                 pColumn->fillSpan(),
                 pColumn->columnIdx(),
@@ -208,6 +210,27 @@ void QmlLibraryTrackListModel::search(const QString& searchText) {
         return;
     }
     pTrackModel->search(searchText);
+}
+
+QString QmlLibraryTrackListModel::getModelSetting(const QString& name) {
+    auto* const pTrackModel = dynamic_cast<TrackModel*>(sourceModel());
+    return pTrackModel ? pTrackModel->getModelSetting(name) : QString();
+}
+
+bool QmlLibraryTrackListModel::setModelSetting(
+        const QString& name, const QVariant& value) {
+    auto* const pTrackModel = dynamic_cast<TrackModel*>(sourceModel());
+    return pTrackModel && pTrackModel->setModelSetting(name, value);
+}
+
+int QmlLibraryTrackListModel::columnIndexByLayoutId(
+        const QString& layoutId) const {
+    for (std::size_t index = 0; index < m_columns.size(); ++index) {
+        if (m_columns[index]->layoutId() == layoutId) {
+            return static_cast<int>(index);
+        }
+    }
+    return -1;
 }
 
 void QmlLibraryTrackListModel::sort(int column, Qt::SortOrder order) {
