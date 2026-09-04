@@ -156,17 +156,29 @@ Rectangle {
                                 Repeater {
                                     id: lineIcon
 
-                                    anchors.left: parent.left
-                                    anchors.verticalCenter: parent.verticalCenter
                                     model: !!icon ? 1 : 0
 
                                     Image {
+                                        // Trailing icon: parked at the right edge of the
+                                        // column so every label starts at the same x and the
+                                        // tree reads as a list. Leading icons pushed each
+                                        // label in by the icon width and made the column
+                                        // look ragged.
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        height: 16
+                                        width: 16
+                                        // SVGs rasterise at sourceSize, so render at 2x and
+                                        // scale down -- at 1x these were soft on a scaled
+                                        // display.
+                                        sourceSize.height: 32
+                                        sourceSize.width: 32
+                                        smooth: true
                                         // Chrome treatment: secondary elements sit back at
                                         // ~0.7 and come forward when active, as in the deck
-                                        // and mixer restyle. Without this every feature icon
-                                        // shouts equally and the selected row does not read.
-                                        opacity: current ? 1 : (rowMouseArea.containsMouse ? 0.85 : 0.7)
-                                        height: 25
+                                        // and mixer restyle.
+                                        opacity: current ? 1 : (rowMouseArea.containsMouse ? 0.9 : 0.55)
                                         // The model supplies LibraryFeature::iconName() -- a
                                         // bare name like "tracks", not a URL. Binding it
                                         // straight to source resolved it against
@@ -174,7 +186,6 @@ Rectangle {
                                         // "Cannot open .../res/qml/Library/tracks".
                                         source: icon ? Qt.resolvedUrl("../../images/library/ic_library_" + icon + ".svg") : ""
                                         visible: depth == 0 && icon
-                                        width: 25
                                     }
                                 }
                                 Label {
@@ -196,12 +207,16 @@ Rectangle {
                                     id: labelItem
 
                                     anchors.left: parent.left
-                                    // Reserve room for the feature icon only where one
-                                    // actually draws (see visible: depth == 0 && icon above).
-                                    // Keying this on row == 0 instead put the first top-level
-                                    // label at 10px on top of its own 25px icon.
-                                    anchors.leftMargin: depth == 0 && !icon ? 10 : 34
+                                    // The icon is trailing now, so the only thing to clear on
+                                    // the left is the expand arrow -- and only where one is
+                                    // drawn. Every label without children starts at the same x.
+                                    anchors.leftMargin: isTreeNode && hasChildren ? 20 : 10
+                                    // Stop short of the trailing icon rather than sliding
+                                    // under it; elide instead of clipping mid-glyph.
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: depth == 0 && icon ? 34 : 10
                                     anchors.verticalCenter: parent.verticalCenter
+                                    elide: Text.ElideRight
                                     clip: true
                                     color: current ? Theme.white : (openParent ? Theme.midGray : Theme.deckTextColor)
                                     font.pixelSize: 14
