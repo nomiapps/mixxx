@@ -1,14 +1,16 @@
 import Qt5Compat.GraphicalEffects
-import QtQuick 2
-import QtQuick.Controls 2
+import QtQuick 2.12
+import QtQuick.Controls 2.12
 import "Theme"
 
 AbstractButton {
     id: root
 
     property color activeColor: Theme.buttonActiveColor
-    // exposed so dense (e.g. two-line) buttons can use a smaller face
+    property bool compact: false
+    readonly property color faceColor: root.pressed ? root.pressedColor : ((root.highlight || root.checked) ? root.activeColor : root.normalColor)
     property alias fontPixelSize: label.font.pixelSize
+    property Component glyph: null
     property bool highlight: false
     property color normalColor: Theme.buttonNormalColor
     property color pressedColor: activeColor
@@ -16,45 +18,19 @@ AbstractButton {
     implicitHeight: 26
     implicitWidth: 52
 
-    background: Item {
+    background: BorderImage {
+        id: backgroundImage
+
         anchors.fill: parent
+        horizontalTileMode: BorderImage.Stretch
+        source: Theme.imgButton
+        verticalTileMode: BorderImage.Stretch
 
-        Rectangle {
-            id: backgroundImage
-
-            anchors.fill: parent
-            color: '#2B2B2B'
-            radius: 2
-        }
-        DropShadow {
-            id: effect1
-
-            anchors.fill: backgroundImage
-            color: "#80000000"
-            horizontalOffset: 0
-            radius: 1.0
-            source: backgroundImage
-            verticalOffset: 0
-        }
-        InnerShadow {
-            id: effect2
-
-            anchors.fill: backgroundImage
-            color: "#353535"
-            horizontalOffset: 1
-            radius: 1
-            samples: 16
-            source: effect1
-            verticalOffset: 1
-        }
-        InnerShadow {
-            anchors.fill: backgroundImage
-            color: "#353535"
-            horizontalOffset: -1
-            radius: 1
-            samples: 16
-            source: effect2
-            verticalOffset: -1
+        border {
+            bottom: 10
+            left: 10
+            right: 10
+            top: 10
         }
     }
     contentItem: Item {
@@ -65,23 +41,45 @@ AbstractButton {
 
             anchors.fill: parent
             color: label.color
-            radius: 1
-            source: label
+            radius: 4
+            source: face
             spread: 0.1
         }
-        Label {
-            id: label
+        Item {
+            id: face
 
             anchors.fill: parent
-            color: root.normalColor
-            font.bold: true
-            font.capitalization: Font.AllUppercase
-            font.family: Theme.fontFamily
-            font.pixelSize: Theme.buttonFontPixelSize
-            horizontalAlignment: Text.AlignHCenter
-            text: root.text
-            verticalAlignment: Text.AlignVCenter
-            visible: root.text != null
+
+            Column {
+                anchors.centerIn: parent
+                spacing: 4
+                width: parent.width
+
+                Loader {
+                    id: glyphLoader
+
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    height: visible ? 20 : 0
+                    sourceComponent: root.glyph
+                    visible: root.glyph !== null && !root.compact
+                    width: 20
+                }
+                Label {
+                    id: label
+
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    color: root.normalColor
+                    font.bold: true
+                    font.capitalization: Font.AllUppercase
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.buttonFontPixelSize
+                    horizontalAlignment: Text.AlignHCenter
+                    text: root.text
+                    verticalAlignment: Text.AlignVCenter
+                    visible: root.text
+                    width: Math.max(8, parent.width - 12)
+                }
+            }
         }
         Image {
             id: image
@@ -108,7 +106,7 @@ AbstractButton {
             when: root.pressed
 
             PropertyChanges {
-                color: root.checked ? "#3a60be" : Theme.darkGray3
+                source: Theme.imgButtonPressed
                 target: backgroundImage
             }
             PropertyChanges {
@@ -125,7 +123,7 @@ AbstractButton {
             when: (root.highlight || root.checked) && !root.pressed
 
             PropertyChanges {
-                color: "#2D4EA1"
+                source: Theme.imgButton
                 target: backgroundImage
             }
             PropertyChanges {
@@ -141,6 +139,10 @@ AbstractButton {
             name: "inactive"
             when: !root.checked && !root.highlight && !root.pressed
 
+            PropertyChanges {
+                source: Theme.imgButton
+                target: backgroundImage
+            }
             PropertyChanges {
                 color: root.normalColor
                 target: label

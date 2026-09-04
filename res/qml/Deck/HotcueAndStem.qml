@@ -1,6 +1,5 @@
 import ".." as Skin
 import Mixxx 1.0 as Mixxx
-import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
 import QtQuick.Layouts
 import QtQuick.Shapes
@@ -26,7 +25,12 @@ Item {
         key: "track_loaded"
     }
     Rectangle {
-        color: '#0E0E0E'
+        id: surface
+
+        border.color: "#30343d"
+        border.width: 1
+        color: "#111216"
+        radius: 6
 
         states: [
             State {
@@ -35,12 +39,12 @@ Item {
 
                 PropertyChanges {
                     checked: false
-                    opacity: 0.75
+                    opacity: 0.45
                     target: hotcueTabButton
                 }
                 PropertyChanges {
                     checked: false
-                    opacity: 0.75
+                    opacity: 0.45
                     target: stemTabButton
                 }
                 PropertyChanges {
@@ -87,6 +91,16 @@ Item {
             rightMargin: stemCountControl.value > 0 ? 6 : 0
             top: parent.top
         }
+        Rectangle {
+            anchors.left: parent.left
+            anchors.leftMargin: 10
+            anchors.right: parent.right
+            anchors.rightMargin: 10
+            anchors.top: parent.top
+            color: Theme.accentColor
+            height: 1
+            opacity: 0.55
+        }
         Item {
             id: hotcueTab
 
@@ -98,11 +112,11 @@ Item {
             }
 
             GridLayout {
-                anchors.bottomMargin: 8
+                anchors.bottomMargin: 7
                 anchors.fill: parent
-                anchors.leftMargin: 16
-                anchors.rightMargin: 16
-                anchors.topMargin: 8
+                anchors.leftMargin: 9
+                anchors.rightMargin: 9
+                anchors.topMargin: 7
                 columnSpacing: 6
                 rowSpacing: 6
 
@@ -134,46 +148,36 @@ Item {
                             id: backgroundImage
 
                             anchors.fill: parent
-                            color: hotcue.isSet ? hotcue.color : '#2B2B2B'
+                            border.color: hotcue.isSet ? Qt.lighter(hotcue.color, 1.15) : (activator.containsMouse ? Theme.accentColor : "#383b44")
+                            border.width: 1
+                            color: hotcue.isSet ? Qt.darker(hotcue.color, 1.25) : "#202124"
+                            radius: 4
 
                             MouseArea {
                                 id: activator
 
                                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                                 anchors.fill: parent
+                                hoverEnabled: true
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: "#99000000"
+                                    radius: backgroundImage.radius
+                                    visible: activator.pressed
+                                }
                             }
-                        }
-                        DropShadow {
-                            id: effect1
 
-                            anchors.fill: backgroundImage
-                            color: "#80000000"
-                            horizontalOffset: 0
-                            radius: 1.0
-                            source: backgroundImage
-                            verticalOffset: 0
-                        }
-                        InnerShadow {
-                            id: effect2
-
-                            anchors.fill: parent
-                            color: "#353535"
-                            horizontalOffset: 1
-                            radius: 12
-                            samples: 24
-                            source: effect1
-                            spread: 0.2
-                            verticalOffset: 1
-                        }
-                        InnerShadow {
-                            anchors.fill: parent
-                            color: "#353535"
-                            horizontalOffset: -1
-                            radius: 12
-                            samples: 24
-                            source: effect2
-                            spread: 0.2
-                            verticalOffset: -1
+                            Rectangle {
+                                anchors.bottom: parent.bottom
+                                anchors.bottomMargin: 2
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                color: hotcue.color
+                                height: 2
+                                radius: 1
+                                visible: hotcue.isSet
+                                width: parent.width - 10
+                            }
                         }
                         ColumnLayout {
                             anchors.centerIn: backgroundImage
@@ -181,15 +185,15 @@ Item {
 
                             Label {
                                 Layout.alignment: Qt.AlignHCenter
-                                color: "#626262"
-                                font.pixelSize: 14
+                                color: hotcue.isSet ? Theme.white : Theme.lightGray3
+                                font.pixelSize: 13
                                 font.weight: Font.Bold
                                 text: `${index + 1}`
                             }
                             Label {
                                 Layout.alignment: Qt.AlignHCenter
-                                color: "#626262"
-                                font.pixelSize: 12
+                                color: hotcue.isSet ? Theme.white : Theme.lightGray3
+                                font.pixelSize: 10
                                 text: hotcue.label ?? ""
                                 visible: hotcue.label
                             }
@@ -209,12 +213,12 @@ Item {
             }
 
             RowLayout {
-                anchors.bottomMargin: 6
+                anchors.bottomMargin: 7
                 anchors.fill: parent
-                anchors.leftMargin: 9
-                anchors.rightMargin: 9
-                anchors.topMargin: 6
-                spacing: 9
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                anchors.topMargin: 7
+                spacing: 6
 
                 Repeater {
                     model: root.currentTrack.stemsModel
@@ -231,31 +235,12 @@ Item {
                         Layout.fillHeight: true
                         Layout.fillWidth: true
 
-                        Item {
-                            id: content
-
+                        Rectangle {
                             anchors.fill: parent
-                            visible: false
-
-                            Rectangle {
-                                id: backgroundColor
-
-                                anchors.fill: parent
-                                color: stem.color
-                                opacity: 0.75
-                                radius: 1
-                            }
-                        }
-                        InnerShadow {
-                            anchors.fill: parent
-                            color: "#4b000000"
-                            horizontalOffset: 0
-                            radius: 4.0
-                            samples: 24
-                            smooth: true
-                            source: content
-                            spread: 0
-                            verticalOffset: 4
+                            border.color: Qt.darker(stem.color, 2.0)
+                            border.width: 1
+                            color: "#191a1e"
+                            radius: 4
                         }
                         Item {
                             id: stemButton
@@ -268,52 +253,12 @@ Item {
                                 left: parent.left
                                 top: parent.top
                             }
-                            Item {
-                                id: contentStemButton
-
+                            Rectangle {
                                 anchors.fill: parent
-                                visible: false
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    color: stem.color
-                                    opacity: stemMute.value ? 0.6 : 1.0
-                                }
-                            }
-                            DropShadow {
-                                id: effect1
-
-                                anchors.fill: parent
-                                color: "#80000000"
-                                horizontalOffset: 0
-                                radius: 2.0
-                                source: contentStemButton
-                                spread: 0.5
-                                verticalOffset: 0
-                            }
-                            InnerShadow {
-                                id: effect2
-
-                                anchors.fill: parent
-                                color: "#353535"
-                                horizontalOffset: 2
-                                radius: 4.0
-                                samples: 24
-                                smooth: true
-                                source: effect1
-                                spread: 0.4
-                                verticalOffset: 2
-                            }
-                            InnerShadow {
-                                anchors.fill: parent
-                                color: "#353535"
-                                horizontalOffset: -2
-                                radius: 4.0
-                                samples: 24
-                                smooth: true
-                                source: effect2
-                                spread: 0.4
-                                verticalOffset: -2
+                                border.color: stemMute.value ? "#3a3d46" : Qt.lighter(stem.color, 1.12)
+                                border.width: 1
+                                color: stemMute.value ? Qt.darker(stem.color, 2.4) : Qt.darker(stem.color, 1.35)
+                                radius: 4
                             }
                             Item {
                                 anchors.fill: parent
@@ -326,7 +271,7 @@ Item {
                                     readonly property bool rotated: fontMetrics.advanceWidth > parent.width && parent.height >= parent.width
 
                                     anchors.centerIn: parent
-                                    color: Theme.white
+                                    color: stemMute.value ? Theme.lightGray3 : Theme.white
                                     elide: Text.ElideRight
                                     font.weight: Font.Bold
                                     height: font.pixelSize
@@ -451,6 +396,7 @@ Item {
                                 knob.arcStyle: ShapePath.DashLine
                                 knob.arcStylePattern: [2, 2]
                                 knob.color: Theme.eqFxColor
+                                showPreset: false
                                 width: Math.min(parent.width, parent.height)
 
                                 knob {
@@ -469,16 +415,15 @@ Item {
 
         anchors.bottom: parent.bottom
         anchors.right: parent.right
-        anchors.rightMargin: 6
+        anchors.rightMargin: 0
         anchors.top: parent.top
-        spacing: 10
-        width: stemCountControl.value > 0 ? 36 : 0
+        spacing: 6
+        width: stemCountControl.value > 0 ? 38 : 0
 
         Behavior on width {
-            SpringAnimation {
-                damping: 0.2
-                duration: 500
-                spring: 2
+            NumberAnimation {
+                duration: 160
+                easing.type: Easing.OutCubic
             }
         }
 
@@ -491,6 +436,13 @@ Item {
             checked: true
             implicitHeight: 30
 
+            background: Rectangle {
+                border.color: hotcueTabButton.checked ? Theme.accentColor : "#343740"
+                border.width: 1
+                color: hotcueTabButton.checked ? "#203b78" : (hotcueTabButton.pressed ? "#252b36" : "#17181b")
+                radius: 4
+            }
+
             contentItem: Shape {
                 anchors.fill: parent
                 antialiasing: true
@@ -498,7 +450,7 @@ Item {
                 layer.samples: 4
 
                 ShapePath {
-                    fillColor: '#D9D9D9'
+                    fillColor: hotcueTabButton.checked ? Theme.white : Theme.lightGray3
                     startX: 10
                     startY: 4
 
@@ -542,9 +494,16 @@ Item {
             activeColor: Theme.deckActiveColor
             implicitHeight: 30
 
+            background: Rectangle {
+                border.color: stemTabButton.checked ? Theme.accentColor : "#343740"
+                border.width: 1
+                color: stemTabButton.checked ? "#203b78" : (stemTabButton.pressed ? "#252b36" : "#17181b")
+                radius: 4
+            }
+
             contentItem: Item {
                 Rectangle {
-                    color: '#D9D9D9'
+                    color: stemTabButton.checked ? Theme.white : Theme.lightGray3
                     height: 1
 
                     anchors {
@@ -557,7 +516,7 @@ Item {
                     }
                 }
                 Rectangle {
-                    color: '#D9D9D9'
+                    color: stemTabButton.checked ? Theme.white : Theme.lightGray3
                     height: 1
 
                     anchors {
@@ -570,7 +529,7 @@ Item {
                     }
                 }
                 Rectangle {
-                    color: '#D9D9D9'
+                    color: stemTabButton.checked ? Theme.white : Theme.lightGray3
                     height: 1
 
                     anchors {
@@ -583,7 +542,7 @@ Item {
                     }
                 }
                 Rectangle {
-                    color: '#D9D9D9'
+                    color: stemTabButton.checked ? Theme.white : Theme.lightGray3
                     height: 1
 
                     anchors {
@@ -596,7 +555,7 @@ Item {
                     }
                 }
                 Rectangle {
-                    color: '#D9D9D9'
+                    color: stemTabButton.checked ? Theme.white : Theme.lightGray3
                     height: 1
 
                     anchors {
@@ -609,7 +568,7 @@ Item {
                     }
                 }
                 Rectangle {
-                    color: '#D9D9D9'
+                    color: stemTabButton.checked ? Theme.white : Theme.lightGray3
                     height: 1
 
                     anchors {
@@ -622,7 +581,7 @@ Item {
                     }
                 }
                 Rectangle {
-                    color: '#D9D9D9'
+                    color: stemTabButton.checked ? Theme.white : Theme.lightGray3
                     height: 1
 
                     anchors {

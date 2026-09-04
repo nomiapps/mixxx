@@ -1,24 +1,27 @@
 import ".." as Skin
 import Mixxx 1.0 as Mixxx
-import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
-import QtQuick.Shapes
 import QtQuick.Controls 2.12
 import "../Theme"
 
 Rectangle {
     id: root
 
-    property color buttonColor: trackLoadedControl.value > 0 ? Theme.buttonActiveColor : Theme.buttonDisableColor
     required property string group
 
-    color: Theme.deckBeatjumpBackgroundColor
+    color: Theme.darkGray
+    radius: 4
 
     Label {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
-        color: Theme.deckBeatjumpLabelColor
-        text: "Beatjump"
+        anchors.topMargin: 4
+        color: Theme.lightGray3
+        font.bold: true
+        font.capitalization: Font.AllUppercase
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.buttonFontPixelSize
+        text: qsTr("Beatjump")
     }
     Mixxx.ControlProxy {
         id: trackLoadedControl
@@ -37,87 +40,25 @@ Rectangle {
     Skin.ControlButton {
         id: jumpBackButton
 
+        activeColor: Theme.deckActiveColor
+        enabled: trackLoadedControl.value > 0
         group: root.group
         implicitHeight: 26
         implicitWidth: 50
         key: "beatjump_backward"
+        glyph: Item {
+            implicitHeight: 20
+            implicitWidth: 20
 
-        contentItem: Item {
-            anchors.fill: parent
-
-            Shape {
+            ChevronGlyph {
                 anchors.centerIn: parent
-                antialiasing: true
-                height: 14
-                layer.enabled: true
-                layer.samples: 4
-                width: 21
-
-                ShapePath {
-                    fillColor: root.buttonColor
-                    startX: 0
-                    startY: 1
-                    strokeColor: 'transparent'
-
-                    PathLine {
-                        x: 1
-                        y: 1
-                    }
-                    PathLine {
-                        x: 1
-                        y: 7
-                    }
-                    PathLine {
-                        x: 10
-                        y: 1
-                    }
-                    PathLine {
-                        x: 10
-                        y: 7
-                    }
-                    PathLine {
-                        x: 20
-                        y: 1
-                    }
-                    PathLine {
-                        x: 21
-                        y: 1
-                    }
-                    PathLine {
-                        x: 21
-                        y: 13
-                    }
-                    PathLine {
-                        x: 20
-                        y: 13
-                    }
-                    PathLine {
-                        x: 10
-                        y: 7
-                    }
-                    PathLine {
-                        x: 10
-                        y: 13
-                    }
-                    PathLine {
-                        x: 1
-                        y: 7
-                    }
-                    PathLine {
-                        x: 1
-                        y: 13
-                    }
-                    PathLine {
-                        x: 0
-                        y: 13
-                    }
-                    PathLine {
-                        x: 0
-                        y: 1
-                    }
-                }
+                doubled: true
+                fillColor: jumpBackButton.faceColor
+                forward: false
             }
         }
+
+        width: (root.width - 18) / 2
 
         anchors {
             left: parent.left
@@ -129,77 +70,22 @@ Rectangle {
     Skin.ControlButton {
         id: jumpForwardButton
 
+        activeColor: Theme.deckActiveColor
+        enabled: trackLoadedControl.value > 0
         group: root.group
         implicitHeight: 26
         implicitWidth: 50
         key: "beatjump_forward"
+        width: jumpBackButton.width
+        glyph: Item {
+            implicitHeight: 20
+            implicitWidth: 20
 
-        contentItem: Item {
-            anchors.fill: parent
-
-            Shape {
+            ChevronGlyph {
                 anchors.centerIn: parent
-                antialiasing: true
-                height: 14
-                layer.enabled: true
-                layer.samples: 4
-                width: 21
-
-                ShapePath {
-                    fillColor: root.buttonColor
-                    startX: 0
-                    startY: 1
-                    strokeColor: 'transparent'
-
-                    PathLine {
-                        x: 10
-                        y: 7
-                    }
-                    PathLine {
-                        x: 10
-                        y: 1
-                    }
-                    PathLine {
-                        x: 20
-                        y: 7
-                    }
-                    PathLine {
-                        x: 20
-                        y: 1
-                    }
-                    PathLine {
-                        x: 21
-                        y: 1
-                    }
-                    PathLine {
-                        x: 21
-                        y: 13
-                    }
-                    PathLine {
-                        x: 20
-                        y: 13
-                    }
-                    PathLine {
-                        x: 20
-                        y: 7
-                    }
-                    PathLine {
-                        x: 10
-                        y: 13
-                    }
-                    PathLine {
-                        x: 10
-                        y: 7
-                    }
-                    PathLine {
-                        x: 0
-                        y: 13
-                    }
-                    PathLine {
-                        x: 0
-                        y: 1
-                    }
-                }
+                doubled: true
+                fillColor: jumpForwardButton.faceColor
+                forward: true
             }
         }
 
@@ -213,45 +99,22 @@ Rectangle {
     Skin.Button {
         id: jumpSizeHalfButton
 
+        activeColor: Theme.deckActiveColor
+        enabled: trackLoadedControl.value > 0
         implicitHeight: 28
         implicitWidth: 22
+        glyph: Item {
+            implicitHeight: 20
+            implicitWidth: 20
 
-        onPressed: {
-            beatjumpSize.step(-1);
-        }
-
-        contentItem: Item {
-            anchors.fill: parent
-
-            Shape {
+            ChevronGlyph {
                 anchors.centerIn: parent
-                antialiasing: true
-                height: 10
-                layer.enabled: true
-                layer.samples: 4
-                width: 12
-
-                ShapePath {
-                    fillColor: root.buttonColor
-                    startX: 0
-                    startY: 5
-                    strokeColor: 'transparent'
-
-                    PathLine {
-                        x: 12
-                        y: 0
-                    }
-                    PathLine {
-                        x: 12
-                        y: 10
-                    }
-                    PathLine {
-                        x: 0
-                        y: 5
-                    }
-                }
+                fillColor: jumpSizeHalfButton.faceColor
+                forward: false
             }
         }
+
+        onPressed: beatjumpSize.step(-1)
 
         anchors {
             bottom: parent.bottom
@@ -267,95 +130,66 @@ Rectangle {
             bottom: parent.bottom
             bottomMargin: 7
             left: jumpSizeHalfButton.right
-            leftMargin: 5
+            leftMargin: 6
             right: jumpSizeDoubleButton.left
-            rightMargin: 5
+            rightMargin: 6
         }
-        Rectangle {
-            id: backgroundImage
+
+        BorderImage {
+            id: sizeFace
 
             anchors.fill: parent
-            color: '#2B2B2B'
-        }
-        DropShadow {
-            anchors.fill: backgroundImage
-            color: "#80000000"
-            horizontalOffset: 0
-            radius: 1.0
-            source: backgroundImage
-            verticalOffset: 0
-        }
-        InnerShadow {
-            anchors.fill: backgroundImage
-            color: "#353535"
-            horizontalOffset: -0
-            radius: 1
-            samples: 16
-            source: backgroundImage
-            verticalOffset: 0
+            horizontalTileMode: BorderImage.Stretch
+            source: Theme.imgButton
+            verticalTileMode: BorderImage.Stretch
+
+            border {
+                bottom: 10
+                left: 10
+                right: 10
+                top: 10
+            }
         }
         TextInput {
-            function update() {
-                this.text = Qt.binding(function () {
-                    return beatjumpSize.valueText;
-                });
-            }
+            id: sizeInput
 
-            anchors.centerIn: backgroundImage
-            color: root.buttonColor
+            anchors.fill: parent
+            color: trackLoadedControl.value > 0 ? Theme.buttonActiveColor : Theme.buttonDisableColor
+            font.bold: true
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.buttonFontPixelSize
+            horizontalAlignment: Text.AlignHCenter
             text: beatjumpSize.valueText
+            verticalAlignment: Text.AlignVCenter
 
             onAccepted: {
-                beatjumpSize.commitText(this.text);
-                this.focus = false;
-                update();
+                beatjumpSize.commitText(sizeInput.text);
+                sizeInput.focus = false;
+                sizeInput.text = Qt.binding(function () {
+                    return beatjumpSize.valueText;
+                });
             }
         }
     }
     Skin.Button {
         id: jumpSizeDoubleButton
 
+        activeColor: Theme.deckActiveColor
+        enabled: trackLoadedControl.value > 0
         implicitHeight: 28
         implicitWidth: 22
+        glyph: Item {
+            implicitHeight: 20
+            implicitWidth: 20
 
-        onPressed: {
-            beatjumpSize.step(1);
-        }
-
-        contentItem: Item {
-            anchors.fill: parent
-
-            Shape {
+            ChevronGlyph {
                 anchors.centerIn: parent
-                antialiasing: true
-                height: 10
-                layer.enabled: true
-                layer.samples: 4
-                width: 12
-
-                ShapePath {
-                    capStyle: ShapePath.RoundCap
-                    fillColor: root.buttonColor
-                    fillRule: ShapePath.WindingFill
-                    startX: 0
-                    startY: 0
-                    strokeColor: 'transparent'
-
-                    PathLine {
-                        x: 12
-                        y: 5
-                    }
-                    PathLine {
-                        x: 0
-                        y: 10
-                    }
-                    PathLine {
-                        x: 0
-                        y: 0
-                    }
-                }
+                fillColor: jumpSizeDoubleButton.faceColor
+                forward: true
             }
         }
+
+        onPressed: beatjumpSize.step(1)
 
         anchors {
             bottom: parent.bottom

@@ -11,10 +11,14 @@ Item {
     property alias clear: hotcueClearControl.value
     readonly property bool isSet: hotcueStatusControl.value != 0
     readonly property color color: {
-        if (hotcueColorControl.value < 0)
-            return Theme.deckActiveColor;
+        const value = hotcueColorControl.value;
+        // Unset sentinel is -1. Other negatives are signed 0xAARRGGBB
+        // (hotcue 1's default red often arrives this way).
+        if (!Number.isFinite(value) || value === -1)
+            return Theme.red;
 
-        return "#" + hotcueColorControl.value.toString(16).padStart(6, "0");
+        const rgb = (Math.round(value) >>> 0) & 0xFFFFFF;
+        return "#" + rgb.toString(16).padStart(6, "0");
     }
 
     function setColor(newColor) {

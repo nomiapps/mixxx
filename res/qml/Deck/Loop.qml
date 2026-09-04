@@ -2,23 +2,27 @@ import ".." as Skin
 import Mixxx 1.0 as Mixxx
 import QtQuick 2
 import QtQuick.Layouts
-import QtQuick.Shapes
 import QtQuick.Controls 2.12
 import "../Theme"
 
 Rectangle {
     id: root
 
-    property color buttonColor: trackLoadedControl.value > 0 ? Theme.buttonActiveColor : Theme.buttonDisableColor
     required property string group
 
-    color: Theme.deckLoopBackgroundColor
+    color: Theme.darkGray
+    radius: 4
 
     Label {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
-        color: Theme.deckLoopLabelColor
-        text: "Loop"
+        anchors.topMargin: 4
+        color: Theme.lightGray3
+        font.bold: true
+        font.capitalization: Font.AllUppercase
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.buttonFontPixelSize
+        text: qsTr("Loop")
     }
     Mixxx.ControlProxy {
         id: trackLoadedControl
@@ -35,31 +39,9 @@ Rectangle {
     BeatSizeSpinBoxBehavior {
         id: beatloopSize
 
+        beatSizes: [1 / 32, 1 / 16, 1 / 8, 1 / 4, 1 / 2, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
         group: root.group
         key: "beatloop_size"
-        beatSizes: [
-            1 / 32,
-            1 / 16,
-            1 / 8,
-            1 / 4,
-            1 / 2,
-            1,
-            2,
-            4,
-            8,
-            16,
-            32,
-            64,
-            128,
-            256,
-            512
-        ]
-    }
-    Mixxx.ControlProxy {
-        id: beatloopActivate
-
-        group: root.group
-        key: "beatloop_activate"
     }
     Mixxx.ControlProxy {
         id: loopHalve
@@ -78,59 +60,68 @@ Rectangle {
             left: parent.left
             leftMargin: 6
             right: parent.right
-            rightMargin: 6
+            rightMargin: 4
             top: parent.top
             topMargin: 22
         }
+
         Skin.ControlButton {
             id: loopInButton
 
-            Layout.fillWidth: true
+            Layout.fillWidth: false
             Layout.minimumWidth: 28
-            activeColor: root.buttonColor
+            Layout.preferredWidth: 36
+            activeColor: Theme.deckActiveColor
+            enabled: trackLoadedControl.value > 0
+            fontPixelSize: Theme.buttonFontPixelSize
             group: root.group
             implicitHeight: 26
             key: "loop_in"
-            normalColor: root.buttonColor
-            text: "In"
+            text: qsTr("In")
         }
         Skin.ControlButton {
             id: loopOutButton
 
-            Layout.fillWidth: true
+            Layout.fillWidth: false
             Layout.minimumWidth: 28
-            activeColor: root.buttonColor
+            Layout.preferredWidth: 36
+            activeColor: Theme.deckActiveColor
+            enabled: trackLoadedControl.value > 0
+            fontPixelSize: Theme.buttonFontPixelSize
             group: root.group
             implicitHeight: 26
             key: "loop_out"
-            normalColor: root.buttonColor
-            text: "Out"
+            text: qsTr("Out")
         }
         Skin.ControlButton {
             id: loopRecallButton
 
             Layout.fillWidth: true
-            Layout.minimumWidth: 40
-            activeColor: root.buttonColor
+            Layout.minimumWidth: 56
+            Layout.preferredWidth: 80
+            activeColor: Theme.deckActiveColor
+            enabled: trackLoadedControl.value > 0
+            fontPixelSize: Theme.buttonFontPixelSize
             group: root.group
             implicitHeight: 26
             key: loopEnabled.value ? "loop_enabled" : "reloop_toggle"
-            normalColor: root.buttonColor
-            text: loopEnabled.value ? "exit" : "Recall"
+            text: loopEnabled.value ? qsTr("Exit") : qsTr("Recall")
             toggleable: loopEnabled.value
         }
     }
     RowLayout {
         WheelHandler {
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+
             onWheel: event => {
                 if (event.angleDelta.y < 0) {
-                    loopSizeRepeater.adjustSelectedIndex(-1)
+                    loopSizeRepeater.adjustSelectedIndex(-1);
                 } else if (event.angleDelta.y > 0) {
-                    loopSizeRepeater.adjustSelectedIndex(1)
+                    loopSizeRepeater.adjustSelectedIndex(1);
                 }
             }
         }
+
         anchors {
             bottom: parent.bottom
             bottomMargin: 6
@@ -139,55 +130,41 @@ Rectangle {
             right: parent.right
             rightMargin: 6
         }
+
         Skin.Button {
             id: loopSizeHalfButton
 
-            activeColor: root.buttonColor
+            activeColor: Theme.deckActiveColor
+            enabled: trackLoadedControl.value > 0
             implicitHeight: 28
             implicitWidth: 22
+            glyph: Item {
+                implicitHeight: 20
+                implicitWidth: 20
 
-            contentItem: Item {
-                anchors.fill: parent
-
-                Shape {
+                ChevronGlyph {
                     anchors.centerIn: parent
-                    antialiasing: true
-                    height: 10
-                    layer.enabled: true
-                    layer.samples: 4
-                    width: 12
+                    fillColor: loopSizeHalfButton.faceColor
+                    forward: false
+                }
+            }
 
-                    ShapePath {
-                        fillColor: root.buttonColor
-                        startX: 0
-                        startY: 5
-                        strokeColor: 'transparent'
-
-                        PathLine {
-                            x: 12
-                            y: 0
-                        }
-                        PathLine {
-                            x: 12
-                            y: 10
-                        }
-                        PathLine {
-                            x: 0
-                            y: 5
-                        }
-                    }
+            onPressed: {
+                loopSizeRepeater.adjustSelectedIndex(-1);
+                if (loopEnabled.value) {
+                    loopHalve.trigger();
                 }
             }
 
             MouseArea {
-                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                acceptedButtons: Qt.RightButton
                 anchors.fill: parent
 
-                onPressed: mouse => {
-                    if (loopEnabled.value ^ mouse.button == Qt.RightButton) {
+                onPressed: {
+                    loopSizeRepeater.adjustSelectedIndex(-1);
+                    if (!loopEnabled.value) {
                         loopHalve.trigger();
                     }
-                    loopSizeRepeater.adjustSelectedIndex(-1);
                 }
             }
         }
@@ -198,11 +175,9 @@ Rectangle {
             property int valueCount: Math.min(Math.max(1, parseInt((root.width - 56) / 40)), 4)
             property list<double> values: beatloopSize.beatSizes
 
-
-            function adjustSelectedIndex(delta){
-                loopSizeRepeater.selectedIndex = Math.min(Math.max(0, loopSizeRepeater.selectedIndex + delta), loopSizeRepeater.values.length - 1)
+            function adjustSelectedIndex(delta) {
+                loopSizeRepeater.selectedIndex = Math.min(Math.max(0, loopSizeRepeater.selectedIndex + delta), loopSizeRepeater.values.length - 1);
             }
-
             function update() {
                 let values = [this.values[selectedIndex]];
                 let appendMode = values[0] <= this.values[0];
@@ -243,6 +218,7 @@ Rectangle {
 
                 target: beatloopSize
             }
+
             Skin.Button {
                 id: loopSizeOpt1Button
 
@@ -250,7 +226,8 @@ Rectangle {
                 required property int index
                 required property var modelData
 
-                activeColor: root.buttonColor
+                activeColor: Theme.deckActiveColor
+                enabled: trackLoadedControl.value > 0
                 highlight: currentSize == beatloopSize.value && trackLoadedControl.value > 0
                 implicitHeight: 28
                 implicitWidth: 33
@@ -275,54 +252,37 @@ Rectangle {
         Skin.Button {
             id: loopSizeDoubleButton
 
-            activeColor: root.buttonColor
+            activeColor: Theme.deckActiveColor
+            enabled: trackLoadedControl.value > 0
             implicitHeight: 28
             implicitWidth: 22
+            glyph: Item {
+                implicitHeight: 20
+                implicitWidth: 20
 
-            contentItem: Item {
-                anchors.fill: parent
-
-                Shape {
+                ChevronGlyph {
                     anchors.centerIn: parent
-                    antialiasing: true
-                    height: 10
-                    layer.enabled: true
-                    layer.samples: 4
-                    width: 12
+                    fillColor: loopSizeDoubleButton.faceColor
+                    forward: true
+                }
+            }
 
-                    ShapePath {
-                        capStyle: ShapePath.RoundCap
-                        fillColor: root.buttonColor
-                        fillRule: ShapePath.WindingFill
-                        startX: 0
-                        startY: 0
-                        strokeColor: 'transparent'
-
-                        PathLine {
-                            x: 12
-                            y: 5
-                        }
-                        PathLine {
-                            x: 0
-                            y: 10
-                        }
-                        PathLine {
-                            x: 0
-                            y: 0
-                        }
-                    }
+            onPressed: {
+                loopSizeRepeater.adjustSelectedIndex(1);
+                if (loopEnabled.value) {
+                    loopDouble.trigger();
                 }
             }
 
             MouseArea {
-                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                acceptedButtons: Qt.RightButton
                 anchors.fill: parent
 
-                onPressed: mouse => {
-                    if (loopEnabled.value ^ mouse.button == Qt.RightButton) {
+                onPressed: {
+                    loopSizeRepeater.adjustSelectedIndex(1);
+                    if (!loopEnabled.value) {
                         loopDouble.trigger();
                     }
-                    loopSizeRepeater.adjustSelectedIndex(1);
                 }
             }
         }

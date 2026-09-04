@@ -82,10 +82,10 @@ Item {
                                             "type": "column",
                                             "items": [
                                                 {
-                                                    "type": "play"
+                                                    "type": "cue"
                                                 },
                                                 {
-                                                    "type": "cue"
+                                                    "type": "play"
                                                 }
                                             ]
                                         },
@@ -119,7 +119,7 @@ Item {
                         },
                         {
                             "type": "column",
-                            "minWidth": 800,
+                            "minWidth": 700,
                             "items": [
                                 {
                                     "type": "spinny"
@@ -144,10 +144,10 @@ Item {
                     "type": "column",
                     "items": [
                         {
-                            "type": "play"
+                            "type": "cue"
                         },
                         {
-                            "type": "cue"
+                            "type": "play"
                         }
                     ]
                 },
@@ -231,7 +231,7 @@ Item {
 
             LayoutItem {
                 Layout.fillWidth: true
-                Layout.maximumWidth: 185
+                Layout.maximumWidth: 195
                 Layout.minimumWidth: 120
                 editLabel.color: Theme.white
                 editLabel.font.capitalization: Font.AllUppercase
@@ -249,7 +249,7 @@ Item {
             roleValue: "beatjump"
 
             LayoutItem {
-                Layout.preferredWidth: 120
+                Layout.preferredWidth: 112
                 editLabel.color: Theme.white
                 editLabel.font.capitalization: Font.AllUppercase
                 editLabel.text: "Beatjump"
@@ -328,7 +328,7 @@ Item {
                 Layout.preferredWidth: 60
                 editLabel.color: Theme.white
                 editLabel.horizontalAlignment: Text.AlignHCenter
-                editLabel.text: "Play\nButton"
+                editLabel.text: "Play/\nPause"
                 editOverlay.border.color: '#000000'
                 editOverlay.border.width: 2
                 editOverlay.color: Theme.darkGray2
@@ -370,8 +370,8 @@ Item {
                 editLabel.text: "Spinny"
                 editOverlay.color: "#BDBDBD"
                 editOverlay.radius: height
-                height: 140
-                width: 140
+                height: root.width < 900 ? 124 : 140
+                width: height
 
                 DeckComponent.Spinny {
                     anchors.fill: parent
