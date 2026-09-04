@@ -167,11 +167,6 @@ Mixxx.LibrarySourceTree {
         }
     ]
 
-    Mixxx.LibraryAllTrackSource {
-        columns: root.defaultColumns
-        label: qsTr("All...")
-    }
-
     component DefaultDelegate: LibraryComponent.Cell {
         id: cell
 

@@ -63,16 +63,16 @@ Rectangle {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
 
-                ScrollView {
+                TreeView {
+                    id: featureView
+
                     anchors.fill: parent
+                    clip: true
+                    model: root.model
+                    selectionModel: featureSelection
 
-                    TreeView {
-                        id: featureView
-
-                        clip: true
-                        model: root.model
-                        selectionModel: featureSelection
-                        width: parent.width
+                    ScrollBar.vertical: ScrollBar {
+                    }
 
                     delegate: FocusScope {
                         required property int column
@@ -273,7 +273,6 @@ Rectangle {
                             }
                         }
                     }
-                }
                 }
                 Rectangle {
                     anchors.left: parent.left

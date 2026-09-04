@@ -73,7 +73,12 @@ QQmlListProperty<QmlLibraryAbstractSource> QmlLibrarySourceTree::sources() {
 }
 
 void QmlLibrarySourceTree::componentComplete() {
-    m_model->update(m_sources);
+    auto* pLibrary = QmlLibraryProxy::get();
+    VERIFY_OR_DEBUG_ASSERT(pLibrary) {
+        m_model->update(m_sources);
+        return;
+    }
+    m_model->update(pLibrary->features(), m_defaultColumns);
 }
 
 } // namespace qml

@@ -64,7 +64,7 @@ QmlSidebarModelProxy::~QmlSidebarModelProxy() = default;
 
 void QmlSidebarModelProxy::update(const QList<QmlLibraryAbstractSource*>& sources) {
     beginResetModel();
-    qDeleteAll(m_sFeatures);
+    m_sFeatures.clear();
     for (const auto& librarySource : sources) {
         VERIFY_OR_DEBUG_ASSERT(librarySource) {
             continue;
@@ -72,9 +72,30 @@ void QmlSidebarModelProxy::update(const QList<QmlLibraryAbstractSource*>& source
         connect(librarySource,
                 &QmlLibraryAbstractSource::requestTrackModel,
                 this,
-                &QmlSidebarModelProxy::slotShowTrackModel);
+                qOverload<std::shared_ptr<QmlLibraryTrackListModel>>(
+                        &QmlSidebarModelProxy::slotShowTrackModel));
         auto* pLibrarySource = librarySource->internal();
         addLibraryFeature(pLibrarySource);
+    }
+    endResetModel();
+}
+
+void QmlSidebarModelProxy::update(const QList<LibraryFeature*>& features,
+        const QList<QmlLibraryTrackListColumn*>& columns) {
+    beginResetModel();
+    m_sFeatures.clear();
+    m_columns = columns;
+    for (auto* pFeature : features) {
+        VERIFY_OR_DEBUG_ASSERT(pFeature) {
+            continue;
+        }
+        connect(pFeature,
+                &LibraryFeature::showTrackModel,
+                this,
+                qOverload<QAbstractItemModel*, bool>(
+                        &QmlSidebarModelProxy::slotShowTrackModel),
+                Qt::UniqueConnection);
+        addLibraryFeature(pFeature);
     }
     endResetModel();
 }
@@ -82,6 +103,13 @@ void QmlSidebarModelProxy::update(const QList<QmlLibraryAbstractSource*>& source
 void QmlSidebarModelProxy::slotShowTrackModel(std::shared_ptr<QmlLibraryTrackListModel> pModel) {
     m_tracklist = pModel;
     emit tracklistChanged();
+}
+
+void QmlSidebarModelProxy::slotShowTrackModel(
+        QAbstractItemModel* pModel, bool restoreState) {
+    Q_UNUSED(restoreState);
+    slotShowTrackModel(
+            std::make_shared<QmlLibraryTrackListModel>(m_columns, pModel));
 }
 
 } // namespace qml

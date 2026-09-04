@@ -38,6 +38,8 @@ class QmlSidebarModelProxy : public SidebarModel {
     }
 
     void update(const QList<QmlLibraryAbstractSource*>& sources);
+    void update(const QList<LibraryFeature*>& features,
+            const QList<QmlLibraryTrackListColumn*>& columns);
     QHash<int, QByteArray> roleNames() const override;
     Q_INVOKABLE QVariant get(int row) const;
     Q_INVOKABLE void activate(const QModelIndex& index);
@@ -46,9 +48,11 @@ class QmlSidebarModelProxy : public SidebarModel {
 
   protected slots:
     void slotShowTrackModel(std::shared_ptr<mixxx::qml::QmlLibraryTrackListModel> pModel);
+    void slotShowTrackModel(QAbstractItemModel* pModel, bool restoreState);
 
   private:
     std::shared_ptr<QmlLibraryTrackListModel> m_tracklist;
+    QList<QmlLibraryTrackListColumn*> m_columns;
 };
 
 } // namespace qml

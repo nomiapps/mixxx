@@ -21,6 +21,73 @@ Rectangle {
 
     readonly property string layoutSettingName: "qml_header_state_v1"
 
+    component ColumnMenuItem: MenuItem {
+        id: menuItem
+
+        implicitHeight: 30
+        implicitWidth: 220
+        leftPadding: checkable ? 28 : 10
+        rightPadding: subMenu ? 28 : 10
+
+        arrow: Text {
+            anchors.right: parent.right
+            anchors.rightMargin: 10
+            anchors.verticalCenter: parent.verticalCenter
+            color: menuItem.enabled ? Theme.deckTextColor : Theme.midGray
+            font.family: Theme.fontFamily
+            font.pixelSize: 11
+            text: "▶"
+            visible: menuItem.subMenu
+        }
+        background: Rectangle {
+            color: menuItem.highlighted && menuItem.enabled
+                    ? Qt.rgba(0.004, 0.863, 0.988, 0.18)
+                    : "transparent"
+            radius: 3
+        }
+        contentItem: Text {
+            color: menuItem.enabled ? Theme.deckTextColor : Theme.midGray
+            elide: Text.ElideRight
+            font.family: Theme.fontFamily
+            font.pixelSize: 12
+            text: menuItem.text
+            verticalAlignment: Text.AlignVCenter
+        }
+        indicator: Text {
+            anchors.left: parent.left
+            anchors.leftMargin: 9
+            anchors.verticalCenter: parent.verticalCenter
+            color: Theme.blue
+            font.bold: true
+            font.family: Theme.fontFamily
+            font.pixelSize: 14
+            text: "✓"
+            visible: menuItem.checkable && menuItem.checked
+        }
+    }
+    component ColumnMenuSeparator: MenuSeparator {
+        implicitHeight: 7
+
+        contentItem: Rectangle {
+            color: Theme.midGray
+            implicitHeight: 1
+            opacity: 0.5
+        }
+    }
+    component ColumnMenu: Menu {
+        delegate: ColumnMenuItem {
+        }
+        padding: 4
+
+        background: Rectangle {
+            border.color: Theme.midGray
+            border.width: 1
+            color: Theme.darkGray2
+            implicitWidth: 220
+            radius: 4
+        }
+    }
+
     function captureDefaultLayout() {
         const result = [];
         if (!root.model) {
@@ -377,30 +444,18 @@ Rectangle {
             }
         }
     }
-    Menu {
+    ColumnMenu {
         id: headerMenu
 
         property int columnIndex: -1
 
-        delegate: MenuItem {
-        }
-        padding: 4
-
-        background: Rectangle {
-            border.color: Theme.midGray
-            border.width: 1
-            color: Theme.darkGray2
-            implicitWidth: 220
-            radius: 4
-        }
-
-        MenuItem {
+        ColumnMenuItem {
             enabled: root.visualIndexForColumn(headerMenu.columnIndex) > 0
             text: qsTr("Move column left")
 
             onTriggered: root.moveColumn(headerMenu.columnIndex, -1)
         }
-        MenuItem {
+        ColumnMenuItem {
             enabled: {
                 const visualIndex = root.visualIndexForColumn(headerMenu.columnIndex);
                 return visualIndex >= 0 && visualIndex < root.columnCount - 1;
@@ -409,9 +464,9 @@ Rectangle {
 
             onTriggered: root.moveColumn(headerMenu.columnIndex, 1)
         }
-        MenuSeparator {
+        ColumnMenuSeparator {
         }
-        Menu {
+        ColumnMenu {
             id: columnsMenu
 
             property var columnSnapshot: []
@@ -440,7 +495,7 @@ Rectangle {
             Instantiator {
                 model: columnsMenu.columnSnapshot
 
-                delegate: MenuItem {
+                delegate: ColumnMenuItem {
                     required property var modelData
 
                     checkable: true
@@ -455,9 +510,9 @@ Rectangle {
                 onObjectRemoved: (index, object) => columnsMenu.removeItem(object)
             }
         }
-        MenuSeparator {
+        ColumnMenuSeparator {
         }
-        MenuItem {
+        ColumnMenuItem {
             text: qsTr("Reset column layout")
 
             onTriggered: root.resetColumnLayout()
