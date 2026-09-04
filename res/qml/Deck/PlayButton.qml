@@ -1,7 +1,5 @@
-import Mixxx 1.0 as Mixxx
 import QtQuick 2.12
 import QtQuick.Shapes
-import QtQuick.Controls 2.12
 import ".." as Skin
 import "../Theme"
 
@@ -11,78 +9,60 @@ Skin.ControlButton {
     property bool minimized: false
 
     activeColor: Theme.deckActiveColor
+    compact: root.minimized
     key: "play"
-    toggleable: trackLoadedControl.value == 1
-
-    contentItem: Item {
-        id: content
+    text: root.highlight ? qsTr("Pause") : qsTr("Play")
+    toggleable: true
+    glyph: Item {
+        implicitHeight: 20
+        implicitWidth: 20
 
         Shape {
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
-            anchors.topMargin: 6
+            anchors.fill: parent
             antialiasing: true
-            height: 32
             layer.enabled: true
             layer.samples: 4
-            visible: !root.minimized
-            width: 30
+            visible: !root.highlight
 
             ShapePath {
                 capStyle: ShapePath.RoundCap
-                fillColor: trackLoadedControl.value > 0 ? Theme.buttonActiveColor : Theme.buttonDisableColor
+                fillColor: root.faceColor
                 fillRule: ShapePath.WindingFill
-                startX: 5
-                startY: 0
-                strokeColor: 'transparent'
+                startX: 4
+                startY: 1
+                strokeColor: "transparent"
 
                 PathLine {
-                    x: 30
-                    y: 16
+                    x: 18
+                    y: 10
                 }
                 PathLine {
-                    x: 5
-                    y: 32
+                    x: 4
+                    y: 19
                 }
                 PathLine {
-                    x: 5
-                    y: 0
+                    x: 4
+                    y: 1
                 }
             }
         }
-        Label {
-            id: label
+        Row {
+            anchors.centerIn: parent
+            spacing: 4
+            visible: root.highlight
 
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 4
-            anchors.horizontalCenter: parent.horizontalCenter
-            color: '#626262'
-            font.bold: true
-            font.capitalization: Font.AllUppercase
-            font.family: Theme.fontFamily
-            font.pixelSize: Theme.buttonFontPixelSize
-            horizontalAlignment: Text.AlignHCenter
-            text: "Play"
-            verticalAlignment: Text.AlignVCenter
-
-            states: [
-                State {
-                    when: root.minimized
-
-                    AnchorChanges {
-                        anchors.bottom: undefined
-                        anchors.verticalCenter: content.verticalCenter
-                        target: label
-                    }
-                }
-            ]
+            Rectangle {
+                color: root.faceColor
+                height: 16
+                radius: 1
+                width: 5
+            }
+            Rectangle {
+                color: root.faceColor
+                height: 16
+                radius: 1
+                width: 5
+            }
         }
-    }
-
-    Mixxx.ControlProxy {
-        id: trackLoadedControl
-
-        group: root.group
-        key: "track_loaded"
     }
 }

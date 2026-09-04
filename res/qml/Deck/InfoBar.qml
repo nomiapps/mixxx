@@ -11,7 +11,7 @@ import "../Theme"
 Rectangle {
     id: root
 
-    property list<string> availableData: ["none", "title", "year", "time", "artist", "rating"]
+    property list<string> availableData: ["none", "title", "year", "time", "duration", "artist", "rating"]
     readonly property var currentTrack: deckPlayer?.currentTrack
     property var deckPlayer: Mixxx.PlayerManager.getPlayer(group)
     property bool editMode: false
@@ -20,7 +20,9 @@ Rectangle {
     property bool minimized: false
     required property int rightColumnWidth
 
-    radius: 5
+    border.color: "#30343d"
+    border.width: 1
+    radius: 6
 
     gradient: Gradient {
         orientation: Gradient.Horizontal
@@ -31,7 +33,7 @@ Rectangle {
                 if (!trackColor.valid)
                     return Theme.deckInfoBarBackgroundColor;
 
-                return Qt.darker(root.currentTrack?.color, 2);
+                return Qt.darker(root.currentTrack?.color, 3.2);
             }
             position: 0
         }
@@ -57,7 +59,7 @@ Rectangle {
 
         anchors.fill: coverArt
         color: Theme.deckEmptyCoverArt
-        radius: 4
+        radius: root.radius - 1
         visible: !root.deckPlayer?.isLoaded && !root.minimized
     }
     OpacityMask {
@@ -105,30 +107,70 @@ Rectangle {
         DelegateChoice {
             roleValue: "time"
 
+            Item {
+                id: timeCell
+
+                required property int index
+
+                Layout.fillHeight: true
+                Layout.minimumWidth: 96
+                Layout.preferredWidth: Math.max(136, timeLabel.implicitWidth + 16)
+                visible: root.deckPlayer?.isLoaded
+
+                TrackTime {
+                    id: timeLabel
+
+                    anchors.fill: parent
+                    anchors.leftMargin: 6
+                    anchors.rightMargin: 6
+                    color: Theme.white
+                    display: Mixxx.Config.controlPositionDisplay
+                    elide: Text.ElideNone
+                    font.bold: true
+                    font.pixelSize: 13
+                    group: root.group
+                    horizontalAlignment: Text.AlignHCenter
+                    mode: Mixxx.Config.controlTimeFormat
+                    wrapMode: Text.NoWrap
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+
+                    onClicked: Mixxx.Config.controlPositionDisplay = (Mixxx.Config.controlPositionDisplay + 1) % 3
+                }
+                Rectangle {
+                    anchors.bottom: timeCell.bottom
+                    anchors.right: timeCell.right
+                    anchors.top: timeCell.top
+                    anchors.topMargin: 5
+                    color: root.lineColor
+                    opacity: 0.7
+                    visible: timeCell.index != parent.model.count - 1
+                    width: 1
+                }
+            }
+        }
+        DelegateChoice {
+            roleValue: "duration"
+
             Cell {
-                visible: root.width > 450
-                item.text: time.text
+                item.elide: Text.ElideNone
+                item.font.pixelSize: 13
+                item.text: {
+                    const seconds = durationSeconds.value;
+                    if (!Number.isFinite(seconds) || seconds <= 0) {
+                        return "";
+                    }
+                    return Mixxx.DurationFormatter.format(seconds, TrackTime.Mode.TraditionalCoarse);
+                }
+                visible: root.deckPlayer?.isLoaded
 
                 Mixxx.ControlProxy {
-                    id: durationControl
+                    id: durationSeconds
 
                     group: root.group
                     key: "duration"
-                }
-                Mixxx.ControlProxy {
-                    id: playPositionControl
-
-                    group: root.group
-                    key: "playposition"
-                }
-
-                TrackTime {
-                    id: time
-                    display: Mixxx.Config.controlPositionDisplay
-                    elapsed: durationControl.value * playPositionControl.value
-                    mode: Mixxx.Config.controlTimeFormat
-                    remaining: durationControl.value * (1 - playPositionControl.value)
-                    visible: false
                 }
             }
         }
@@ -249,8 +291,9 @@ Rectangle {
                     anchors.top: cell.top
                     anchors.topMargin: 5
                     color: root.lineColor
+                    opacity: 0.7
                     visible: showSeparator
-                    width: 2
+                    width: 1
 
                     Skin.FadeBehavior on visible {
                         fadeTarget: separator
@@ -279,7 +322,7 @@ Rectangle {
             type: "artist"
         }
         ListElement {
-            type: "none"
+            type: "duration"
         }
         ListElement {
             type: "rating"
@@ -327,8 +370,9 @@ Rectangle {
         }
         Rectangle {
             Layout.fillWidth: true
-            color: root.lineColor
-            height: 2
+            color: Theme.accentColor
+            height: 1
+            opacity: root.deckPlayer?.isLoaded ? 0.8 : 0.35
             visible: !root.minimized
         }
         RowLayout {
@@ -357,7 +401,7 @@ Rectangle {
 
         Layout.fillHeight: true
         Layout.fillWidth: index == 0
-        Layout.leftMargin: index == 0 ? 10 : 0
+        Layout.leftMargin: index == 0 ? 12 : 0
         Layout.preferredWidth: index == 0 ? 0 : rightColumnWidth
 
         Skin.EmbeddedText {
@@ -366,7 +410,7 @@ Rectangle {
             anchors.fill: parent
             color: Theme.white
             font.bold: isTop
-            font.pixelSize: isTop ? 18 : Theme.textFontPixelSize
+            font.pixelSize: isTop ? 17 : Theme.textFontPixelSize
             horizontalAlignment: index == 0 ? Text.AlignLeft : Text.AlignHCenter
             visible: root.deckPlayer?.isLoaded
 
@@ -383,8 +427,9 @@ Rectangle {
             anchors.top: cell.top
             anchors.topMargin: isTop ? 5 : 0
             color: root.lineColor
+            opacity: 0.7
             visible: showSeparator
-            width: 2
+            width: 1
 
             Skin.FadeBehavior on visible {
                 fadeTarget: separator

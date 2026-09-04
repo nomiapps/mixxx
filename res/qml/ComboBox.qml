@@ -67,6 +67,7 @@ ComboBox {
         elide: root.clip ? Text.ElideNone : Text.ElideRight
         font: root.font
         leftPadding: 5
+        rightPadding: root.indicator.width + root.spacing
         text: root.displayText
         verticalAlignment: Text.AlignVCenter
     }
@@ -79,7 +80,7 @@ ComboBox {
         padding: 4
         text: root.textAt(this.index)
         verticalPadding: 8
-        width: root.width
+        width: popupItem.width
 
         background: Rectangle {
             border.color: itemDlgt.highlighted ? Theme.deckLineColor : "transparent"

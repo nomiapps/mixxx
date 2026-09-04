@@ -1,14 +1,20 @@
-import ".." as Skin
 import Mixxx 1.0 as Mixxx
 import Mixxx.Controls 1.0 as MixxxControls
+import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
 import QtQuick.Controls 2.12
+import QtQuick.Shapes
 import "../Theme"
 
 Item {
     id: root
 
     required property string group
+    readonly property real platterSize: Math.min(width, height)
+    readonly property bool loaded: trackLoadedControl.value > 0
+    readonly property bool scratching: scratchEnableControl.value > 0
+    readonly property var currentTrack: deckPlayer?.currentTrack
+    property var deckPlayer: Mixxx.PlayerManager.getPlayer(group)
 
     Mixxx.ControlProxy {
         id: trackLoadedControl
@@ -16,108 +22,229 @@ Item {
         group: root.group
         key: "track_loaded"
     }
+    Mixxx.ControlProxy {
+        id: playPositionControl
+
+        group: root.group
+        key: "playposition"
+    }
+    Mixxx.ControlProxy {
+        id: scratchEnableControl
+
+        group: root.group
+        key: "scratch_position_enable"
+    }
+    Mixxx.ControlProxy {
+        id: bpmControl
+
+        group: root.group
+        key: "bpm"
+    }
+    Mixxx.ControlProxy {
+        id: rateRatioControl
+
+        group: root.group
+        key: "rate_ratio"
+    }
+
     Rectangle {
-        id: spinner
+        id: bezel
 
-        color: '#BDBDBD'
-        height: 140
+        anchors.centerIn: parent
+        color: "#08090a"
+        height: root.platterSize
         radius: width / 2
-        width: 140
+        width: root.platterSize
 
-        transform: Rotation {
-            angle: 45
-            origin.x: spinner.width / 2
-            origin.y: spinner.height / 2
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 2
+            border.color: root.scratching ? Theme.blue : "#3b4045"
+            border.width: root.scratching ? 3 : 1
+            color: "#111315"
+            radius: width / 2
+
+            Behavior on border.color {
+                ColorAnimation {
+                    duration: 90
+                }
+            }
+            Behavior on border.width {
+                NumberAnimation {
+                    duration: 90
+                }
+            }
         }
 
-        anchors {
-            top: parent.top
+        Repeater {
+            model: 7
+
+            Rectangle {
+                required property int index
+
+                anchors.centerIn: parent
+                border.color: index % 2 ? "#202326" : "#191c1f"
+                border.width: 1
+                color: "transparent"
+                height: width
+                radius: width / 2
+                width: bezel.width * (0.9 - index * 0.07)
+            }
         }
+
         MixxxControls.Spinny {
             id: spinnyIndicator
 
             anchors.fill: parent
+            anchors.margins: 5
             group: root.group
-            indicatorVisible: trackLoadedControl.value
+            indicatorVisible: root.loaded
 
             indicator: Item {
                 height: spinnyIndicator.height
                 width: spinnyIndicator.width
 
                 Rectangle {
-                    id: tick
+                    anchors.centerIn: parent
+                    border.color: "#050505"
+                    border.width: 2
+                    color: "#181a1c"
+                    height: width
+                    radius: width / 2
+                    width: parent.width * 0.54
+                }
+                Image {
+                    id: coverArt
 
-                    color: '#0E0E0E'
-                    height: 70
-                    width: 2
+                    anchors.centerIn: parent
+                    asynchronous: true
+                    fillMode: Image.PreserveAspectCrop
+                    height: width
+                    source: root.currentTrack?.coverArtUrl ?? ""
+                    sourceSize.height: height * Screen.devicePixelRatio
+                    sourceSize.width: width * Screen.devicePixelRatio
+                    visible: false
+                    width: parent.width * 0.52
+                }
+                Rectangle {
+                    id: coverArtMask
 
-                    anchors {
-                        horizontalCenter: parent.horizontalCenter
-                        top: parent.top
+                    anchors.fill: coverArt
+                    radius: width / 2
+                    visible: false
+                }
+                OpacityMask {
+                    anchors.fill: coverArt
+                    maskSource: coverArtMask
+                    source: coverArt
+                    visible: coverArt.status === Image.Ready
+                }
+
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: 2
+                    color: root.scratching ? Theme.blue : Theme.white
+                    height: parent.height * 0.25
+                    radius: width / 2
+                    width: Math.max(2, parent.width * 0.018)
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 90
+                        }
+                    }
+                }
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    color: root.scratching ? Theme.white : Theme.blue
+                    height: width
+                    radius: width / 2
+                    width: Math.max(5, parent.width * 0.045)
+                }
+                Rectangle {
+                    anchors.centerIn: parent
+                    color: "#090a0b"
+                    height: width
+                    radius: width / 2
+                    width: Math.max(6, parent.width * 0.055)
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        color: Theme.lightGray2
+                        height: width
+                        radius: width / 2
+                        width: parent.width * 0.35
                     }
                 }
             }
         }
-    }
-    Rectangle {
-        id: tempoInfo
 
-        anchors.centerIn: spinner
-        clip: true
-        color: '#0E0E0E'
-        height: trackLoadedControl.value ? spinner.height / 4 : 0
-        radius: height / 2 - 5
-        width: spinner.width / 2 - 10
+        Shape {
+            anchors.fill: parent
+            preferredRendererType: Shape.CurveRenderer
+            visible: root.loaded
 
-        Behavior on height {
-            SpringAnimation {
-                id: heightAnimation
+            ShapePath {
+                fillColor: "transparent"
+                strokeColor: Theme.blue
+                strokeWidth: root.scratching ? 3 : 2
 
-                damping: 0.2
-                duration: 500
-                spring: 2
+                PathAngleArc {
+                    centerX: bezel.width / 2
+                    centerY: bezel.height / 2
+                    radiusX: bezel.width / 2 - 4
+                    radiusY: radiusX
+                    startAngle: -90
+                    sweepAngle: Math.max(0, Math.min(1, playPositionControl.value)) * 360
+                }
             }
         }
 
-        Label {
-            id: tempo
+        Rectangle {
+            id: tempoBadge
 
-            readonly property real bpm: bpmControl.value
-            readonly property int precision: 2
+            anchors.centerIn: parent
+            border.color: root.scratching ? Theme.blue : "#424951"
+            border.width: 2
+            color: "#e60b0d0f"
+            height: Math.max(48, parent.height * 0.38)
+            radius: width / 2
+            visible: root.loaded
+            width: height
 
-            color: '#BDBDBD'
-            text: `${Math.round(bpm)}.${((bpm % 1) * Math.pow(10, precision)).toFixed().padEnd(precision, "0")}`
+            Column {
+                anchors.centerIn: parent
+                spacing: 0
 
-            Mixxx.ControlProxy {
-                id: bpmControl
+                Label {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    color: Theme.white
+                    font.bold: true
+                    font.pixelSize: 12
+                    text: bpmControl.value > 0 ? bpmControl.value.toFixed(1) : "--.-"
+                }
+                Label {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    color: Theme.midGray
+                    font.pixelSize: 7
+                    text: "BPM"
+                }
+                Label {
+                    readonly property real percent: (rateRatioControl.value - 1) * 100
 
-                group: root.group
-                key: "bpm"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    color: Theme.blue
+                    font.pixelSize: 9
+                    text: (percent >= 0 ? "+" : "") + percent.toFixed(1) + "%"
+                }
             }
-            anchors {
-                horizontalCenter: parent.horizontalCenter
-                top: parent.top
-                topMargin: 2
-            }
-        }
-        Label {
-            id: pitchRatio
 
-            readonly property real ratio: ((rateRatioControl.value - 1) * 100).toPrecision(2)
-
-            color: Theme.darkGray3
-            text: ((ratio > 0) ? "+" + ratio.toFixed(2) : ratio.toFixed(2)) + "%"
-
-            Mixxx.ControlProxy {
-                id: rateRatioControl
-
-                group: root.group
-                key: "rate_ratio"
-            }
-            anchors {
-                bottom: parent.bottom
-                bottomMargin: 2
-                horizontalCenter: parent.horizontalCenter
+            Behavior on border.color {
+                ColorAnimation {
+                    duration: 90
+                }
             }
         }
     }

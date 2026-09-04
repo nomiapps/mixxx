@@ -16,6 +16,13 @@ Item {
         group: root.group
         key: "track_loaded"
     }
+    Rectangle {
+        anchors.fill: parent
+        border.color: "#30343d"
+        border.width: 1
+        color: "#111216"
+        radius: 5
+    }
     Skin.ControlButton {
         id: reverseButton
 
@@ -25,6 +32,27 @@ Item {
         implicitWidth: 22
         key: "reverse"
 
+        anchors {
+            left: parent.left
+            verticalCenter: parent.verticalCenter
+        }
+
+        background: Rectangle {
+            border.color: reverseButton.highlight ? Theme.accentColor : "#343740"
+            border.width: 1
+            color: reverseButton.highlight ? "#203b78" : (reverseButton.pressed ? "#252b36" : "#17181b")
+            radius: 4
+
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.horizontalCenter: parent.horizontalCenter
+                color: Theme.accentColor
+                height: 2
+                visible: reverseButton.highlight
+                width: parent.width - 8
+            }
+        }
+
         contentItem: Shape {
             anchors.fill: parent
             antialiasing: true
@@ -32,7 +60,7 @@ Item {
             layer.samples: 4
 
             ShapePath {
-                fillColor: root.buttonColor
+                fillColor: reverseButton.highlight ? Theme.white : root.buttonColor
                 startX: 5
                 startY: 11
                 strokeColor: 'transparent'
@@ -56,10 +84,19 @@ Item {
         id: beatgridButton
 
         anchors.right: ejectButton.left
-        anchors.rightMargin: 5
+        anchors.rightMargin: 4
+        anchors.verticalCenter: parent.verticalCenter
         implicitHeight: 22
+        normalColor: trackLoadedControl.value > 0 ? Theme.lightGray2 : Theme.buttonDisableColor
         text: "Beatgrid"
         visible: root.width > 165
+
+        background: Rectangle {
+            border.color: beatgridButton.pressed ? Theme.accentColor : "#343740"
+            border.width: 1
+            color: beatgridButton.pressed ? "#252b36" : "#17181b"
+            radius: 4
+        }
     }
     Skin.ControlButton {
         id: ejectButton
@@ -70,6 +107,15 @@ Item {
         implicitHeight: 22
         implicitWidth: 22
         key: "eject"
+
+        anchors.verticalCenter: parent.verticalCenter
+
+        background: Rectangle {
+            border.color: ejectButton.pressed ? Theme.accentColor : "#343740"
+            border.width: 1
+            color: ejectButton.pressed ? "#252b36" : "#17181b"
+            radius: 4
+        }
 
         contentItem: Item {
             anchors.fill: parent

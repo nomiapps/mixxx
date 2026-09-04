@@ -10,14 +10,17 @@ Item {
     required property var groups
     property bool show4decks: false
 
-    implicitHeight: content.height + crossfader.height
+    implicitHeight: content.height + crossfader.height + 4
     implicitWidth: 190
 
-    Skin.SectionBackground {
+    Rectangle {
         anchors.fill: parent
+        color: Theme.backgroundColor
+        radius: 8
     }
     Column {
         anchors.fill: parent
+        spacing: 4
 
         Item {
             id: content
@@ -25,8 +28,12 @@ Item {
             height: (root.show4decks ? eqDeck1.height * 2 : eqDeck1.height) + 10
             width: root.implicitWidth
 
-            Skin.SectionBackground {
+            Rectangle {
                 anchors.fill: parent
+                border.color: "#303034"
+                border.width: 1
+                color: "#121214"
+                radius: 7
             }
             Item {
                 anchors.fill: parent
@@ -185,48 +192,107 @@ Item {
         Item {
             id: crossfader
 
-            height: 40
+            height: 52
             width: root.implicitWidth
 
-            Skin.SectionBackground {
+            Rectangle {
                 anchors.fill: parent
+                border.color: "#3a3a40"
+                border.width: 1
+                color: "#171719"
+                radius: 7
+            }
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.top: parent.top
+                color: Theme.blue
+                opacity: 0.65
+                radius: 1
+                width: 2
+            }
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.right: parent.right
+                anchors.top: parent.top
+                color: Theme.yellow
+                opacity: 0.65
+                radius: 1
+                width: 2
             }
             Item {
                 anchors.fill: parent
-                anchors.margins: 3
+                anchors.margins: 4
 
-                Skin.SectionBackground {
-                    anchors.fill: parent
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    color: Theme.lightGray3
+                    font.bold: true
+                    font.capitalization: Font.AllUppercase
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 8
+                    font.letterSpacing: 1
+                    text: root.show4decks ? qsTr("Deck assign · Crossfader") : qsTr("Crossfader")
+                }
+                Text {
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    color: Theme.blue
+                    font.bold: true
+                    font.pixelSize: 9
+                    horizontalAlignment: Text.AlignHCenter
+                    text: "A"
+                    visible: root.show4decks
+                    width: leftDeckAssignment.width
+                }
+                Text {
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    color: Theme.yellow
+                    font.bold: true
+                    font.pixelSize: 9
+                    horizontalAlignment: Text.AlignHCenter
+                    text: "B"
+                    visible: root.show4decks
+                    width: rightDeckAssignment.width
                 }
                 GridLayout {
                     id: leftDeckAssignment
 
+                    anchors.bottom: parent.bottom
                     anchors.left: parent.left
                     columnSpacing: 0
                     rowSpacing: 0
-                    width: root.show4decks ? 34 : 17
+                    visible: root.show4decks
+                    width: visible ? 40 : 0
 
                     Repeater {
-                        model: root.show4decks ? 4 : 2
+                        model: root.show4decks ? 4 : 0
 
                         Item {
                             required property int index
 
                             Layout.column: show4decks ? index % 2 : 0
                             Layout.row: root.show4decks ? parseInt(index / 2) : index
-                            implicitHeight: 17
-                            implicitWidth: 17
+                            implicitHeight: 20
+                            implicitWidth: 20
 
-                            Skin.SectionBackground {
+                            Rectangle {
                                 anchors.fill: parent
+                                border.color: "#303034"
+                                border.width: 1
+                                color: "#101012"
+                                radius: 3
                             }
                             Skin.ControlButton {
                                 id: deckButton
 
-                                activeColor: Theme.deckActiveColor
+                                activeColor: Theme.blue
+                                fontPixelSize: 9
                                 group: `[Channel${index + 1}]`
                                 key: "orientation_left"
-                                text: `${index + 1}`
+                                text: `D${index + 1}`
                                 toggleable: true
 
                                 anchors {
@@ -245,47 +311,58 @@ Item {
                     bg: Theme.imgCrossfaderBackground
                     fg: Theme.imgCrossfaderHandle
                     group: "[Master]"
+                    height: 33
                     key: "crossfader"
                     orientation: Qt.Horizontal
 
                     anchors {
                         left: leftDeckAssignment.right
+                        leftMargin: 4
                         right: rightDeckAssignment.left
-                        verticalCenter: parent.verticalCenter
+                        rightMargin: 4
+                        top: parent.top
+                        topMargin: 11
                     }
                     handleImage {
-                        height: 34
+                        height: 31
                     }
                 }
                 GridLayout {
                     id: rightDeckAssignment
 
+                    anchors.bottom: parent.bottom
                     anchors.right: parent.right
                     columnSpacing: 0
                     rowSpacing: 0
-                    width: root.show4decks ? 34 : 17
+                    visible: root.show4decks
+                    width: visible ? 40 : 0
 
                     Repeater {
-                        model: root.show4decks ? 4 : 2
+                        model: root.show4decks ? 4 : 0
 
                         Item {
                             required property int index
 
                             Layout.column: show4decks ? index % 2 : 0
                             Layout.row: root.show4decks ? parseInt(index / 2) : index
-                            implicitHeight: 17
-                            implicitWidth: 17
+                            implicitHeight: 20
+                            implicitWidth: 20
 
-                            Skin.SectionBackground {
+                            Rectangle {
                                 anchors.fill: parent
+                                border.color: "#303034"
+                                border.width: 1
+                                color: "#101012"
+                                radius: 3
                             }
                             Skin.ControlButton {
                                 id: deckButton
 
-                                activeColor: Theme.deckActiveColor
+                                activeColor: Theme.yellow
+                                fontPixelSize: 9
                                 group: `[Channel${index + 1}]`
                                 key: "orientation_right"
-                                text: `${index + 1}`
+                                text: `D${index + 1}`
                                 toggleable: true
 
                                 anchors {

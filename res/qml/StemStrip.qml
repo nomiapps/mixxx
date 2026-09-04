@@ -168,22 +168,20 @@ Item {
                         key: "super1"
                         opacity: fxEnabledControl.value ? 1 : 0.5
                     }
-                    Skin.ComboBox {
+                    Skin.OpaqueComboBox {
                         id: fxPreset
 
                         // Takes whatever width is left in the cell, within reason.
                         Layout.fillWidth: true
                         Layout.maximumWidth: 180
                         Layout.minimumWidth: 80
-                        Layout.preferredHeight: 28
+                        Layout.preferredHeight: 22
                         clip: true
                         currentIndex: fxPresetControl.value === -1 ? 0 : fxPresetControl.value
                         font.pixelSize: 10
                         model: Mixxx.EffectsManager.quickChainPresetModel
                         opacity: fxEnabledControl.value ? 1 : 0.6
-                        popupMaxItem: 8
                         popupWidth: 160
-                        spacing: 2
                         textRole: "display"
 
                         onActivated: index => {

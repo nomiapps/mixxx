@@ -19,8 +19,9 @@ Skin.EmbeddedText {
         HectoSeconds
     }
 
-    property var display: TrackTime.Mode.Display
-    property double elapsed: durationControl.value
+    property int display: TrackTime.Display.Elapsed
+    readonly property double duration: durationControl.value
+    property double elapsed: durationControl.value * playPositionControl.value
     property string group: "[Channel1]"
     property var mode: TrackTime.Mode.Traditional
     property double remaining: durationControl.value * (1 - playPositionControl.value)
