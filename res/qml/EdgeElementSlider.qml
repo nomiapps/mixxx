@@ -47,7 +47,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: 1
         height: parent.height - 10
-        color: "#ffffff"
+        color: Theme.pureWhite
         opacity: 0.07
     }
 
@@ -69,7 +69,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         width: parent.width - 10
         height: 1
-        color: "#ffffff"
+        color: Theme.pureWhite
         opacity: 0.07
     }
 }

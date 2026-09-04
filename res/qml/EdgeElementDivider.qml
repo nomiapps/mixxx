@@ -1,4 +1,5 @@
 import QtQuick 2.12
+import "Theme"
 
 // Panel seam: a shadow line separating surface sections (e.g. the deck
 // sections from the mixer), like the panel joints on hardware controllers.
@@ -26,7 +27,7 @@ Item {
         anchors.verticalCenterOffset: root.vertical ? 0 : 2
         width: root.vertical ? 1 : parent.width
         height: root.vertical ? parent.height : 1
-        color: "#ffffff"
+        color: Theme.pureWhite
         opacity: 0.08
     }
 }

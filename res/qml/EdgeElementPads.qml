@@ -43,9 +43,9 @@ Item {
         case "beatloop":
             return Theme.bpmSliderBarColor;
         case "beatjump":
-            return "#e0a040";
+            return Theme.amber;
         case "sampler":
-            return "#b060e0";
+            return Theme.purple;
         case "stems":
             return "#46a3d9";
         default:

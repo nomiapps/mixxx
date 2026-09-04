@@ -181,7 +181,7 @@ Window {
                 return ;
 
             try {
-                root.layoutDef = JSON.parse(xhr.responseText);
+                root.layoutDef = root.resolveThemeColors(JSON.parse(xhr.responseText));
                 root.revealIfReady();
             } catch (e) {
                 console.warn("edge-layout: failed to parse", url, e);
@@ -189,6 +189,22 @@ Window {
         };
         xhr.open("GET", url);
         xhr.send();
+    }
+
+    // An element's "color" may name a Theme property ("amber", "red") instead of
+    // carrying a hex literal, so a layout inherits the palette rather than pinning it.
+    // Literals still work -- anything starting with '#' is passed through untouched.
+    function resolveThemeColors(def) {
+        for (const el of (def.elements ?? [])) {
+            if (typeof el.color === "string" && !el.color.startsWith("#")) {
+                const resolved = Theme[el.color];
+                if (resolved !== undefined)
+                    el.color = resolved;
+                else
+                    console.warn("edge-layout: no Theme colour named", el.color);
+            }
+        }
+        return def;
     }
 
     ListModel {

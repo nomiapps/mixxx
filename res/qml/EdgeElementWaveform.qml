@@ -1,5 +1,6 @@
 import "." as Skin
 import QtQuick 2.12
+import "Theme"
 
 Item {
     id: root
@@ -39,7 +40,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         height: 1
-        color: "#ffffff"
+        color: Theme.pureWhite
         opacity: 0.06
     }
 

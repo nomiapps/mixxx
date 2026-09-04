@@ -89,4 +89,11 @@ QtObject {
     property color waveformPrerollColor: midGray
     property color white: "#D9D9D9"
     property color yellow: "#fca001"
+    // Primitives named 2026-09-04. These four were loose literals: the first three
+    // lived only in edge-layouts JSON (amber/purple/offWhite), and pureWhite was
+    // written ~12 times with nothing to reference -- `white` is #D9D9D9, not white.
+    property color amber: "#e0a040"
+    property color purple: "#b060e0"
+    property color offWhite: "#e8e8e8"
+    property color pureWhite: "#ffffff"
 }
