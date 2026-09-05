@@ -23,7 +23,10 @@ Item {
     readonly property var stemsModel: root.hasStems && root.player && root.player.currentTrack ? root.player.currentTrack.stemsModel : []
     // [Waveform]/StemLabels: bit 0 is the main window, bit 1 is the Edge surface.
     readonly property bool laneLabelsVisible: root.splitStemTracks && root.hasStems && (Mixxx.Config.waveformStemLabels & 1)
-    readonly property real laneHeight: root.height / Math.max(1, root.stemsModel.length)
+    // Lane count comes from the CONTROL, not from stemsModel: that model is not a JS
+    // array, so .length is undefined and this whole binding evaluated to NaN -- which
+    // positioned every label at NaN and drew nothing, with no error anywhere.
+    readonly property real laneHeight: root.height / Math.max(1, stemCountControl.value)
     readonly property string zoomGroup: Mixxx.Config.waveformZoomSynchronization ? "[Channel1]" : group
 
     Mixxx.ControlProxy {
