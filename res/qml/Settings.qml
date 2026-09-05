@@ -24,6 +24,10 @@ Popup {
 
     horizontalPadding: 20
     verticalPadding: 20
+    // Stated rather than inherited: this popup had no close button and no declared
+    // policy, so the only way out was Escape -- and nothing on screen said so. When it
+    // fills the window there is no "outside" left to click either.
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     background: Rectangle {
         anchors.fill: parent
@@ -36,6 +40,23 @@ Popup {
         height: parent.height - 40
         width: parent.width - 40
 
+        Skin.Button {
+            id: closeButton
+
+            activeColor: Theme.white
+            fontPixelSize: 14
+            implicitHeight: 26
+            implicitWidth: 26
+            text: "✕"
+            z: 1
+
+            anchors {
+                right: parent.right
+                top: parent.top
+            }
+
+            onClicked: root.close()
+        }
         RowLayout {
             anchors.fill: parent
             spacing: 0
