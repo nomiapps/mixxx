@@ -16,6 +16,19 @@ Category {
 
     property bool dirty: false
 
+    // Turn a file url back into something readable, for display only: the list
+    // should show "C:/Music", not "file:///C:/Music". Inverse of toFileUrl();
+    // see the comment there for why the model holds urls at all.
+    function displayPath(url) {
+        const text = decodeURIComponent(String(url));
+        if (text.startsWith("file:///"))
+            return text.substring(8);
+
+        if (text.startsWith("file://"))
+            return "//" + text.substring(7);
+
+        return text;
+    }
     function load() {
         loadSources();
         integrationRepeater.model = [
@@ -60,7 +73,10 @@ Category {
         let rootDirs = [];
         for (let source of Object.values(Mixxx.Library.sources)) {
             rootDirs.push({
-                path: source.path,
+                path: root.toFileUrl(source.path),
+                // Carried alongside the url so the delegate can render a readable
+                // path without reaching out to an id in an enclosing component.
+                display: source.path,
                 trackCount: source.trackCount,
                 totalMinute: Math.round(source.totalSecond / 60)
             });
@@ -144,6 +160,28 @@ Category {
         Mixxx.Config.librarySearchBpmFuzzyRange = pitchSliderFuzzBPMInput.value;
         load();
     }
+    // Library.sources exposes `path` as a plain QString ("C:/Music"), but
+    // addSource/removeSource/relinkSource all take a QUrl. Handing a bare path
+    // straight to them does NOT produce a file URL: QML reads "C:" as a scheme,
+    // so the value arrives as the url `c:/Music` and QUrl::toLocalFile() returns
+    // an empty string. The DAO then looks up "" and reports NotFound, which is
+    // why removing or relinking a listed directory failed while adding one from
+    // the folder dialog (already a real file:/// url) worked.
+    //
+    // So normalise on the way in and keep the model holding real URLs.
+    // Note the slash count differs by path shape: a drive letter needs an empty
+    // authority (file:///C:/Music), a UNC path puts the server IN the authority
+    // (file://SERVER/share). Getting that wrong is what broke UNC paths before.
+    function toFileUrl(path) {
+        const text = String(path).replace(/\\/g, "/");
+        if (/^[a-z][a-z0-9+.-]*:\/\//i.test(text))
+            return text; // already a url with an authority, e.g. file:///... or file://SERVER/...
+
+        if (text.startsWith("//"))
+            return "file:" + text; // UNC: //SERVER/share -> file://SERVER/share
+
+        return "file:///" + text; // drive letter or absolute posix path
+    }
 
     label: qsTr("Library")
 
@@ -225,7 +263,8 @@ Category {
                                     onAccepted: {
                                         let model = sourceListView.model;
                                         model.push({
-                                            path: addDialog.selectedFolder
+                                            path: addDialog.selectedFolder,
+                                            display: root.displayPath(addDialog.selectedFolder)
                                         });
                                         root.dirty = true;
                                         sourceListView.model = model;
@@ -303,7 +342,7 @@ Category {
                                                 font.pixelSize: 14
                                                 font.weight: Font.Medium
                                                 opacity: modelData.deleting !== undefined ? 0.4 : 1
-                                                text: modelData.path
+                                                text: modelData.display
                                             }
                                             FolderDialog {
                                                 id: relinkDialog
