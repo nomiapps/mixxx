@@ -509,7 +509,13 @@ endif()
 
 project(mixxx VERSION 2.7.0 LANGUAGES C CXX)
 # Work around missing version suffixes support https://gitlab.kitware.com/cmake/cmake/-/issues/16716
-set(MIXXX_VERSION_PRERELEASE "alpha") # set to "alpha" "beta" or ""
+# Fork marker. Upstream uses "alpha"/"beta"/""; this fork identifies itself here
+# rather than renumbering project(), because 3.0 is already taken twice over --
+# upstream reserves it (VersionStore::FUTURE_UNSTABLE is "3.0-unstable") and it is
+# also Mixxx's name for the New UI skin. Keeping 2.7.0 preserves which upstream
+# engine this is built on, which matters while we keep merging upstream/main.
+# Composes as "2.7.0-nomi" (CMakeLists.txt:3172).
+set(MIXXX_VERSION_PRERELEASE "nomi") # upstream: "alpha" "beta" or ""
 
 set(CMAKE_PROJECT_HOMEPAGE_URL "https://www.mixxx.org")
 set(
