@@ -26,6 +26,7 @@ class PreviewDeck;
 class Sampler;
 class SamplerBank;
 class SoundManager;
+class Synth;
 class ControlProxy;
 
 // For mocking PlayerManager
@@ -90,6 +91,9 @@ class PlayerManager : public PlayerManagerInterface {
     // Add an auxiliary input to the PlayerManager
     void addAuxiliary();
 
+    // Add a synthesizer channel to the PlayerManager
+    void addSynth();
+
     // Returns true if the group is a deck group. If index is non-NULL,
     // populates it with the deck number (1-indexed).
     static bool isDeckGroup(const QString& group, int* number = nullptr);
@@ -135,6 +139,9 @@ class PlayerManager : public PlayerManagerInterface {
 
     // Get the auxiliary by its number. Auxiliaries are numbered starting with 1.
     Auxiliary* getAuxiliary(unsigned int auxiliary) const;
+
+    // Get the synth by its number. Synths are numbered starting with 1.
+    Synth* getSynth(unsigned int synth) const;
 
     // Binds signals between PlayerManager and Library. The library
     // must exist at least for the lifetime of this instance.
@@ -195,6 +202,12 @@ class PlayerManager : public PlayerManagerInterface {
         return QStringLiteral("[Auxiliary") + QString::number(i + 1) + QChar(']');
     }
 
+    // Returns the group for the ith Synth where i is zero indexed
+    static QString groupForSynth(int i) {
+        DEBUG_ASSERT(i >= 0);
+        return QStringLiteral("[Synth") + QString::number(i + 1) + QChar(']');
+    }
+
   public slots:
     // Slots for loading tracks into a Player, which is either a Sampler or a Deck
 #ifdef __STEM__
@@ -228,6 +241,7 @@ class PlayerManager : public PlayerManagerInterface {
     void slotChangeNumPreviewDecks(double v);
     void slotChangeNumMicrophones(double v);
     void slotChangeNumAuxiliaries(double v);
+    void slotChangeNumSynths(double v);
 
   protected slots:
     FRIEND_TEST(PlayerManagerTest, UnEjectInvalidTrackIdTest);
@@ -278,6 +292,9 @@ class PlayerManager : public PlayerManagerInterface {
     // Must hold m_mutex before calling this method. Internal method that
     // creates a new auxiliary.
     void addAuxiliaryInner();
+    // Must hold m_mutex before calling this method. Internal method that
+    // creates a new synth.
+    void addSynthInner();
 
     // Used to protect access to PlayerManager state across threads.
     mutable QT_RECURSIVE_MUTEX m_mutex;
@@ -296,6 +313,7 @@ class PlayerManager : public PlayerManagerInterface {
     std::unique_ptr<ControlObject> m_pCONumPreviewDecks;
     std::unique_ptr<ControlObject> m_pCONumMicrophones;
     std::unique_ptr<ControlObject> m_pCONumAuxiliaries;
+    std::unique_ptr<ControlObject> m_pCONumSynths;
     parented_ptr<ControlProxy> m_pAutoDjEnabled;
 
     TrackAnalysisScheduler::Pointer m_pTrackAnalysisScheduler;
@@ -308,5 +326,6 @@ class PlayerManager : public PlayerManagerInterface {
     QList<PreviewDeck*> m_previewDecks;
     QList<Microphone*> m_microphones;
     QList<Auxiliary*> m_auxiliaries;
+    QList<Synth*> m_synths;
     QMap<ChannelHandle, BaseTrackPlayer*> m_players;
 };

@@ -90,6 +90,7 @@ namespace {
 const mixxx::Logger kLogger("CoreServices");
 constexpr int kMicrophoneCount = 4;
 constexpr int kAuxiliaryCount = 4;
+constexpr int kSynthCount = 1;
 constexpr int kSamplerCount = 4;
 
 #define CLEAR_AND_CHECK_DELETED(x) clearHelper(x, #x);
@@ -580,6 +581,10 @@ void CoreServices::initialize(QApplication* pApp) {
 
     for (int i = 0; i < kAuxiliaryCount; ++i) {
         m_pPlayerManager->addAuxiliary();
+    }
+
+    for (int i = 0; i < kSynthCount; ++i) {
+        m_pPlayerManager->addSynth();
     }
 
     m_pPlayerManager->addConfiguredDecks();

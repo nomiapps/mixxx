@@ -15,6 +15,7 @@
 #include "mixer/previewdeck.h"
 #include "mixer/sampler.h"
 #include "mixer/samplerbank.h"
+#include "mixer/synth.h"
 #include "moc_playermanager.cpp"
 #include "preferences/dialog/dlgprefdeck.h"
 #include "soundio/soundmanager.h"
@@ -115,6 +116,8 @@ PlayerManager::PlayerManager(UserSettingsPointer pConfig,
                   ConfigKey(kAppGroup, QStringLiteral("num_microphones")), true, true)),
           m_pCONumAuxiliaries(std::make_unique<ControlObject>(
                   ConfigKey(kAppGroup, QStringLiteral("num_auxiliaries")), true, true)),
+          m_pCONumSynths(std::make_unique<ControlObject>(
+                  ConfigKey(kAppGroup, QStringLiteral("num_synths")), true, true)),
           m_pTrackAnalysisScheduler(TrackAnalysisScheduler::NullPointer()) {
     m_pCONumDecks->addAlias(ConfigKey(kLegacyGroup, QStringLiteral("num_decks")));
     m_pCONumDecks->connectValueChangeRequest(this,
@@ -131,6 +134,8 @@ PlayerManager::PlayerManager(UserSettingsPointer pConfig,
     m_pCONumAuxiliaries->addAlias(ConfigKey(kLegacyGroup, QStringLiteral("num_auxiliaries")));
     m_pCONumAuxiliaries->connectValueChangeRequest(this,
             &PlayerManager::slotChangeNumAuxiliaries, Qt::DirectConnection);
+    m_pCONumSynths->connectValueChangeRequest(this,
+            &PlayerManager::slotChangeNumSynths, Qt::DirectConnection);
 
     // This is parented to the PlayerManager so does not need to be deleted
     m_pSamplerBank = new SamplerBank(m_pConfig, this);
@@ -151,6 +156,7 @@ PlayerManager::~PlayerManager() {
     m_samplers.clear();
     m_microphones.clear();
     m_auxiliaries.clear();
+    m_synths.clear();
     // We need to delete m_pTrackAnalysisScheduler here immediately synchronously,
     // waiting for pending threads to have finished, to not kill them during exit
     delete m_pTrackAnalysisScheduler.release();
@@ -316,6 +322,20 @@ void PlayerManager::slotChangeNumAuxiliaries(double v) {
         addAuxiliaryInner();
     }
     m_pCONumAuxiliaries->setAndConfirm(m_auxiliaries.size());
+}
+
+void PlayerManager::slotChangeNumSynths(double v) {
+    const auto locker = lockMutex(&m_mutex);
+    int num = (int)v;
+    if (num < m_synths.size()) {
+        // The request was invalid -- don't set the value.
+        kLogger.debug() << "Ignoring request to reduce the number of synths to" << num;
+        return;
+    }
+    while (m_synths.size() < num) {
+        addSynthInner();
+    }
+    m_pCONumSynths->setAndConfirm(m_synths.size());
 }
 
 void PlayerManager::addDeck() {
@@ -516,6 +536,20 @@ void PlayerManager::addAuxiliaryInner() {
     m_auxiliaries.append(pAuxiliary);
 }
 
+void PlayerManager::addSynth() {
+    const auto locker = lockMutex(&m_mutex);
+    slotChangeNumSynths(m_pCONumSynths->get() + 1);
+}
+
+void PlayerManager::addSynthInner() {
+    // Do not lock m_mutex here.
+    int index = m_synths.count();
+    QString group = groupForSynth(index);
+
+    auto* pSynth = new Synth(this, group, m_pEngine, m_pEffectsManager);
+    m_synths.append(pSynth);
+}
+
 BaseTrackPlayer* PlayerManager::getPlayer(const QString& group) const {
     return getPlayer(m_pEngine->registerChannelGroup(group).handle());
 }
@@ -594,6 +628,15 @@ Auxiliary* PlayerManager::getAuxiliary(unsigned int auxiliary) const {
         return nullptr;
     }
     return m_auxiliaries[auxiliary - 1];
+}
+
+Synth* PlayerManager::getSynth(unsigned int synth) const {
+    const auto locker = lockMutex(&m_mutex);
+    if (synth < 1 || synth > static_cast<unsigned int>(m_synths.size())) {
+        kLogger.warning() << "Warning getSynth() called with invalid index: " << synth;
+        return nullptr;
+    }
+    return m_synths[synth - 1];
 }
 
 void PlayerManager::slotCloneDeck(const QString& source_group, const QString& target_group) {

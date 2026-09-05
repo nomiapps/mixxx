@@ -1331,6 +1331,7 @@ add_library(
   src/engine/channels/enginechannel.cpp
   src/engine/channels/enginedeck.cpp
   src/engine/channels/enginemicrophone.cpp
+  src/engine/channels/enginesynth.cpp
   src/engine/controls/bpmcontrol.cpp
   src/engine/controls/clockcontrol.cpp
   src/engine/controls/cuecontrol.cpp
@@ -1505,6 +1506,7 @@ add_library(
   src/mixer/previewdeck.cpp
   src/mixer/sampler.cpp
   src/mixer/samplerbank.cpp
+  src/mixer/synth.cpp
   src/mixxxapplication.cpp
   src/mixxxmainwindow.cpp
   src/musicbrainz/chromaprinter.cpp
@@ -2931,6 +2933,7 @@ if(BUILD_TESTING)
     src/test/enginefilterbiquadtest.cpp
     src/test/enginemixertest.cpp
     src/test/enginemicrophonetest.cpp
+    src/test/enginesynthtest.cpp
     src/test/enginesynctest.cpp
     src/test/fileinfo_test.cpp
     src/test/frametest.cpp

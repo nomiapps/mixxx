@@ -4,7 +4,7 @@ import "Theme"
 
 // The Edge performance surface: a layout ENGINE. Controller layouts are JSON
 // files in res/qml/edge-layouts/ describing a design canvas plus elements
-// (platter, pads, knob, slider, button, text) with rects and Mixxx
+// (platter, pads, knob, slider, button, text, synth) with rects and Mixxx
 // group/key bindings. Add a .json there, list it in edge-layouts/index.json,
 // and pick it from the LAYOUT menu; the canvas scales as one locked unit at
 // any window size. (index.json exists because Qt.labs.folderlistmodel is not
@@ -73,6 +73,8 @@ Window {
             return "EdgeElementDeckSwitch.qml";
         case "divider":
             return "EdgeElementDivider.qml";
+        case "synth":
+            return "EdgeElementSynth.qml";
         default:
             console.warn("edge-layout: unknown element type", type);
             return "";

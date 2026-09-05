@@ -1,0 +1,21 @@
+{
+    "name": "Synth",
+    "canvas": [
+        2560,
+        720
+    ],
+    "elements": [
+        {
+            "type": "synth",
+            "group": "[Synth1]",
+            "octaves": 3,
+            "baseNote": 36,
+            "rect": [
+                16,
+                8,
+                2528,
+                704
+            ]
+        }
+    ]
+}
