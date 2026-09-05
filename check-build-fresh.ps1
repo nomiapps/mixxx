@@ -22,7 +22,7 @@
 
 [CmdletBinding()]
 param(
-    [string]$Root = 'C:\StreamDeck\src\mixxx-edge',
+    [string]$Root = 'C:\StreamDeck\src\mixxx-shared',
     [switch]$Quiet
 )
 
@@ -84,6 +84,6 @@ $newer | Sort-Object Modified -Descending | Select-Object -First 12 |
     ForEach-Object { Write-Host ("    {0}  {1}" -f $_.Modified.ToString('HH:mm:ss'), $_.File) }
 if ($newer.Count -gt 12) { Write-Host "    ... and $($newer.Count - 12) more" }
 Write-Host ""
-Write-Host "  Rebuild:  build-edge.bat" -ForegroundColor Cyan
+Write-Host "  Rebuild:  build-shared.bat" -ForegroundColor Cyan
 Write-Host ""
 exit 1
