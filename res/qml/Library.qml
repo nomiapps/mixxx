@@ -23,7 +23,9 @@ Item {
 
     function applySearch() {
         if (root.sidebar && root.sidebar.tracklist) {
-            // Both terms are ANDed, so the search box filters WITHIN the crate.
+            // In practice only one of these is ever set -- focusing the search box drops
+            // the crate scope. They are still ANDed rather than one overriding the other,
+            // so nothing silently wins if that ever changes.
             const parts = [root.smartCrateQuery, searchField.text].filter(p => p.trim().length > 0);
             root.sidebar.tracklist.search(parts.join(" "));
         }
@@ -78,6 +80,16 @@ Item {
         }
 
         onTextChanged: searchDebounce.restart()
+        // Reaching for the search box means searching the whole library, so drop any
+        // crate scope rather than quietly searching inside it. Otherwise a search can
+        // return nothing while the collection plainly contains matches.
+        onActiveFocusChanged: {
+            if (searchField.activeFocus && root.smartCrateQuery.length > 0) {
+                root.smartCrateQuery = "";
+                searchDebounce.stop();
+                root.applySearch();
+            }
+        }
 
         Timer {
             id: searchDebounce
