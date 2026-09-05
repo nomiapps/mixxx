@@ -3996,6 +3996,29 @@ if(QML)
       res/qml/Mixxx/Controls/WaveformDisplay.qml
   )
   target_link_libraries(mixxx-qml-lib PRIVATE mixxx-qml-mixxxcontrolsplugin)
+  # Edge.Controls: the fork's own copies of the shared QML control primitives.
+  # These files are compiled into the binary, so unlike the rest of res/qml they
+  # cannot be overridden from --resource-path. Keeping them in a separate module
+  # lets res/qml/Mixxx/Controls stay pristine upstream and merge silently.
+  qt_add_library(mixxx-qml-edgecontrols STATIC)
+  set_target_properties(mixxx-qml-edgecontrols PROPERTIES AUTOMOC ON)
+  qt_add_qml_module(mixxx-qml-edgecontrols
+    URI Edge.Controls
+    VERSION 1.0
+    RESOURCE_PREFIX /mixxx.org/imports
+    OPTIONAL_IMPORTS Mixxx
+    QML_FILES
+      res/qml/Edge/Controls/Slider.qml
+      res/qml/Edge/Controls/Knob.qml
+      res/qml/Edge/Controls/Fader.qml
+      res/qml/Edge/Controls/Spinny.qml
+      res/qml/Edge/Controls/WaveformOverviewHotcueMarker.qml
+      res/qml/Edge/Controls/WaveformOverviewMarker.qml
+      res/qml/Edge/Controls/WaveformOverviewMarkerLayer.qml
+      res/qml/Edge/Controls/WaveformOverview.qml
+      res/qml/Edge/Controls/WaveformDisplay.qml
+  )
+  target_link_libraries(mixxx-qml-lib PRIVATE mixxx-qml-edgecontrolsplugin)
 
   target_sources(
     mixxx-qml-lib

@@ -1,6 +1,6 @@
 import "." as Skin
 import Mixxx 1.0 as Mixxx
-import Mixxx.Controls 1.0 as MixxxControls
+import Edge.Controls 1.0 as EdgeControls
 import QtQuick 2.12
 import "Theme"
 
@@ -18,7 +18,7 @@ Item {
     property bool splitStemTracks: false
     readonly property string zoomGroup: Mixxx.Config.waveformZoomSynchronization ? "[Channel1]" : group
 
-    MixxxControls.WaveformDisplay {
+    EdgeControls.WaveformDisplay {
         anchors.fill: parent
         backgroundColor: "transparent"
         group: root.group

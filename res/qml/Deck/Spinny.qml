@@ -1,5 +1,5 @@
 import Mixxx 1.0 as Mixxx
-import Mixxx.Controls 1.0 as MixxxControls
+import Edge.Controls 1.0 as EdgeControls
 import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
 import QtQuick.Controls 2.12
@@ -92,7 +92,7 @@ Item {
             }
         }
 
-        MixxxControls.Spinny {
+        EdgeControls.Spinny {
             id: spinnyIndicator
 
             anchors.fill: parent

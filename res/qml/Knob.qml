@@ -1,9 +1,9 @@
-import Mixxx.Controls 1.0 as MixxxControls
+import Edge.Controls 1.0 as EdgeControls
 import QtQuick 2.12
 import QtQuick.Window 2.12
 import "Theme"
 
-MixxxControls.Knob {
+EdgeControls.Knob {
     id: root
 
     property url backgroundSource: Theme.imgKnob

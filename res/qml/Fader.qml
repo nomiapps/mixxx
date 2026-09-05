@@ -1,10 +1,10 @@
-import Mixxx.Controls 1.0 as MixxxControls
+import Edge.Controls 1.0 as EdgeControls
 import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
 import QtQuick.Window 2.12
 import "Theme"
 
-MixxxControls.Fader {
+EdgeControls.Fader {
     id: root
 
     property real backgroundMargin: bar.margin

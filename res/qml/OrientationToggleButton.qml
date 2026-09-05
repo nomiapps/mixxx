@@ -1,6 +1,6 @@
 import "." as Skin
 import Mixxx 1.0 as Mixxx
-import Mixxx.Controls 1.0 as MixxxControls
+import Edge.Controls 1.0 as EdgeControls
 import QtQuick 2.12
 
 Item {
@@ -25,7 +25,7 @@ Item {
         from: 0
         live: false
         orientation: Qt.Horizontal
-        snapMode: MixxxControls.Slider.SnapOnRelease
+        snapMode: EdgeControls.Slider.SnapOnRelease
         stepSize: 1
         to: 2
         value: control.value

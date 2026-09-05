@@ -1,6 +1,6 @@
 import "." as Skin
 import Mixxx 1.0 as Mixxx
-import Mixxx.Controls 1.0 as MixxxControls
+import Edge.Controls 1.0 as EdgeControls
 import QtQuick 2.12
 import "Theme"
 
@@ -117,7 +117,7 @@ Item {
         anchors.fill: parent
         color: Theme.deckBackgroundColor
 
-        MixxxControls.WaveformOverview {
+        EdgeControls.WaveformOverview {
             anchors.fill: parent
             channels: Mixxx.WaveformOverview.Channels.LeftChannel
             renderer: Mixxx.WaveformOverview.Renderer.Filtered
