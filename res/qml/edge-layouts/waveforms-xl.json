@@ -31,6 +31,10 @@
         },
         {
             "type": "waveform",
+            "stemLabels": true,
+            "stemLabelSize": 15,
+            "stemLabelGutter": 84,
+            "splitStems": true,
             "group": "[Channel1]",
             "rect": [
                 135,
@@ -41,6 +45,10 @@
         },
         {
             "type": "waveform",
+            "stemLabels": true,
+            "stemLabelSize": 15,
+            "stemLabelGutter": 84,
+            "splitStems": true,
             "group": "[Channel2]",
             "rect": [
                 135,
@@ -57,7 +65,7 @@
             "toggle": true,
             "rect": [
                 10,
-                42,
+                195,
                 110,
                 134
             ]
@@ -69,7 +77,7 @@
             "label": "CUE",
             "rect": [
                 10,
-                185,
+                119,
                 110,
                 67
             ]
@@ -82,7 +90,7 @@
             "toggle": true,
             "rect": [
                 10,
-                262,
+                42,
                 110,
                 67
             ]
@@ -95,7 +103,7 @@
             "toggle": true,
             "rect": [
                 10,
-                355,
+                508,
                 110,
                 134
             ]
@@ -107,7 +115,7 @@
             "label": "CUE",
             "rect": [
                 10,
-                499,
+                432,
                 110,
                 67
             ]
@@ -120,7 +128,7 @@
             "toggle": true,
             "rect": [
                 10,
-                575,
+                355,
                 110,
                 67
             ]
