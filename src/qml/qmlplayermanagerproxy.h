@@ -37,6 +37,11 @@ class QmlPlayerManagerProxy : public QObject {
             bool play);
     Q_INVOKABLE void showNoDeckPassthroughInputConfiguredWarning();
     Q_INVOKABLE void showNoVinylControlInputConfiguredWarning();
+    /// Copy the source deck's current loop onto a sampler: same track, loop
+    /// in/out, loop enabled, cue at loop start. samplerNumber is 1-based;
+    /// 0 picks the first empty sampler (or sampler 1 if all are loaded).
+    /// Returns the 1-based sampler index, or 0 on failure.
+    Q_INVOKABLE int sampleLoopToSampler(const QString& sourceGroup, int samplerNumber = 0);
 
     QStringList supportedAudioFileNameFilters() const;
     QUrl initialTrackDirectoryUrl() const;
