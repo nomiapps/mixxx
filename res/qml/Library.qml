@@ -55,6 +55,21 @@ Item {
         root.applySearch();
     }
 
+    // What makes a smart crate smart: it stores a QUERY, not a track list, so anything
+    // added later that matches belongs to it. That only shows while you are looking at
+    // one if the query is re-run when the collection changes -- otherwise a crate quietly
+    // shows a stale set until you reselect it.
+    Connections {
+        function onLibraryScanActiveChanged() {
+            if (!Mixxx.Library.libraryScanActive) {
+                searchDebounce.stop();
+                root.applySearch();
+            }
+        }
+
+        target: Mixxx.Library
+    }
+
     LibraryComponent.SourceTree {
         id: librarySources
     }

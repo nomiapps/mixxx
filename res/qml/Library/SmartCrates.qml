@@ -117,6 +117,7 @@ Rectangle {
                     required property var modelData
 
                     readonly property bool active: root.activeQuery.length > 0 && root.activeQuery === row.modelData.query
+                    property bool renaming: false
 
                     color: row.active ? Qt.rgba(0.004, 0.863, 0.988, 0.16) : (rowMouseArea.containsMouse ? Theme.knobBackgroundColor : 'transparent')
                     implicitHeight: 24
@@ -130,6 +131,41 @@ Rectangle {
                         hoverEnabled: true
 
                         onClicked: root.activated(row.modelData.query)
+                        // A crate is named after its own query when saved, which is fine
+                        // for "stem" and unreadable for a long one. Double-click to rename.
+                        onDoubleClicked: {
+                            nameField.text = row.modelData.name;
+                            row.renaming = true;
+                            nameField.forceActiveFocus();
+                            nameField.selectAll();
+                        }
+                    }
+                    TextInput {
+                        id: nameField
+
+                        anchors.left: parent.left
+                        anchors.leftMargin: 10
+                        anchors.right: removeButton.left
+                        anchors.rightMargin: 5
+                        anchors.verticalCenter: parent.verticalCenter
+                        clip: true
+                        color: Theme.white
+                        font.pixelSize: 12
+                        selectByMouse: true
+                        visible: row.renaming
+
+                        onAccepted: {
+                            Mixxx.Library.renameSmartCrate(row.index, nameField.text);
+                            row.renaming = false;
+                        }
+                        // Losing focus commits nothing: an abandoned edit should not
+                        // silently rename the crate.
+                        onActiveFocusChanged: {
+                            if (!nameField.activeFocus) {
+                                row.renaming = false;
+                            }
+                        }
+                        Keys.onEscapePressed: row.renaming = false
                     }
                     Label {
                         anchors.left: parent.left
@@ -142,6 +178,7 @@ Rectangle {
                         font.bold: row.active
                         font.pixelSize: 12
                         text: "⚙  " + row.modelData.name
+                        visible: !row.renaming
                     }
                     Label {
                         id: removeButton

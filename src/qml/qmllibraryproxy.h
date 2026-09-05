@@ -198,6 +198,7 @@ class QmlLibraryProxy : public QObject {
     Q_INVOKABLE void addSmartCrate(const QString& name, const QString& query);
     /// Remove the smart crate at the given index of `smartCrates`.
     Q_INVOKABLE void removeSmartCrate(int index);
+    Q_INVOKABLE void renameSmartCrate(int index, const QString& name);
 
     Q_INVOKABLE QString deckHotcueLabel(
             mixxx::qml::QmlTrackProxy* track,

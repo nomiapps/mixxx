@@ -422,6 +422,24 @@ void QmlLibraryProxy::removeSmartCrate(int index) {
     emit smartCratesChanged();
 }
 
+void QmlLibraryProxy::renameSmartCrate(int index, const QString& name) {
+    if (index < 0 || index >= m_smartCrates.size()) {
+        return;
+    }
+    const QString trimmedName = name.trimmed();
+    if (trimmedName.isEmpty()) {
+        return;
+    }
+    QVariantMap entry = m_smartCrates.at(index).toMap();
+    if (entry.value(kSmartCrateNameKey).toString() == trimmedName) {
+        return;
+    }
+    entry.insert(kSmartCrateNameKey, trimmedName);
+    m_smartCrates.replace(index, entry);
+    saveSmartCrates();
+    emit smartCratesChanged();
+}
+
 void QmlLibraryProxy::loadSmartCrates() {
     const QString filePath = smartCratesFilePath();
     if (filePath.isEmpty()) {
