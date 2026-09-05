@@ -135,19 +135,33 @@ Rectangle {
             rightMargin: 6
         }
 
-        BorderImage {
+        // Same vector treatment as Skin.Button: button.svg was a 58x26 raster
+        // 9-sliced to this field and then upscaled again on a fractional-DPR
+        // screen, stair-stepping the corners. The artwork is a rounded rect
+        // with a half-opaque surround and a vertical gradient, so it is drawn
+        // directly. No state changes here -- this field is not a button.
+        Rectangle {
             id: sizeFace
 
             anchors.fill: parent
-            horizontalTileMode: BorderImage.Stretch
-            source: Theme.imgButton
-            verticalTileMode: BorderImage.Stretch
+            color: Qt.rgba(0, 0, 0, 0.502)
+            radius: 3
 
-            border {
-                bottom: 10
-                left: 10
-                right: 10
-                top: 10
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: 2
+                radius: 1
+
+                gradient: Gradient {
+                    GradientStop {
+                        color: "#282828"
+                        position: 0
+                    }
+                    GradientStop {
+                        color: "#202020"
+                        position: 1
+                    }
+                }
             }
         }
         TextInput {

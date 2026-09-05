@@ -1,5 +1,6 @@
 import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
+import QtQuick.Window 2.12
 import QtQuick.Controls 2.12
 import "Theme"
 
@@ -95,6 +96,11 @@ AbstractButton {
             fillMode: Image.PreserveAspectFit
             height: icon.height
             source: icon.source
+            // SVGs rasterise at sourceSize, so an icon left unset is drawn at its
+            // natural size and rescaled -- visibly jagged. Rasterise at the size it
+            // is actually drawn, times the screen's DPR.
+            sourceSize.height: height * Screen.devicePixelRatio
+            sourceSize.width: width * Screen.devicePixelRatio
             visible: false
             width: icon.width
         }

@@ -6,7 +6,7 @@ import QtQuick
 import QtQml.Models
 import QtQuick.Layouts
 import QtQuick.Controls 2.15
-import QtQuick.Shapes 1.6
+import QtQuick.Shapes
 import "Theme"
 import "Library" as LibraryComponent
 

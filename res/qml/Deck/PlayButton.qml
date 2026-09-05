@@ -18,10 +18,11 @@ Skin.ControlButton {
         implicitWidth: 20
 
         Shape {
+            // Qt 6.6+ resolution-independent antialiasing; the older
+            // geometry renderer stair-steps curves on some displays.
+            preferredRendererType: Shape.CurveRenderer
             anchors.fill: parent
             antialiasing: true
-            layer.enabled: true
-            layer.samples: 4
             visible: !root.highlight
 
             ShapePath {

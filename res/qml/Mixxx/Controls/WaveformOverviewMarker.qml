@@ -1,6 +1,6 @@
 import Mixxx 1.0 as Mixxx
 import QtQuick 2.12
-import QtQuick.Shapes 1.12
+import QtQuick.Shapes
 import QtQuick.Window 2.12
 
 Item {
@@ -11,6 +11,9 @@ Item {
     property string color: "white"
 
     Shape {
+        // Qt 6.6+ resolution-independent antialiasing; the older
+        // geometry renderer stair-steps curves on some displays.
+        preferredRendererType: Shape.CurveRenderer
         id: shape
 
         visible: control.value >= 0

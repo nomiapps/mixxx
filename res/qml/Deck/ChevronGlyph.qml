@@ -12,10 +12,11 @@ Item {
     implicitWidth: root.doubled ? 20 : 12
 
     Shape {
+        // Qt 6.6+ resolution-independent antialiasing; the older
+        // geometry renderer stair-steps curves on some displays.
+        preferredRendererType: Shape.CurveRenderer
         anchors.fill: parent
         antialiasing: true
-        layer.enabled: true
-        layer.samples: 4
         rotation: root.forward ? 0 : 180
         transformOrigin: Item.Center
 

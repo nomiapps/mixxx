@@ -1,6 +1,7 @@
 import Mixxx.Controls 1.0 as MixxxControls
 import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
+import QtQuick.Window 2.12
 import "Theme"
 
 MixxxControls.Fader {
@@ -15,14 +16,27 @@ MixxxControls.Fader {
 
     bar.enabled: true
     bar.margin: 10
-    implicitHeight: backgroundImage.implicitHeight
-    implicitWidth: backgroundImage.implicitWidth
+    // Size comes from a hidden probe at the source's NATURAL size, not from the
+    // visible image. Setting sourceSize on the visible one (so the SVG
+    // rasterises at device resolution instead of being upscaled on a
+    // fractional-DPR screen) also changes its implicitWidth/Height, which fed
+    // straight back into the fader's own size. The probe keeps the two apart.
+    implicitHeight: naturalSize.implicitHeight
+    implicitWidth: naturalSize.implicitWidth
 
+    Image {
+        id: naturalSize
+
+        source: backgroundImage.source
+        visible: false
+    }
     background: Image {
         id: backgroundImage
 
         anchors.fill: parent
         anchors.margins: root.backgroundMargin
+        sourceSize.height: height * Screen.devicePixelRatio
+        sourceSize.width: width * Screen.devicePixelRatio
     }
     handle: Item {
         id: handleItem
@@ -37,6 +51,11 @@ MixxxControls.Fader {
             anchors.fill: parent
             fillMode: Image.PreserveAspectFit
             source: handleImage.source
+            // SVGs rasterise at sourceSize, so an icon left unset is drawn at its
+            // natural size and rescaled -- visibly jagged. Rasterise at the size it
+            // is actually drawn, times the screen's DPR.
+            sourceSize.height: height * Screen.devicePixelRatio
+            sourceSize.width: width * Screen.devicePixelRatio
             visible: !root.showHandleShadow
         }
         DropShadow {

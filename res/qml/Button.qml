@@ -1,5 +1,6 @@
 import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
+import QtQuick.Window 2.12
 import QtQuick.Controls 2.12
 import "Theme"
 
@@ -18,19 +19,39 @@ AbstractButton {
     implicitHeight: 26
     implicitWidth: 52
 
-    background: BorderImage {
+    background: Rectangle {
         id: backgroundImage
 
-        anchors.fill: parent
-        horizontalTileMode: BorderImage.Stretch
-        source: Theme.imgButton
-        verticalTileMode: BorderImage.Stretch
+        // Drawn as vector instead of a 9-slice SVG. button.svg is a 58x26 raster
+        // source: it was stretched to the button and then upscaled again on a
+        // fractional-DPR screen (1.5x here), which stair-stepped the rounded
+        // corners. BorderImage cannot be told to rasterise larger -- sourceSize
+        // is read-only there -- but the artwork is only a rounded rect with a
+        // half-opaque surround and a vertical gradient, so QML draws it exactly,
+        // crisp at any scale and cheaper than sampling an image.
+        // Colours taken from button.svg / button_pressed.svg; the states below
+        // shift the gradient instead of swapping the source.
+        property color bottomColor: "#202020"
+        property color topColor: "#282828"
 
-        border {
-            bottom: 10
-            left: 10
-            right: 10
-            top: 10
+        color: Qt.rgba(0, 0, 0, 0.502)
+        radius: 3
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 2
+            radius: 1
+
+            gradient: Gradient {
+                GradientStop {
+                    color: backgroundImage.topColor
+                    position: 0
+                }
+                GradientStop {
+                    color: backgroundImage.bottomColor
+                    position: 1
+                }
+            }
         }
     }
     contentItem: Item {
@@ -89,6 +110,11 @@ AbstractButton {
             fillMode: Image.PreserveAspectFit
             height: icon.height
             source: icon.source
+            // SVGs rasterise at sourceSize, so an icon left unset is drawn at its
+            // natural size and rescaled -- visibly jagged. Rasterise at the size it
+            // is actually drawn, times the screen's DPR.
+            sourceSize.height: height * Screen.devicePixelRatio
+            sourceSize.width: width * Screen.devicePixelRatio
             visible: false
             width: icon.width
         }
@@ -106,8 +132,9 @@ AbstractButton {
             when: root.pressed
 
             PropertyChanges {
-                source: Theme.imgButtonPressed
+                bottomColor: "#181818"
                 target: backgroundImage
+                topColor: "#202020"
             }
             PropertyChanges {
                 color: root.pressedColor
@@ -123,8 +150,9 @@ AbstractButton {
             when: (root.highlight || root.checked) && !root.pressed
 
             PropertyChanges {
-                source: Theme.imgButton
+                bottomColor: "#202020"
                 target: backgroundImage
+                topColor: "#282828"
             }
             PropertyChanges {
                 color: root.activeColor
@@ -140,8 +168,9 @@ AbstractButton {
             when: !root.checked && !root.highlight && !root.pressed
 
             PropertyChanges {
-                source: Theme.imgButton
+                bottomColor: "#202020"
                 target: backgroundImage
+                topColor: "#282828"
             }
             PropertyChanges {
                 color: root.normalColor

@@ -206,12 +206,13 @@ Rectangle {
                         model: 5
 
                         Shape {
+                            // Qt 6.6+ resolution-independent antialiasing; the older
+                            // geometry renderer stair-steps curves on some displays.
+                            preferredRendererType: Shape.CurveRenderer
                             id: star
 
                             antialiasing: true
                             height: 14
-                            layer.enabled: true
-                            layer.samples: 4
                             width: 16
 
                             ShapePath {

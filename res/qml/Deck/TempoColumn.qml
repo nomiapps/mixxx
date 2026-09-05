@@ -40,11 +40,12 @@ ColumnLayout {
                 anchors.fill: parent
 
                 Shape {
+                    // Qt 6.6+ resolution-independent antialiasing; the older
+                    // geometry renderer stair-steps curves on some displays.
+                    preferredRendererType: Shape.CurveRenderer
                     anchors.centerIn: parent
                     antialiasing: true
                     height: 10
-                    layer.enabled: true
-                    layer.samples: 4
                     width: 12
 
                     ShapePath {
@@ -140,11 +141,12 @@ ColumnLayout {
                 anchors.fill: parent
 
                 Shape {
+                    // Qt 6.6+ resolution-independent antialiasing; the older
+                    // geometry renderer stair-steps curves on some displays.
+                    preferredRendererType: Shape.CurveRenderer
                     anchors.centerIn: parent
                     antialiasing: true
                     height: 10
-                    layer.enabled: true
-                    layer.samples: 4
                     width: 12
 
                     ShapePath {

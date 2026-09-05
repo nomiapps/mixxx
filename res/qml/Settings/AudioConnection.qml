@@ -142,6 +142,9 @@ Item {
     }
 
     Shape {
+        // Qt 6.6+ resolution-independent antialiasing; the older
+        // geometry renderer stair-steps curves on some displays.
+        preferredRendererType: Shape.CurveRenderer
         anchors.fill: parent
         // anchors.centerIn: parent
         antialiasing: true

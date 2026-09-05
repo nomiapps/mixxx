@@ -6,7 +6,7 @@ import QtQuick
 import QtQml.Models
 import QtQuick.Layouts
 import QtQuick.Controls 2.15
-import QtQuick.Shapes 1.6
+import QtQuick.Shapes
 import "Theme"
 
 Rectangle {
@@ -15,6 +15,9 @@ Rectangle {
     color: 'transparent'
 
     Shape {
+        // Qt 6.6+ resolution-independent antialiasing; the older
+        // geometry renderer stair-steps curves on some displays.
+        preferredRendererType: Shape.CurveRenderer
         anchors.fill: parent
         ShapePath {
             strokeColor: Theme.midGray

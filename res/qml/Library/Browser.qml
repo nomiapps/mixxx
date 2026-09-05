@@ -6,7 +6,7 @@ import QtQuick
 import QtQml.Models
 import QtQuick.Layouts
 import QtQuick.Controls 2.15
-import QtQuick.Shapes 1.12
+import QtQuick.Shapes
 import Qt5Compat.GraphicalEffects
 import "../Theme"
 
@@ -264,6 +264,9 @@ Rectangle {
                                         width: 20
 
                                         Shape {
+                                            // Qt 6.6+ resolution-independent antialiasing; the older
+                                            // geometry renderer stair-steps curves on some displays.
+                                            preferredRendererType: Shape.CurveRenderer
                                             anchors.fill: parent
                                             anchors.margins: 4
 

@@ -3,7 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import QtQuick.Dialogs
-import QtQuick.Shapes 1.6
+import QtQuick.Shapes
 import Qt.labs.qmlmodels
 import QtMultimedia
 import Qt5Compat.GraphicalEffects
@@ -120,6 +120,9 @@ Item {
                 visible: !nameInput.visible
             }
             Shape {
+                // Qt 6.6+ resolution-independent antialiasing; the older
+                // geometry renderer stair-steps curves on some displays.
+                preferredRendererType: Shape.CurveRenderer
                 id: editButton
 
                 anchors.right: label.right
@@ -345,6 +348,9 @@ Item {
                 visible: controllerVisual.status != Image.Ready || root.editable
 
                 Shape {
+                    // Qt 6.6+ resolution-independent antialiasing; the older
+                    // geometry renderer stair-steps curves on some displays.
+                    preferredRendererType: Shape.CurveRenderer
                     anchors.fill: parent
                     visible: controllerVisual.status != Image.Ready || !controllerVisual.source
 
