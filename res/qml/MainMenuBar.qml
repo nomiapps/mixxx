@@ -139,6 +139,9 @@ MenuBar {
         MenuItem {
             action: root.actions.optionsPreferences
         }
+        MenuItem {
+            action: root.actions.optionsLegacyPreferences
+        }
     }
     Component {
         id: developerMenuComponent

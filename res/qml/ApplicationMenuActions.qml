@@ -39,6 +39,7 @@ Item {
     property alias optionsEnableVinyl3: optionsEnableVinyl3Action
     property alias optionsEnableVinyl4: optionsEnableVinyl4Action
     property alias optionsPreferences: optionsPreferencesAction
+    property alias optionsLegacyPreferences: optionsLegacyPreferencesAction
     property alias optionsRecordMix: optionsRecordMixAction
     readonly property string preferencesDefaultShortcut: Qt.platform.os === "osx" ? "Ctrl+," : "Ctrl+P"
     property int shortcutRevision: 0
@@ -53,6 +54,7 @@ Item {
     property alias viewShowVinylControl: viewShowVinylControlAction
 
     signal focusLibrarySearchRequested
+    signal preferencesRequested
 
     function configuredMenuShortcut(command, defaultShortcut, revision) {
         return Mixxx.Application.menuShortcut(command, defaultShortcut);
@@ -326,6 +328,17 @@ Item {
 
         shortcut: root.configuredMenuShortcut("OptionsMenu_Preferences", root.preferencesDefaultShortcut, root.shortcutRevision)
         text: qsTranslate("WMainMenuBar", "&Preferences")
+
+        // Was Mixxx.PreferencesDialog.show(). The menu sent people to the legacy
+        // QWidget dialog while the toolbar gear opened the 3.0 settings page, so the
+        // two entry points led somewhere different. Preferences now means the 3.0 page;
+        // the old dialog is still reachable, by its own menu item below.
+        onTriggered: root.preferencesRequested()
+    }
+    Action {
+        id: optionsLegacyPreferencesAction
+
+        text: qsTranslate("WMainMenuBar", "Legacy &Preferences...")
 
         onTriggered: Mixxx.PreferencesDialog.show()
     }

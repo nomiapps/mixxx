@@ -134,6 +134,11 @@ ApplicationWindow {
         commands: applicationMenuCommands
         numberOfDecks: root.show4decks ? root.numDecks : 2
 
+        onPreferencesRequested: {
+            if (!settingsPopup.opened) {
+                settingsPopup.open();
+            }
+        }
         onFocusLibrarySearchRequested: {
             if (library.item) {
                 library.item.focusSearch();
@@ -319,6 +324,11 @@ ApplicationWindow {
                     icon.source: "images/gear.svg"
                     icon.width: 16
                     implicitWidth: implicitHeight
+                    // An unlabelled gear whose press-and-hold opens a different and much
+                    // larger preferences system is not something anyone finds by accident.
+                    ToolTip.delay: 500
+                    ToolTip.text: qsTr("Preferences (Ctrl+P) — hold for the legacy dialog")
+                    ToolTip.visible: hovered
 
                     onClicked: {
                         if (!settingsPopup.opened) {
