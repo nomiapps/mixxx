@@ -224,10 +224,8 @@ Category {
 
                                     onAccepted: {
                                         let model = sourceListView.model;
-                                        let path = addDialog.selectedFolder.toString();
-                                        path = path.replace(/^file:\/{2,3}/, ""); // FIXME does this work on Windows ?
                                         model.push({
-                                            path: decodeURIComponent(path)
+                                            path: addDialog.selectedFolder
                                         });
                                         root.dirty = true;
                                         sourceListView.model = model;
@@ -315,8 +313,7 @@ Category {
 
                                                 onAccepted: {
                                                     let model = sourceListView.model;
-                                                    let path = selectedFolder.toString().replace(/^(file:\/\/)/, ""); // FIXME does this work on Windows ?
-                                                    model[mouse.index].relink = decodeURIComponent(path);
+                                                    model[mouse.index].relink = selectedFolder;
                                                     root.dirty = true;
                                                     sourceListView.model = model;
                                                 }
