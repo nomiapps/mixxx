@@ -108,6 +108,9 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     // Library group
     Q_PROPERTY(mixxx::preferences::Tooltips libraryTooltips READ libraryTooltips
                     WRITE set_libraryTooltips NOTIFY libraryTooltipsChanged);
+    Q_PROPERTY(bool libraryShowFeatureIcons READ libraryShowFeatureIcons WRITE
+                    set_libraryShowFeatureIcons NOTIFY
+                            libraryShowFeatureIconsChanged);
     Q_PROPERTY(mixxx::preferences::ScreenSaver libraryInhibitScreensaver READ
                     libraryInhibitScreensaver WRITE
                             set_libraryInhibitScreensaver NOTIFY
@@ -354,6 +357,7 @@ class QmlConfigProxy : public QmlConfigProxyBase {
 
     // Library group
     PROPERTY_DECL_ACCESSOR(mixxx::preferences::Tooltips, libraryTooltips);
+    PROPERTY_DECL_ACCESSOR(bool, libraryShowFeatureIcons);
     PROPERTY_DECL_ACCESSOR(mixxx::preferences::ScreenSaver, libraryInhibitScreensaver);
     PROPERTY_DECL_ACCESSOR(bool, libraryHideMenuBar);
     PROPERTY_DECL_ACCESSOR(bool, libraryEnableSearchCompletions);
@@ -458,6 +462,7 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     void waveformOptionsChanged();
     void waveformBeatGridAlphaChanged();
     void libraryTooltipsChanged();
+    void libraryShowFeatureIconsChanged();
     void libraryInhibitScreensaverChanged();
     void libraryHideMenuBarChanged();
     void libraryEnableSearchCompletionsChanged();

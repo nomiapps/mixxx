@@ -53,6 +53,7 @@ Category {
         // colorInput.value =
         // layoutInput.value =
         tooltipsInput.selected = tooltipsInput.options[Mixxx.Config.libraryTooltips];
+        browseIconsInput.selected = Mixxx.Config.libraryShowFeatureIcons ? "on" : "off";
         disableScreensaverInput.selected = disableScreensaverInput.options[Mixxx.Config.libraryInhibitScreensaver];
         startFullscreenInput.selected = Mixxx.Config.configStartInFullscreenKey ? "on" : "off";
         autoHideMenuBarInput.selected = Mixxx.Config.libraryHideMenuBar ? "on" : "off";
@@ -120,6 +121,7 @@ Category {
         // colorInput.value =
         // layoutInput.value =
         Mixxx.Config.libraryTooltips = tooltipsInput.options.indexOf(tooltipsInput.selected);
+        Mixxx.Config.libraryShowFeatureIcons = browseIconsInput.selected === "on";
         Mixxx.Config.libraryInhibitScreensaver = disableScreensaverInput.options.indexOf(disableScreensaverInput.selected);
         Mixxx.Config.configStartInFullscreenKey = startFullscreenInput.selected === "on";
         Mixxx.Config.libraryHideMenuBar = autoHideMenuBarInput.selected === "on";
@@ -288,6 +290,27 @@ Category {
                                 id: tooltipsInput
 
                                 options: ["off", "library", "all"]
+
+                                onSelectedChanged: themeColorTab.dirty = true
+                            }
+                        }
+                        RowLayout {
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                label: "Browse tree icons"
+
+                                Text {
+                                    color: Theme.white
+                                    font.pixelSize: 14
+                                    text: parent.label
+                                }
+                            }
+                            RatioChoice {
+                                id: browseIconsInput
+
+                                readonly property bool enabled: selected == "on"
+
+                                options: ["on", "off"]
 
                                 onSelectedChanged: themeColorTab.dirty = true
                             }

@@ -50,6 +50,7 @@ const QString kMultiSamplingKey = QStringLiteral("multi_sampling");
 const QString k3DHardwareAccelerationKey = QStringLiteral("force_hardware_acceleration");
 
 // Library group
+const QString kShowFeatureIconsKey = QStringLiteral("ShowFeatureIcons");
 const QString kRhythmboxEnabled = QStringLiteral("ShowRhythmboxLibrary");
 const QString kBansheeEnabled = QStringLiteral("ShowBansheeLibrary");
 const QString kITunesEnabled = QStringLiteral("ShowITunesLibrary");
@@ -328,6 +329,7 @@ PROPERTY_IMPL_CONFIGKEY(mixxx::library::prefs::kBpmColumnPrecisionConfigKey,
         libraryBpmColumnPrecision,
         BaseTrackTableModel::kBpmColumnPrecisionDefault);
 PROPERTY_IMPL(kLibraryGroup, kRowHeightKey, double, libraryRowHeight, Library::kDefaultRowHeightPx);
+PROPERTY_IMPL(kLibraryGroup, kShowFeatureIconsKey, bool, libraryShowFeatureIcons, true);
 PROPERTY_IMPL(kLibraryGroup, kRhythmboxEnabled, bool, libraryRhythmboxEnabled, false);
 PROPERTY_IMPL(kLibraryGroup, kBansheeEnabled, bool, libraryBansheeEnabled, false);
 PROPERTY_IMPL(kLibraryGroup, kITunesEnabled, bool, libraryITunesEnabled, false);
