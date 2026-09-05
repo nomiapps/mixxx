@@ -14,6 +14,8 @@ Rectangle {
     radius: 4
 
     Label {
+        id: loopHeader
+
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
         anchors.topMargin: 4
@@ -23,6 +25,20 @@ Rectangle {
         font.family: Theme.fontFamily
         font.pixelSize: Theme.buttonFontPixelSize
         text: qsTr("Loop")
+    }
+    Skin.Button {
+        id: sampleButton
+
+        anchors.right: parent.right
+        anchors.rightMargin: 6
+        anchors.verticalCenter: loopHeader.verticalCenter
+        enabled: trackLoadedControl.value > 0 && loopStart.value >= 0 && loopEnd.value > loopStart.value
+        fontPixelSize: Theme.buttonFontPixelSize
+        implicitHeight: 18
+        implicitWidth: 58
+        text: qsTr("Sample")
+
+        onClicked: Mixxx.PlayerManager.sampleLoopToSampler(root.group, 0)
     }
     Mixxx.ControlProxy {
         id: trackLoadedControl
@@ -35,6 +51,18 @@ Rectangle {
 
         group: root.group
         key: "loop_enabled"
+    }
+    Mixxx.ControlProxy {
+        id: loopStart
+
+        group: root.group
+        key: "loop_start_position"
+    }
+    Mixxx.ControlProxy {
+        id: loopEnd
+
+        group: root.group
+        key: "loop_end_position"
     }
     BeatSizeSpinBoxBehavior {
         id: beatloopSize

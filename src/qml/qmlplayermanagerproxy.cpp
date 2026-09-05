@@ -2,8 +2,10 @@
 
 #include <QQmlEngine>
 
+#include "control/controlobject.h"
 #include "library/library_prefs.h"
 #include "mixer/playermanager.h"
+#include "mixer/sampler.h"
 #include "moc_qmlplayermanagerproxy.cpp"
 #include "qml/qmlconfigproxy.h"
 #include "qml/qmlplayerproxy.h"
@@ -103,6 +105,88 @@ void QmlPlayerManagerProxy::loadTrackToPlayer(TrackPointer track,
             stemSelection,
 #endif
             play);
+}
+
+namespace {
+void applyLoopToSampler(const QString& destGroup, double loopStart, double loopEnd) {
+    ControlObject::set(ConfigKey(destGroup, QStringLiteral("loop_start_position")), loopStart);
+    ControlObject::set(ConfigKey(destGroup, QStringLiteral("loop_end_position")), loopEnd);
+    ControlObject::set(ConfigKey(destGroup, QStringLiteral("cue_point")), loopStart);
+    // Reloop toggle (1 then 0) enables the loop without sticking the button.
+    ControlObject::set(ConfigKey(destGroup, QStringLiteral("reloop_toggle")), 1.0);
+    ControlObject::set(ConfigKey(destGroup, QStringLiteral("reloop_toggle")), 0.0);
+    ControlObject::set(ConfigKey(destGroup, QStringLiteral("play")), 0.0);
+}
+} // namespace
+
+int QmlPlayerManagerProxy::sampleLoopToSampler(
+        const QString& sourceGroup, int samplerNumber) {
+    BaseTrackPlayer* pSource = m_pPlayerManager->getPlayer(sourceGroup);
+    if (!pSource) {
+        qWarning() << "sampleLoopToSampler: no player for" << sourceGroup;
+        return 0;
+    }
+    const TrackPointer pTrack = pSource->getLoadedTrack();
+    if (!pTrack) {
+        qWarning() << "sampleLoopToSampler: no track on" << sourceGroup;
+        return 0;
+    }
+
+    const double loopStart = ControlObject::get(
+            ConfigKey(sourceGroup, QStringLiteral("loop_start_position")));
+    const double loopEnd = ControlObject::get(
+            ConfigKey(sourceGroup, QStringLiteral("loop_end_position")));
+    if (loopStart < 0 || loopEnd <= loopStart) {
+        qWarning() << "sampleLoopToSampler: no loop set on" << sourceGroup;
+        return 0;
+    }
+
+    int samplerIndex = samplerNumber - 1;
+    if (samplerIndex < 0) {
+        samplerIndex = 0;
+        bool foundEmpty = false;
+        for (int i = 0; i < m_pPlayerManager->numberOfSamplers(); ++i) {
+            Sampler* pSampler = m_pPlayerManager->getSampler(i);
+            if (pSampler && !pSampler->getLoadedTrack()) {
+                samplerIndex = i;
+                foundEmpty = true;
+                break;
+            }
+        }
+        if (!foundEmpty && m_pPlayerManager->numberOfSamplers() <= 0) {
+            return 0;
+        }
+    }
+    if (samplerIndex < 0 || samplerIndex >= m_pPlayerManager->numberOfSamplers()) {
+        qWarning() << "sampleLoopToSampler: invalid sampler" << samplerNumber;
+        return 0;
+    }
+
+    const QString destGroup = PlayerManager::groupForSampler(samplerIndex);
+    BaseTrackPlayer* pDest = m_pPlayerManager->getPlayer(destGroup);
+    if (!pDest) {
+        return 0;
+    }
+
+    if (pDest->getLoadedTrack() == pTrack) {
+        applyLoopToSampler(destGroup, loopStart, loopEnd);
+        return samplerIndex + 1;
+    }
+
+    QObject::connect(pDest,
+            &BaseTrackPlayer::newTrackLoaded,
+            this,
+            [destGroup, loopStart, loopEnd](TrackPointer) {
+                applyLoopToSampler(destGroup, loopStart, loopEnd);
+            },
+            static_cast<Qt::ConnectionType>(Qt::SingleShotConnection));
+
+    m_pPlayerManager->slotLoadTrackToPlayer(pTrack, destGroup,
+#ifdef __STEM__
+            mixxx::StemChannelSelection(),
+#endif
+            false);
+    return samplerIndex + 1;
 }
 
 void QmlPlayerManagerProxy::showNoDeckPassthroughInputConfiguredWarning() {

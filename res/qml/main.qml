@@ -782,24 +782,39 @@ ApplicationWindow {
                     }
                 }
 
-                // Skin.SamplerRow {
-                //     id: samplers
-                //     visible: root.showSamplers
-                //     width: parent.width
+                Skin.SamplerRow {
+                    id: samplers
 
-                //     Skin.FadeBehavior on visible {
-                //         fadeTarget: samplers
-                //     }
-                // }
-                // Skin.EffectRow {
-                //     id: effects
-                //     visible: root.showEffects
-                //     width: parent.width
+                    clip: true
+                    height: visible ? implicitHeight : 0
+                    samplerCount: 8
+                    visible: root.showSamplers && !root.maximizeLibrary
+                    width: parent.width
 
-                //     Skin.FadeBehavior on visible {
-                //         fadeTarget: effects
-                //     }
-                // }
+                    anchors {
+                        top: mixer.bottom
+                    }
+
+                    Skin.FadeBehavior on visible {
+                        fadeTarget: samplers
+                    }
+                }
+                Skin.EffectRow {
+                    id: effects
+
+                    clip: true
+                    height: visible ? implicitHeight : 0
+                    visible: root.showEffects && !root.maximizeLibrary
+                    width: parent.width
+
+                    anchors {
+                        top: samplers.bottom
+                    }
+
+                    Skin.FadeBehavior on visible {
+                        fadeTarget: effects
+                    }
+                }
                 Loader {
                     id: library
 
@@ -840,7 +855,7 @@ ApplicationWindow {
 
                     anchors {
                         bottom: parent.bottom
-                        top: mixer.bottom
+                        top: effects.bottom
                     }
                 }
             }
