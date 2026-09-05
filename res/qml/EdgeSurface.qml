@@ -21,6 +21,13 @@ Window {
             "@right": "[Channel2]"
         })
     property var layoutDef: null
+    // True when a real strip display was found. It decides the window's chrome:
+    // on the strip we are a frameless, always-on-top, focus-refusing panel bolted
+    // to the hardware; anywhere else (a Surface Pro, a laptop) that is hostile --
+    // an undraggable, unresizable window you cannot dismiss -- so we become an
+    // ordinary window instead. Settled before the window is placed, because
+    // changing flags re-creates the native window.
+    property bool onStrip: false
     property bool placementReady: false
 
     // The strip display this surface is built for: a screen whose physical
@@ -71,6 +78,36 @@ Window {
             return "";
         }
     }
+
+    // No strip attached, so derive the window from the display we are on rather
+    // than from the hardware we are imitating. Everything below is in logical
+    // pixels -- Screen.width already has the panel's scaling applied, so a
+    // 2880x1920 Surface Pro at 200% reports 1440x960 and needs no DPI maths of
+    // our own. Keep the layout canvas's aspect so the controls stay at their
+    // designed proportions, take 90% of the smaller constraint, and centre it.
+    function fitToScreen(s) {
+        const availW = s.desktopAvailableWidth;
+        const availH = s.desktopAvailableHeight;
+        const canvasW = root.layoutDef ? root.layoutDef.canvas[0] : 2560;
+        const canvasH = root.layoutDef ? root.layoutDef.canvas[1] : 720;
+        const aspect = canvasW / canvasH;
+        let w = Math.round(availW * 0.9);
+        let h = Math.round(w / aspect) + header.height;
+        if (h > availH * 0.9) {
+            h = Math.round(availH * 0.9);
+            w = Math.round((h - header.height) * aspect);
+        }
+        // A canvas taller than the desktop (a portrait screen, a stacked layout)
+        // can drive the width negative; fall back to filling what we have.
+        if (w < 320 || h < 240) {
+            w = Math.min(Math.round(availW * 0.9), availW);
+            h = Math.min(Math.round(availH * 0.9), availH);
+        }
+        root.width = w;
+        root.height = h;
+        root.x = s.virtualX + Math.round((availW - w) / 2);
+        root.y = s.virtualY + Math.round((availH - h) / 2);
+    }
     function loadLayout(url) {
         const xhr = new XMLHttpRequest();
         xhr.onreadystatechange = () => {
@@ -90,9 +127,10 @@ Window {
 
     // Opening: put the surface ON the Edge, filling it, instead of wherever Qt
     // cascades a new window (the top of the main monitor). With no Edge
-    // attached, clamp onto whatever screen we landed on so the title bar is
-    // never offscreen. Deferred, because the window manager assigns the real
-    // position after the visibility change.
+    // attached, size the window from the screen we are actually on instead of
+    // the strip's 2560x720, which is wider than a Surface Pro's whole desktop.
+    // Deferred, because the window manager assigns the real position after the
+    // visibility change.
     function placeOnScreen() {
         const edge = edgeScreen();
         if (edge) {
@@ -106,16 +144,12 @@ Window {
             root.revealIfReady();
             return;
         }
-        const s = root.screen;
+        const s = root.screen ?? Qt.application.screens[0];
         if (!s) {
             root.opacity = 1;
             return;
         }
-
-        root.width = Math.min(root.width, s.desktopAvailableWidth);
-        root.height = Math.min(root.height, s.desktopAvailableHeight);
-        root.x = Math.min(Math.max(root.x, s.virtualX), s.virtualX + s.desktopAvailableWidth - root.width);
-        root.y = Math.min(Math.max(root.y, s.virtualY), s.virtualY + s.desktopAvailableHeight - root.height);
+        root.fitToScreen(s);
         root.raise();
         root.placementReady = true;
         root.revealIfReady();
@@ -156,8 +190,12 @@ Window {
     }
 
     color: Theme.backgroundColor
-    flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus
+    flags: root.onStrip ? (Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus) : Qt.Window
     height: 720
+    // Anything is resizable once it is an ordinary window, and canvasArea
+    // rescales the layout to whatever it is given, so no minimum beyond legibility.
+    minimumHeight: root.onStrip ? 0 : 240
+    minimumWidth: root.onStrip ? 0 : 320
     opacity: 0
     title: "Mixxx - Edge Surface"
     width: 2560
@@ -191,6 +229,11 @@ Window {
         if (visible) {
             root.opacity = 0;
             root.placementReady = false;
+            // Decide the chrome first: this re-creates the native window, and it
+            // has to happen before clampTimer positions it, or the flag change
+            // discards the geometry we just set. We are still at opacity 0, so
+            // the re-creation is not visible.
+            root.onStrip = !!root.edgeScreen();
             clampTimer.start();
         } else {
             root.opacity = 0;
