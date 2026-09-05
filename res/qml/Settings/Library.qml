@@ -71,7 +71,19 @@ Category {
     }
     function loadSources() {
         let rootDirs = [];
-        for (let source of Object.values(Mixxx.Library.sources)) {
+        // Index this list, do not iterate it with Object.values(). Library.sources
+        // is a QQmlListProperty, and Object.values() on one returns n+1 entries
+        // with the LAST element repeated -- measured, with two roots:
+        //   length 2, Object.keys ["0","1"], but Object.values length 3,
+        //   values = [C:/Music, D:/Music, D:/Music]
+        // With a single root that produced two identical rows in the UI, which
+        // invited deleting the same directory twice. The first delete succeeded,
+        // the second reported NotFound, and save() returns on the first failure --
+        // so a purge committed while the add queued behind it was silently dropped.
+        // Object.keys() and plain indexing are both correct; only values() is not.
+        const sources = Mixxx.Library.sources;
+        for (let i = 0; i < sources.length; ++i) {
+            const source = sources[i];
             rootDirs.push({
                 path: root.toFileUrl(source.path),
                 // Carried alongside the url so the delegate can render a readable
