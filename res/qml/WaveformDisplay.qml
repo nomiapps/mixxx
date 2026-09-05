@@ -311,14 +311,19 @@ Item {
                 // StemStrip renders these same names uppercase; match it.
                 font.capitalization: Font.AllUppercase
                 font.family: Theme.fontFamily
-                font.pixelSize: 10
+                // Shrink before hiding. Four lanes in a short waveform put the lane under
+                // the old flat 16px floor, so the labels simply vanished at some window
+                // heights with nothing to explain why.
+                font.pixelSize: root.laneHeight >= 18 ? 10 : 9
                 opacity: 0.85
                 style: Text.Outline
                 // The waveform behind these is busy and light in places, so the name
                 // needs its own contrast rather than relying on opacity alone.
                 styleColor: "#000000"
                 text: lane.label
-                visible: root.laneHeight >= 16
+                // 11px is where 9px text still fits; below that the swatch alone carries
+                // the lane identity by colour.
+                visible: root.laneHeight >= 11
                 width: parent.width - swatch.width - 5
             }
         }

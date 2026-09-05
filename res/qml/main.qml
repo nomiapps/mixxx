@@ -486,6 +486,11 @@ ApplicationWindow {
                 }
                 Rectangle {
                     width: 125
+                    // Behind the waveforms rather than over them: these edge fades are
+                    // later siblings, so they painted on top of the stem lane labels and
+                    // washed them out. The waveform background is transparent, so the fade still
+                    // reads at the edges from behind.
+                    z: -1
 
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
@@ -508,6 +513,11 @@ ApplicationWindow {
                 }
                 Rectangle {
                     width: 125
+                    // Behind the waveforms rather than over them: these edge fades are
+                    // later siblings, so they painted on top of the stem lane labels and
+                    // washed them out. The waveform background is transparent, so the fade still
+                    // reads at the edges from behind.
+                    z: -1
 
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
