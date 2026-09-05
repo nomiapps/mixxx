@@ -146,7 +146,13 @@ Rectangle {
                     anchors.topMargin: 5
                     color: root.lineColor
                     opacity: 0.7
-                    visible: timeCell.index != parent.model.count - 1
+                    // `parent` here is timeCell, which carries index but no model,
+                    // so parent.model.count threw a TypeError on every evaluation --
+                    // continuously, on every deck. The sibling bindings at the
+                    // delegate roots below are fine because THEIR parent is the
+                    // model-carrying layout. Reach it explicitly, guard the lookup,
+                    // and restore the isLoaded condition those siblings still have.
+                    visible: timeCell.index !== (timeCell.parent?.model?.count ?? 0) - 1 && !!root.deckPlayer?.isLoaded
                     width: 1
                 }
             }
