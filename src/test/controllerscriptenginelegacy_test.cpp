@@ -991,6 +991,42 @@ TEST_F(ControllerScriptEngineLegacyTest, JavascriptPlayerProxy) {
     }
 }
 
+#ifdef __STEM__
+TEST_F(ControllerScriptEngineLegacyTest, JavascriptPlayerProxy_Stems) {
+    const auto* code =
+            "var result = {};"
+            "var player = engine.getPlayer('[Channel1]');"
+            "player.stemLabelsChanged.connect(newValue => {"
+            "    result.stemLabels = newValue;"
+            "});"
+            "player.stemColorsChanged.connect(newValue => {"
+            "    result.stemColors = newValue;"
+            "});";
+    EXPECT_TRUE(evaluateAndAssert(code)) << "Evaluation error in test code";
+
+    // No track loaded yet: empty arrays, not undefined.
+    EXPECT_EQ(evaluate("player.stemLabels.length").toInt(), 0);
+    EXPECT_EQ(evaluate("player.stemColors.length").toInt(), 0);
+
+    loadTrackSync("stems/sin_AAC_256kbps_VBR.stem.mp4");
+
+    const QStringList expectedLabels = {"Drums", "Bass", "Synths", "Vox"};
+    const QStringList expectedColors = {"#fd4a4a", "#ffff00", "#00e8e8", "#ad65ff"};
+    EXPECT_EQ(evaluate("player.stemLabels").toVariant().toStringList(), expectedLabels);
+    EXPECT_EQ(evaluate("player.stemColors").toVariant().toStringList(), expectedColors);
+    EXPECT_EQ(evaluate("result.stemLabels").toVariant().toStringList(), expectedLabels)
+            << "stemLabelsChanged slot didn't produce the expected value";
+    EXPECT_EQ(evaluate("result.stemColors").toVariant().toStringList(), expectedColors)
+            << "stemColorsChanged slot didn't produce the expected value";
+
+    // A track without stems reports empty arrays again.
+    loadTrackSync("id3-test-data/all.mp3");
+    EXPECT_EQ(evaluate("player.stemLabels.length").toInt(), 0);
+    EXPECT_EQ(evaluate("result.stemLabels.length").toInt(), 0)
+            << "stemLabelsChanged should fire with an empty array for a stem-less track";
+}
+#endif
+
 TEST_F(ControllerScriptEngineLegacyTest, JavascriptPlayerProxy_KeyNotation_keyChanged) {
     ControlProxy keyNotationProxy(mixxx::library::prefs::kKeyNotationConfigKey);
     loadTrackSync("id3-test-data/all.mp3");

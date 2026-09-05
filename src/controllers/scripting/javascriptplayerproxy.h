@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QStringList>
+
 #include "control/controlproxy.h"
 #include "mixer/basetrackplayer.h"
 
@@ -25,6 +27,10 @@ class JavascriptPlayerProxy : public QObject {
     Q_PROPERTY(QString trackNumber READ getTrackNumber NOTIFY trackNumberChanged)
     Q_PROPERTY(QString trackTotal READ getTrackTotal NOTIFY trackTotalChanged)
     Q_PROPERTY(QString key READ getKeyText NOTIFY keyChanged)
+#ifdef __STEM__
+    Q_PROPERTY(QStringList stemLabels READ getStemLabels NOTIFY stemLabelsChanged)
+    Q_PROPERTY(QStringList stemColors READ getStemColors NOTIFY stemColorsChanged)
+#endif
 
   public:
     explicit JavascriptPlayerProxy(BaseTrackPlayer* pTrackPlayer, QObject* parent);
@@ -40,6 +46,14 @@ class JavascriptPlayerProxy : public QObject {
     QString getTrackNumber() const;
     QString getTrackTotal() const;
     QString getKeyText() const;
+#ifdef __STEM__
+    /// Labels of the loaded track's stems in stem order, as written by the
+    /// creator of the STEM file (e.g. "Drums", "Bass", "Synths", "Vox").
+    /// Empty when no track is loaded or the track has no stems.
+    QStringList getStemLabels() const;
+    /// Colors of the loaded track's stems in stem order, as "#rrggbb".
+    QStringList getStemColors() const;
+#endif
 
   public slots:
     void slotTrackLoaded(TrackPointer pTrack);
@@ -58,11 +72,19 @@ class JavascriptPlayerProxy : public QObject {
     void trackNumberChanged(const QString& newTrackNumber);
     void trackTotalChanged(const QString& newTrackTotal);
     void keyChanged(const QString& newKey);
+#ifdef __STEM__
+    void stemLabelsChanged(const QStringList& newStemLabels);
+    void stemColorsChanged(const QStringList& newStemColors);
+#endif
 
   private slots:
     // Track::keyChanged has no arguments,
     // so we bridge them with dedicated slots that re-read the value.
     void slotKeyChanged();
+#ifdef __STEM__
+    // Track::stemsUpdated has no arguments either.
+    void slotStemsChanged();
+#endif
 
   protected:
     void disconnectTrack();

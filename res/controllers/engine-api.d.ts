@@ -59,6 +59,18 @@ declare interface Player {
     readonly trackTotal: string;
     /** Tracks key, formatted in the user configured key notation */
     readonly key: string;
+    /**
+     * Labels of the loaded track's stems in stem order, as written by the
+     * creator of the STEM file (e.g. ["Drums", "Bass", "Synths", "Vox"]).
+     * Empty if no track is loaded, the track has no stems, or Mixxx was
+     * built without STEM support.
+     */
+    readonly stemLabels: string[];
+    /**
+     * Colors of the loaded track's stems in stem order, as "#rrggbb" strings.
+     * Same length as {@link stemLabels}.
+     */
+    readonly stemColors: string[];
 
     /** Emitted when the track is unloaded from the player. */
     trackUnloaded: QtSlot<() => void>;
@@ -119,6 +131,16 @@ declare interface Player {
      * or when the key notation configuration is changed.
      */
     keyChanged: QtSlot<(newKey: string) => void>;
+    /**
+     * Emitted with the new stem labels when a new track is loaded to the
+     * player or when the current track's stem information is (re)imported.
+     */
+    stemLabelsChanged: QtSlot<(newStemLabels: string[]) => void>;
+    /**
+     * Emitted with the new stem colors when a new track is loaded to the
+     * player or when the current track's stem information is (re)imported.
+     */
+    stemColorsChanged: QtSlot<(newStemColors: string[]) => void>;
 }
 
 /** ControllerScriptInterfaceLegacy */

@@ -1,5 +1,7 @@
 #include "javascriptplayerproxy.h"
 
+#include <QColor>
+
 #include "library/library_prefs.h"
 #include "moc_javascriptplayerproxy.cpp"
 #include "track/track.h"
@@ -80,6 +82,12 @@ void JavascriptPlayerProxy::slotTrackLoaded(TrackPointer pTrack) {
             &Track::keyChanged,
             this,
             &JavascriptPlayerProxy::slotKeyChanged);
+#ifdef __STEM__
+    connect(pTrack.get(),
+            &Track::stemsUpdated,
+            this,
+            &JavascriptPlayerProxy::slotStemsChanged);
+#endif
 
     // Re-emit keyChanged when the user changes the notation setting,
     // so JS listeners stay in sync even without a track reload.
@@ -98,6 +106,9 @@ void JavascriptPlayerProxy::slotTrackLoaded(TrackPointer pTrack) {
     emit trackNumberChanged(m_pCurrentTrack->getTrackNumber());
     emit trackTotalChanged(m_pCurrentTrack->getTrackTotal());
     emit keyChanged(getKeyText());
+#ifdef __STEM__
+    slotStemsChanged();
+#endif
 }
 
 void JavascriptPlayerProxy::slotLoadingTrack(TrackPointer pNewTrack, TrackPointer pOldTrack) {
@@ -126,6 +137,39 @@ void JavascriptPlayerProxy::slotKeyChanged() {
         emit keyChanged(getKeyText());
     }
 }
+
+#ifdef __STEM__
+void JavascriptPlayerProxy::slotStemsChanged() {
+    if (m_pCurrentTrack != nullptr) {
+        emit stemLabelsChanged(getStemLabels());
+        emit stemColorsChanged(getStemColors());
+    }
+}
+
+QStringList JavascriptPlayerProxy::getStemLabels() const {
+    const TrackPointer pTrack = m_pCurrentTrack;
+    if (pTrack == nullptr) {
+        return QStringList();
+    }
+    QStringList labels;
+    for (const StemInfo& stemInfo : pTrack->getStemInfo()) {
+        labels.append(stemInfo.getLabel());
+    }
+    return labels;
+}
+
+QStringList JavascriptPlayerProxy::getStemColors() const {
+    const TrackPointer pTrack = m_pCurrentTrack;
+    if (pTrack == nullptr) {
+        return QStringList();
+    }
+    QStringList colors;
+    for (const StemInfo& stemInfo : pTrack->getStemInfo()) {
+        colors.append(stemInfo.getColor().name(QColor::HexRgb));
+    }
+    return colors;
+}
+#endif
 
 QString JavascriptPlayerProxy::getKeyText() const {
     if (m_pCurrentTrack == nullptr) {
