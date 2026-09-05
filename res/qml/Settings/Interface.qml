@@ -54,6 +54,7 @@ Category {
         // layoutInput.value =
         tooltipsInput.selected = tooltipsInput.options[Mixxx.Config.libraryTooltips];
         browseIconsInput.selected = Mixxx.Config.libraryShowFeatureIcons ? "on" : "off";
+        stemLabelsInput.selected = stemLabelsInput.options[Mixxx.Config.waveformStemLabels];
         disableScreensaverInput.selected = disableScreensaverInput.options[Mixxx.Config.libraryInhibitScreensaver];
         startFullscreenInput.selected = Mixxx.Config.configStartInFullscreenKey ? "on" : "off";
         autoHideMenuBarInput.selected = Mixxx.Config.libraryHideMenuBar ? "on" : "off";
@@ -122,6 +123,7 @@ Category {
         // layoutInput.value =
         Mixxx.Config.libraryTooltips = tooltipsInput.options.indexOf(tooltipsInput.selected);
         Mixxx.Config.libraryShowFeatureIcons = browseIconsInput.selected === "on";
+        Mixxx.Config.waveformStemLabels = stemLabelsInput.options.indexOf(stemLabelsInput.selected);
         Mixxx.Config.libraryInhibitScreensaver = disableScreensaverInput.options.indexOf(disableScreensaverInput.selected);
         Mixxx.Config.configStartInFullscreenKey = startFullscreenInput.selected === "on";
         Mixxx.Config.libraryHideMenuBar = autoHideMenuBarInput.selected === "on";
@@ -311,6 +313,27 @@ Category {
                                 readonly property bool enabled: selected == "on"
 
                                 options: ["on", "off"]
+
+                                onSelectedChanged: themeColorTab.dirty = true
+                            }
+                        }
+                        RowLayout {
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                label: "Stem lane labels"
+
+                                Text {
+                                    color: Theme.white
+                                    font.pixelSize: 14
+                                    text: parent.label
+                                }
+                            }
+                            RatioChoice {
+                                id: stemLabelsInput
+
+                                // Index maps to [Waveform]/StemLabels: 0 off, 1 main,
+                                // 2 Edge, 3 both. Order matters -- do not reorder.
+                                options: ["off", "main", "edge", "both"]
 
                                 onSelectedChanged: themeColorTab.dirty = true
                             }

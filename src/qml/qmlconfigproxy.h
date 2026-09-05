@@ -54,6 +54,9 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     Q_PROPERTY(bool waveformShowStemStrips READ waveformShowStemStrips WRITE
                     set_waveformShowStemStrips NOTIFY
                             waveformShowStemStripsChanged);
+    // 0 off, 1 main window, 2 Edge surface, 3 both
+    Q_PROPERTY(int waveformStemLabels READ waveformStemLabels WRITE
+                    set_waveformStemLabels NOTIFY waveformStemLabelsChanged);
     // 1..10
     Q_PROPERTY(double waveformDefaultZoom READ waveformDefaultZoom WRITE
                     set_waveformDefaultZoom NOTIFY waveformDefaultZoomChanged);
@@ -331,6 +334,7 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     PROPERTY_DECL_ACCESSOR(bool, waveformZoomSynchronization);
     PROPERTY_DECL_ACCESSOR(bool, waveformOverviewNormalized);
     PROPERTY_DECL_ACCESSOR(bool, waveformShowStemStrips);
+    PROPERTY_DECL_ACCESSOR(int, waveformStemLabels);
     // 1..10
     PROPERTY_DECL_ACCESSOR(double, waveformDefaultZoom);
     // [0..1]
@@ -447,6 +451,7 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     void waveformZoomSynchronizationChanged();
     void waveformOverviewNormalizedChanged();
     void waveformShowStemStripsChanged();
+    void waveformStemLabelsChanged();
     void waveformDefaultZoomChanged();
     void waveformPlayMarkerPositionChanged();
     void waveformUntilMarkShowBeatsChanged();

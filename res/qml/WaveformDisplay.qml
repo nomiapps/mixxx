@@ -21,7 +21,8 @@ Item {
     readonly property var player: Mixxx.PlayerManager.getPlayer(root.group)
     readonly property bool hasStems: stemCountControl.value > 0
     readonly property var stemsModel: root.hasStems && root.player && root.player.currentTrack ? root.player.currentTrack.stemsModel : []
-    readonly property bool laneLabelsVisible: root.splitStemTracks && root.hasStems
+    // [Waveform]/StemLabels: bit 0 is the main window, bit 1 is the Edge surface.
+    readonly property bool laneLabelsVisible: root.splitStemTracks && root.hasStems && (Mixxx.Config.waveformStemLabels & 1)
     readonly property real laneHeight: root.height / Math.max(1, root.stemsModel.length)
     readonly property string zoomGroup: Mixxx.Config.waveformZoomSynchronization ? "[Channel1]" : group
 
