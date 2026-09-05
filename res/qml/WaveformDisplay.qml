@@ -16,8 +16,21 @@ Item {
     required property string group
     property color beatColor: "#a1a1a1a1"
     property bool splitStemTracks: false
+    // Stem lanes are unlabelled while split, so which band is which is guesswork. Same
+    // treatment as the Edge surface: a name per lane, level with the lane it belongs to.
+    readonly property var player: Mixxx.PlayerManager.getPlayer(root.group)
+    readonly property bool hasStems: stemCountControl.value > 0
+    readonly property var stemsModel: root.hasStems && root.player && root.player.currentTrack ? root.player.currentTrack.stemsModel : []
+    readonly property bool laneLabelsVisible: root.splitStemTracks && root.hasStems
+    readonly property real laneHeight: root.height / Math.max(1, root.stemsModel.length)
     readonly property string zoomGroup: Mixxx.Config.waveformZoomSynchronization ? "[Channel1]" : group
 
+    Mixxx.ControlProxy {
+        id: stemCountControl
+
+        group: root.group
+        key: "stem_count"
+    }
     EdgeControls.WaveformDisplay {
         anchors.fill: parent
         backgroundColor: "transparent"
@@ -253,6 +266,56 @@ Item {
                 zoomControl.value -= 1;
             } else if (mouse.angleDelta.y > 0 && zoomControl.value < 10.0) {
                 zoomControl.value += 1;
+            }
+        }
+    }
+
+    // Drawn over the waveform rather than in a gutter: the main window has no spare
+    // horizontal room, and the Edge lays these out per-layout with an explicit gutter.
+    Repeater {
+        model: root.laneLabelsVisible ? root.stemsModel : []
+
+        Item {
+            id: lane
+
+            required property color color
+            required property int index
+            required property string label
+
+            height: root.laneHeight
+            width: 92
+            x: 4
+            y: lane.index * root.laneHeight
+
+            Rectangle {
+                id: swatch
+
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                color: lane.color
+                height: Math.min(14, root.laneHeight - 4)
+                radius: 1
+                width: 3
+            }
+            Text {
+                anchors.left: swatch.right
+                anchors.leftMargin: 5
+                anchors.verticalCenter: parent.verticalCenter
+                color: Theme.pureWhite
+                elide: Text.ElideRight
+                font.bold: true
+                // StemStrip renders these same names uppercase; match it.
+                font.capitalization: Font.AllUppercase
+                font.family: Theme.fontFamily
+                font.pixelSize: 10
+                opacity: 0.85
+                style: Text.Outline
+                // The waveform behind these is busy and light in places, so the name
+                // needs its own contrast rather than relying on opacity alone.
+                styleColor: "#000000"
+                text: lane.label
+                visible: root.laneHeight >= 16
+                width: parent.width - swatch.width - 5
             }
         }
     }
