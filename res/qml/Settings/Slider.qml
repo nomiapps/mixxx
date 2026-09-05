@@ -152,7 +152,7 @@ Item {
                 id: handle
 
                 anchors.fill: parent
-                color: Theme.accentColor
+                color: Theme.blue
                 radius: 7
             }
             InnerShadow {

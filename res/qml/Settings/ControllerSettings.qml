@@ -187,7 +187,7 @@ ColumnLayout {
                         id: content
 
                         anchors.fill: parent
-                        color: Theme.accentColor
+                        color: Theme.blue
 
                         Text {
                             id: textLabel

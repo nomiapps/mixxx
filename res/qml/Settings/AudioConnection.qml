@@ -62,7 +62,7 @@ Item {
             when: root.sink === undefined
 
             PropertyChanges {
-                line.strokeColor: Theme.accentColor
+                line.strokeColor: Theme.blue
             }
             PropertyChanges {
                 root.z: 50
@@ -73,7 +73,7 @@ Item {
             when: root.sink != undefined && !root.existing
 
             PropertyChanges {
-                line.strokeColor: Theme.accentColor
+                line.strokeColor: Theme.blue
             }
         }
     ]

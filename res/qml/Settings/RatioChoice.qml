@@ -68,7 +68,7 @@ Item {
                         id: contentOption
 
                         anchors.fill: parent
-                        color: root.selected == modelData ? Theme.accentColor : 'transparent'
+                        color: root.selected == modelData ? Theme.blue : 'transparent'
                         radius: height / 2
 
                         Text {
@@ -104,7 +104,7 @@ Item {
                         id: bottomOptionInnerEffect
 
                         anchors.fill: parent
-                        color: "#0E2A54"
+                        color: Qt.rgba(0.004, 0.863, 0.988, 0.35)
                         horizontalOffset: -1
                         radius: 8
                         samples: 32
@@ -117,7 +117,7 @@ Item {
                         id: topOptionInnerEffect
 
                         anchors.fill: parent
-                        color: "#0E2A54"
+                        color: Qt.rgba(0.004, 0.863, 0.988, 0.35)
                         horizontalOffset: 1
                         radius: 8
                         samples: 32
@@ -166,7 +166,7 @@ Item {
                 id: content
 
                 anchors.fill: parent
-                color: Theme.accentColor
+                color: Theme.blue
                 radius: height / 2
 
                 Text {
@@ -184,7 +184,7 @@ Item {
                 id: bottomInnerEffect
 
                 anchors.fill: parent
-                color: "#0E2A54"
+                color: Qt.rgba(0.004, 0.863, 0.988, 0.35)
                 horizontalOffset: -1
                 radius: 8
                 samples: 32
@@ -196,7 +196,7 @@ Item {
                 id: topInnerEffect
 
                 anchors.fill: parent
-                color: "#0E2A54"
+                color: Qt.rgba(0.004, 0.863, 0.988, 0.35)
                 horizontalOffset: 1
                 radius: 8
                 samples: 32

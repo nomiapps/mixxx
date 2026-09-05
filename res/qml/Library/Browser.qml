@@ -159,6 +159,8 @@ Rectangle {
                                     model: !!icon ? 1 : 0
 
                                     Image {
+                                        id: featureIcon
+
                                         // Trailing icon: parked at the right edge of the
                                         // column so every label starts at the same x and the
                                         // tree reads as a list. Leading icons pushed each
@@ -175,16 +177,24 @@ Rectangle {
                                         sourceSize.height: 32
                                         sourceSize.width: 32
                                         smooth: true
-                                        // Chrome treatment: secondary elements sit back at
-                                        // ~0.7 and come forward when active, as in the deck
-                                        // and mixer restyle.
-                                        opacity: current ? 1 : (rowMouseArea.containsMouse ? 0.9 : 0.55)
                                         // The model supplies LibraryFeature::iconName() -- a
                                         // bare name like "tracks", not a URL. Binding it
                                         // straight to source resolved it against
                                         // res/qml/Library/, so every feature icon failed with
                                         // "Cannot open .../res/qml/Library/tracks".
                                         source: icon ? Qt.resolvedUrl("../../images/library/ic_library_" + icon + ".svg") : ""
+                                        visible: false
+                                    }
+                                    ColorOverlay {
+                                        anchors.fill: featureIcon
+                                        antialiasing: true
+                                        // Chrome treatment: tint to the NomiApps colourway
+                                        // and sit back at ~0.55, coming forward on hover
+                                        // and fully on the selected row, as in the deck
+                                        // and mixer restyle.
+                                        color: current ? Theme.white : Theme.deckTextColor
+                                        opacity: current ? 1 : (rowMouseArea.containsMouse ? 0.9 : 0.55)
+                                        source: featureIcon
                                         visible: depth == 0 && icon && Mixxx.Config.libraryShowFeatureIcons
                                     }
                                 }

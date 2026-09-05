@@ -8,7 +8,7 @@ AbstractButton {
     id: root
 
     property color activeColor: Theme.deckActiveColor
-    property color backgroundColor: "#3F3F3F"
+    property color backgroundColor: Theme.darkGray3
     property bool highlight: false
     property color normalColor: Theme.white
     property color pressedColor: activeColor
@@ -118,7 +118,7 @@ AbstractButton {
             when: root.pressed
 
             PropertyChanges {
-                backgroundImage.color: root.checked ? "#3a60be" : root.backgroundColor
+                backgroundImage.color: root.checked ? Theme.blue : root.backgroundColor
             }
             PropertyChanges {
                 label.color: root.pressedColor
@@ -138,7 +138,7 @@ AbstractButton {
             when: (root.highlight || root.checked) && !root.pressed
 
             PropertyChanges {
-                backgroundImage.color: "#2D4EA1"
+                backgroundImage.color: Qt.rgba(0.004, 0.863, 0.988, 0.28)
             }
             PropertyChanges {
                 label.color: root.activeColor

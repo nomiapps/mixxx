@@ -225,7 +225,7 @@ Item {
                                     when: edge.connection && !edge.connection.existing
 
                                     PropertyChanges {
-                                        edge.color: Theme.accentColor
+                                        edge.color: Theme.blue
                                         edge.width: 15
                                     }
                                 },
@@ -234,7 +234,7 @@ Item {
                                     when: edge.connecting
 
                                     PropertyChanges {
-                                        edge.color: Theme.accentColor
+                                        edge.color: Theme.blue
                                         edge.width: 15
                                     }
                                 }

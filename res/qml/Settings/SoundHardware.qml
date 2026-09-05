@@ -660,7 +660,7 @@ Category {
                 }
                 Skin.FormButton {
                     activeColor: "#999999"
-                    backgroundColor: root.hasChanges ? "#3a60be" : Theme.darkGray3
+                    backgroundColor: root.hasChanges ? Theme.blue : Theme.darkGray3
                     enabled: root.hasChanges && !root.committing
                     opacity: enabled ? 1.0 : 0.5
                     text: "Save"
