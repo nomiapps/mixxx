@@ -219,6 +219,10 @@ class QmlLibraryProxy : public QObject {
   signals:
     void libraryScanActiveChanged();
     void smartCratesChanged();
+    // Emitted when tracks are added, changed or removed, so a saved query can be
+    // re-run: a smart crate holds a query, not a track list, and a track edited into
+    // or out of that query belongs in or out of the crate immediately.
+    void libraryTracksChanged();
     void libraryScanSummaryAvailable(
             const QString& title,
             const QString& text,

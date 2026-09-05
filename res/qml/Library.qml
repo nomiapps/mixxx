@@ -62,12 +62,29 @@ Item {
     Connections {
         function onLibraryScanActiveChanged() {
             if (!Mixxx.Library.libraryScanActive) {
-                searchDebounce.stop();
-                root.applySearch();
+                refreshDebounce.restart();
             }
         }
 
+        // A track edited into or out of the query belongs in or out of the crate at
+        // once. Debounced because analysis emits this per track and re-running the
+        // query on every one would thrash the model during a scan.
+        function onLibraryTracksChanged() {
+            refreshDebounce.restart();
+        }
+
         target: Mixxx.Library
+    }
+
+    Timer {
+        id: refreshDebounce
+
+        interval: 400
+
+        onTriggered: {
+            searchDebounce.stop();
+            root.applySearch();
+        }
     }
 
     LibraryComponent.SourceTree {

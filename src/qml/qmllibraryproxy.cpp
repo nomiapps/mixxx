@@ -193,6 +193,21 @@ QmlLibraryProxy::QmlLibraryProxy(QObject* parent)
                 deliverPendingLibraryScanSummary();
             });
     deliverPendingLibraryScanSummary();
+    TrackCollection* pCollection = pTrackCollectionManager->internalCollection();
+    if (pCollection) {
+        connect(pCollection,
+                &TrackCollection::tracksChanged,
+                this,
+                &QmlLibraryProxy::libraryTracksChanged);
+        connect(pCollection,
+                &TrackCollection::tracksAdded,
+                this,
+                &QmlLibraryProxy::libraryTracksChanged);
+        connect(pCollection,
+                &TrackCollection::tracksRemoved,
+                this,
+                &QmlLibraryProxy::libraryTracksChanged);
+    }
     loadSmartCrates();
 #ifdef __ENGINEPRIME__
     m_pLibraryExporter = s_pLibrary->makeLibraryExporter(nullptr);
