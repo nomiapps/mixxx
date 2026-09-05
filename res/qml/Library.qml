@@ -15,9 +15,17 @@ Item {
 
     property var sidebar: librarySources.sidebar()
 
+    // A smart crate is a saved query that acts as its own SCOPE, independent of the
+    // search box. It used to be applied BY writing into the search field, which meant
+    // opening a crate silently left the library filtered with no sign of it, and typing
+    // a search threw the crate away.
+    property string smartCrateQuery: ""
+
     function applySearch() {
         if (root.sidebar && root.sidebar.tracklist) {
-            root.sidebar.tracklist.search(searchField.text);
+            // Both terms are ANDed, so the search box filters WITHIN the crate.
+            const parts = [root.smartCrateQuery, searchField.text].filter(p => p.trim().length > 0);
+            root.sidebar.tracklist.search(parts.join(" "));
         }
     }
     function focusSearch() {
@@ -33,17 +41,16 @@ Item {
         }
         analyzeToast.show(root.sidebar.tracklist.analyzeAll());
     }
-    // Smart crates are searches over the whole collection: show the first
-    // source (all tracks) and then apply the saved query.
+    // Smart crates are searches over the whole collection: show the first source (all
+    // tracks), then scope to the saved query. Selecting the active crate again clears
+    // the scope, so there is always a way back to the full library.
     function applySavedSearch(query) {
         if (root.sidebar) {
             root.sidebar.activate(root.sidebar.index(0, 0));
         }
-        if (searchField.text === query) {
-            root.applySearch();
-        } else {
-            searchField.text = query;
-        }
+        root.smartCrateQuery = (root.smartCrateQuery === query) ? "" : query;
+        searchDebounce.stop();
+        root.applySearch();
     }
 
     LibraryComponent.SourceTree {
@@ -240,9 +247,19 @@ Item {
             LibraryComponent.SmartCrates {
                 SplitView.minimumHeight: 60
                 SplitView.preferredHeight: 130
+                activeQuery: root.smartCrateQuery
                 searchText: searchField.text
 
                 onActivated: query => root.applySavedSearch(query)
+                // Saving turns the search INTO the crate: empty the box and scope to the
+                // new crate, so the view does not change but is now a crate rather than a
+                // search nobody can see.
+                onSaved: query => {
+                    searchDebounce.stop();
+                    searchField.text = "";
+                    root.smartCrateQuery = query;
+                    root.applySearch();
+                }
             }
             Skin.PreviewDeck {
                 SplitView.maximumHeight: 200

@@ -14,6 +14,10 @@ Rectangle {
 
     // The library search field's current text.
     required property string searchText
+    // The query currently scoping the library, so the active crate can show as active.
+    property string activeQuery: ""
+
+    signal saved(string query)
 
     signal activated(string query)
 
@@ -56,6 +60,10 @@ Rectangle {
                     onClicked: {
                         const query = root.searchText.trim();
                         Mixxx.Library.addSmartCrate(query, query);
+                        // Hand it up so the search box can be cleared and the new crate
+                        // become the scope: otherwise you are left both searching and
+                        // scoped by the same text, which reads as a filtered library.
+                        root.saved(query);
                     }
                 }
             }
@@ -98,7 +106,9 @@ Rectangle {
                     required property int index
                     required property var modelData
 
-                    color: rowMouseArea.containsMouse ? Theme.knobBackgroundColor : 'transparent'
+                    readonly property bool active: root.activeQuery.length > 0 && root.activeQuery === row.modelData.query
+
+                    color: row.active ? Qt.rgba(0.004, 0.863, 0.988, 0.16) : (rowMouseArea.containsMouse ? Theme.knobBackgroundColor : 'transparent')
                     implicitHeight: 24
                     radius: 3
                     width: smartCrateView.width
@@ -117,8 +127,9 @@ Rectangle {
                         anchors.right: removeButton.left
                         anchors.rightMargin: 5
                         anchors.verticalCenter: parent.verticalCenter
-                        color: Theme.textColor
+                        color: row.active ? Theme.white : Theme.textColor
                         elide: Text.ElideRight
+                        font.bold: row.active
                         font.pixelSize: 12
                         text: "⚙  " + row.modelData.name
                     }
