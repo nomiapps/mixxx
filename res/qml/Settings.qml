@@ -28,6 +28,10 @@ Popup {
     // policy, so the only way out was Escape -- and nothing on screen said so. When it
     // fills the window there is no "outside" left to click either.
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    // CloseOnEscape only fires while the popup holds ACTIVE FOCUS, so the policy alone
+    // did nothing: Escape closed nested dialogs, which take focus themselves, but never
+    // this window.
+    focus: true
 
     background: Rectangle {
         anchors.fill: parent
