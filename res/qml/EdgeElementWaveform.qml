@@ -14,7 +14,9 @@ Item {
     readonly property real laneHeight: wave.height / root.laneCount
     // The names only line up with anything when the stems are in their own
     // lanes, so an unsplit waveform gets no gutter and no labels.
-    readonly property bool labelsVisible: root.spec.stemLabels === true && root.splitStems && root.hasStems
+    // [Waveform]/StemLabels bit 1 is the Edge surface (main window is bit 0). The layout
+    // still opts in per surface; this is the global veto over it.
+    readonly property bool labelsVisible: root.spec.stemLabels === true && root.splitStems && root.hasStems && (Mixxx.Config.waveformStemLabels & 2)
     readonly property real labelGutter: root.spec.stemLabelGutter ?? 64
     readonly property var player: root.groupResolved ? Mixxx.PlayerManager.getPlayer(root.groupResolved) : null
     readonly property bool splitStems: root.spec.splitStems === true
