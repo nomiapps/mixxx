@@ -4,9 +4,9 @@ import QtQuick 2.12
 Item {
     id: root
 
+    readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "") : (spec.group ?? "")
     required property var spec
     property var surface: null
-    readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "") : (spec.group ?? "")
 
     Skin.VuMeter {
         anchors.fill: parent

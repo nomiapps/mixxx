@@ -12,12 +12,6 @@ import "Theme"
 Item {
     id: root
 
-    required property var spec
-    property var surface: null
-
-    readonly property bool pairMode: !!spec.slots
-    readonly property var slotNames: pairMode ? Object.keys(spec.slots) : [spec.slot]
-    readonly property var firstOptions: pairMode ? spec.slots[slotNames[0]] : (spec.options ?? ["[Channel1]", "[Channel3]"])
     readonly property int currentIndex: {
         if (!surface)
             return 0;
@@ -26,12 +20,7 @@ Item {
         const i = firstOptions.indexOf(current);
         return i < 0 ? 0 : i;
     }
-
-    function deckNumber(group) {
-        const m = /\[Channel(\d+)\]/.exec(group);
-        return m ? m[1] : "?";
-    }
-
+    readonly property var firstOptions: pairMode ? spec.slots[slotNames[0]] : (spec.options ?? ["[Channel1]", "[Channel3]"])
     readonly property string labelText: {
         if (!pairMode)
             return "DECK " + deckNumber(surface ? (surface.deckAssign[spec.slot] ?? firstOptions[0]) : firstOptions[0]);
@@ -42,15 +31,25 @@ Item {
         });
         return "DECKS " + nums.join("/");
     }
+    readonly property bool pairMode: !!spec.slots
+    readonly property var slotNames: pairMode ? Object.keys(spec.slots) : [spec.slot]
+    required property var spec
+    property var surface: null
+
+    function deckNumber(group) {
+        const m = /\[Channel(\d+)\]/.exec(group);
+        return m ? m[1] : "?";
+    }
 
     Skin.Button {
-        anchors.fill: parent
-        text: root.labelText
         activeColor: Theme.deckActiveColor
+        anchors.fill: parent
         highlight: root.currentIndex > 0
+        text: root.labelText
+
         onClicked: {
             if (!root.surface)
-                return ;
+                return;
 
             const next = (root.currentIndex + 1) % root.firstOptions.length;
             for (const slot of root.slotNames) {

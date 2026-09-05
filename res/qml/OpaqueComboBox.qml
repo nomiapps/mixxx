@@ -34,19 +34,6 @@ ComboBox {
         text: root.displayText
         verticalAlignment: Text.AlignVCenter
     }
-    indicator: Item {
-        anchors.right: parent.right
-        height: parent.height
-        width: root.showIndicator ? 12 : 0
-
-        Text {
-            anchors.centerIn: parent
-            color: Theme.deckTextColor
-            font.pixelSize: 8
-            text: "▾"
-            visible: root.showIndicator
-        }
-    }
     delegate: ItemDelegate {
         id: itemDlgt
 
@@ -64,6 +51,19 @@ ComboBox {
             font.pixelSize: Math.max(root.font.pixelSize, 11)
             text: root.textAt(itemDlgt.index)
             verticalAlignment: Text.AlignVCenter
+        }
+    }
+    indicator: Item {
+        anchors.right: parent.right
+        height: parent.height
+        width: root.showIndicator ? 12 : 0
+
+        Text {
+            anchors.centerIn: parent
+            color: Theme.deckTextColor
+            font.pixelSize: 8
+            text: "▾"
+            visible: root.showIndicator
         }
     }
     popup: Popup {

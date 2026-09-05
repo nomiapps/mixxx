@@ -8,12 +8,13 @@ import QtQuick 2.12
 Skin.Button {
     id: root
 
-    required property string padGroup
-    required property string padKey
     property string activeGroup: padGroup
     property string activeKey: padKey
+    required property string padGroup
+    required property string padKey
 
     highlight: activeControl.value != 0
+
     onPressed: control.value = 1
     onReleased: control.value = 0
 
@@ -23,7 +24,6 @@ Skin.Button {
         group: root.padGroup
         key: root.padKey
     }
-
     Mixxx.ControlProxy {
         id: activeControl
 

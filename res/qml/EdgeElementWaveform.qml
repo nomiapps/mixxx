@@ -5,50 +5,48 @@ import "Theme"
 Item {
     id: root
 
+    readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "") : (spec.group ?? "")
     required property var spec
     property var surface: null
-    readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "") : (spec.group ?? "")
 
     Skin.WaveformDisplay {
         anchors.fill: parent
+        beatColor: root.spec.beatColor ?? "#a1a1a1a1"
         group: root.groupResolved
         splitStemTracks: root.spec.splitStems === true
-        beatColor: root.spec.beatColor ?? "#a1a1a1a1"
     }
 
     // Inner shadow frame: seats the waveform behind the surface plane.
     Rectangle {
-        anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
+        anchors.top: parent.top
         height: 6
+
         gradient: Gradient {
             GradientStop {
-                position: 0
                 color: "#99000000"
+                position: 0
             }
-
             GradientStop {
-                position: 1
                 color: "#00000000"
+                position: 1
             }
         }
     }
-
     Rectangle {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        height: 1
         color: Theme.pureWhite
+        height: 1
         opacity: 0.06
     }
-
     Rectangle {
         anchors.fill: parent
-        color: "transparent"
         border.color: "#000000"
         border.width: 1
+        color: "transparent"
         opacity: 0.5
     }
 }

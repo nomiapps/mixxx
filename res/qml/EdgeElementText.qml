@@ -13,63 +13,8 @@ import "Theme"
 Item {
     id: root
 
-    required property var spec
-    property var surface: null
-    readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "") : (spec.group ?? "")
-    readonly property string field: spec.field ?? "title"
-
-    property var player: root.groupResolved ? Mixxx.PlayerManager.getPlayer(root.groupResolved) : null
-
-    Mixxx.ControlProxy {
-        id: bpmControl
-
-        group: root.groupResolved
-        key: "bpm"
-    }
-
-    Mixxx.ControlProxy {
-        id: playPositionControl
-
-        group: root.groupResolved
-        key: "playposition"
-    }
-
-    Mixxx.ControlProxy {
-        id: sampleRateControl
-
-        group: root.groupResolved
-        key: "track_samplerate"
-    }
-
-    Mixxx.ControlProxy {
-        id: samplesControl
-
-        group: root.groupResolved
-        key: "track_samples"
-    }
-
-    readonly property bool loaded: root.player && root.player.isLoaded
-    readonly property real durationSeconds: samplesControl.value / 2 / sampleRateControl.value
-    readonly property real elapsedSeconds: durationSeconds * playPositionControl.value
-
-    function formatTime(seconds) {
-        if (!root.loaded || isNaN(seconds) || !isFinite(seconds))
-            return "--:--";
-        seconds = Math.max(0, seconds);
-        const minutes = Math.floor(seconds / 60);
-        let secs = Math.floor(seconds - minutes * 60);
-        if (secs < 10)
-            secs = "0" + secs;
-        return minutes + ":" + secs;
-    }
-
     readonly property string bpmText: (root.loaded && bpmControl.value > 0) ? bpmControl.value.toFixed(1) : "--"
-    readonly property string keyText: (root.loaded && root.player.currentTrack?.keyText) ? root.player.currentTrack.keyText : "--"
-    readonly property string remainingText: "-" + formatTime(durationSeconds - elapsedSeconds)
-    readonly property string elapsedText: formatTime(elapsedSeconds)
-    readonly property string titleText: root.player?.currentTrack ? (root.player.currentTrack.artist + " - " + root.player.currentTrack.title) : ""
     readonly property string deckInfoText: root.bpmText + " BPM  ·  " + root.keyText + "  ·  " + root.remainingText
-
     readonly property string displayText: {
         switch (root.field) {
         case "bpm":
@@ -88,14 +33,61 @@ Item {
             return root.titleText;
         }
     }
+    readonly property real durationSeconds: samplesControl.value / 2 / sampleRateControl.value
+    readonly property real elapsedSeconds: durationSeconds * playPositionControl.value
+    readonly property string elapsedText: formatTime(elapsedSeconds)
+    readonly property string field: spec.field ?? "title"
+    readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "") : (spec.group ?? "")
+    readonly property string keyText: (root.loaded && root.player.currentTrack?.keyText) ? root.player.currentTrack.keyText : "--"
+    readonly property bool loaded: root.player && root.player.isLoaded
+    property var player: root.groupResolved ? Mixxx.PlayerManager.getPlayer(root.groupResolved) : null
+    readonly property string remainingText: "-" + formatTime(durationSeconds - elapsedSeconds)
+    required property var spec
+    property var surface: null
+    readonly property string titleText: root.player?.currentTrack ? (root.player.currentTrack.artist + " - " + root.player.currentTrack.title) : ""
 
+    function formatTime(seconds) {
+        if (!root.loaded || isNaN(seconds) || !isFinite(seconds))
+            return "--:--";
+        seconds = Math.max(0, seconds);
+        const minutes = Math.floor(seconds / 60);
+        let secs = Math.floor(seconds - minutes * 60);
+        if (secs < 10)
+            secs = "0" + secs;
+        return minutes + ":" + secs;
+    }
+
+    Mixxx.ControlProxy {
+        id: bpmControl
+
+        group: root.groupResolved
+        key: "bpm"
+    }
+    Mixxx.ControlProxy {
+        id: playPositionControl
+
+        group: root.groupResolved
+        key: "playposition"
+    }
+    Mixxx.ControlProxy {
+        id: sampleRateControl
+
+        group: root.groupResolved
+        key: "track_samplerate"
+    }
+    Mixxx.ControlProxy {
+        id: samplesControl
+
+        group: root.groupResolved
+        key: "track_samples"
+    }
     Text {
         anchors.fill: parent
-        text: root.displayText
         color: Theme.deckTextColor
-        font.pixelSize: root.spec.fontSize ?? Math.max(10, root.height * 0.7)
         elide: Text.ElideRight
+        font.pixelSize: root.spec.fontSize ?? Math.max(10, root.height * 0.7)
         horizontalAlignment: Text.AlignHCenter
+        text: root.displayText
         verticalAlignment: Text.AlignVCenter
     }
 }

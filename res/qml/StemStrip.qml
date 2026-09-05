@@ -16,8 +16,6 @@ Item {
     // Whether the host wants the strip shown at all (e.g. hidden when the
     // library is maximized). Combined with the actual stem count.
     property bool active: true
-    required property string group
-    readonly property bool hasStems: stemCountControl.value > 0
     // Minimum width a stem cell needs so its controls never overlap. Cells
     // fill the strip evenly when there's room, but never shrink below this;
     // clip keeps any overflow (very narrow windows) from bleeding out.
@@ -26,49 +24,44 @@ Item {
     // hand-tuned 300, the controls were later restyled, the row came to need
     // 314, and the contents collided.
     readonly property real cellPad: 12
+    readonly property real cellShare: (root.width - 10 - 3 * root.cellSpacing) / 4
     readonly property real cellSpacing: 6
     readonly property real chipSize: 8
-    readonly property real toggleWidth: 22
-    readonly property real fxToggleWidth: 26
-    readonly property real volumeKnobSize: 34
-    readonly property real miniKnobSize: 22
+    readonly property real comboMinWidth: root.tight ? 56 : 80
+    readonly property bool compact: root.cellShare < root.mediumCellWidth
+    // Tier 3 -- drop the preset picker, the one control you set up front rather
+    // than reach for mid-mix. Mute, Solo, volume, FX enable and amount survive.
+    readonly property real compactCellWidth: root.fixedPart - root.cellSpacing + 34
     // Everything except the two elements that flex: label and preset picker.
-    readonly property real fixedPart: root.cellPad * 2 + root.chipSize + root.toggleWidth * 2
-        + root.volumeKnobSize + root.fxToggleWidth + root.miniKnobSize + root.cellSpacing * 7
+    readonly property real fixedPart: root.cellPad * 2 + root.chipSize + root.toggleWidth * 2 + root.volumeKnobSize + root.fxToggleWidth + root.miniKnobSize + root.cellSpacing * 7
 
     // Tier 1 -- roomy.
     readonly property real fullCellWidth: root.fixedPart + 46 + 80
+    readonly property real fxToggleWidth: 26
+    required property string group
+    readonly property bool hasStems: stemCountControl.value > 0
+    readonly property real labelWidth: root.tight ? 34 : 46
     // Tier 2 -- tighter label and picker, but EVERY control still present. This
     // exists because a 1209px window gives each cell ~295px: 31px short of tier
     // 1, which is not a good reason to lose the preset picker entirely.
     readonly property real mediumCellWidth: root.fixedPart + 34 + 56
-    // Tier 3 -- drop the preset picker, the one control you set up front rather
-    // than reach for mid-mix. Mute, Solo, volume, FX enable and amount survive.
-    readonly property real compactCellWidth: root.fixedPart - root.cellSpacing + 34
+    readonly property real minCellWidth: root.minimal ? root.minimalCellWidth : (root.compact ? root.compactCellWidth : (root.tight ? root.mediumCellWidth : root.fullCellWidth))
+    readonly property real miniKnobSize: 22
+    readonly property bool minimal: root.cellShare < root.compactCellWidth
     // Tier 4 -- the performance minimum: name, Mute, Solo, volume. The FX enable
     // and amount go too, and the colour chip with them (the cell border already
     // carries the stem colour). Measured need: a 681px strip gives each cell
     // 164px, where even tier 3 overflowed and the fourth stem was clipped off
     // the right edge. This fits four cells from a 668px strip.
-    readonly property real minimalCellWidth: root.cellPad * 2 + 34
-        + root.toggleWidth * 2 + root.volumeKnobSize + root.cellSpacing * 4
-
-    readonly property real cellShare: (root.width - 10 - 3 * root.cellSpacing) / 4
-    readonly property bool minimal: root.cellShare < root.compactCellWidth
-    readonly property bool compact: root.cellShare < root.mediumCellWidth
-    readonly property bool tight: root.cellShare < root.fullCellWidth
-
-    readonly property real labelWidth: root.tight ? 34 : 46
-    readonly property real comboMinWidth: root.tight ? 56 : 80
-    readonly property real minCellWidth: root.minimal ? root.minimalCellWidth
-        : (root.compact ? root.compactCellWidth
-        : (root.tight ? root.mediumCellWidth : root.fullCellWidth))
-
+    readonly property real minimalCellWidth: root.cellPad * 2 + 34 + root.toggleWidth * 2 + root.volumeKnobSize + root.cellSpacing * 4
     readonly property var player: Mixxx.PlayerManager.getPlayer(root.group)
     // Index of the currently soloed stem, or -1 for none.
     property int soloedStem: -1
     // The stems model lives on the loaded track, so re-resolve it per track.
     readonly property var stemsModel: root.hasStems && root.player.currentTrack ? root.player.currentTrack.stemsModel : []
+    readonly property bool tight: root.cellShare < root.fullCellWidth
+    readonly property real toggleWidth: 22
+    readonly property real volumeKnobSize: 34
 
     function stemGroup(index) {
         return `${root.group.substr(0, root.group.length - 1)}_Stem${index + 1}]`;
@@ -175,8 +168,8 @@ Item {
                         Layout.preferredHeight: root.chipSize
                         Layout.preferredWidth: root.chipSize
                         color: cell.color
-                        visible: !root.minimal
                         radius: 2
+                        visible: !root.minimal
                     }
                     Text {
                         Layout.preferredWidth: root.labelWidth
@@ -213,30 +206,26 @@ Item {
                     // FX: enable + amount + preset
                     StemToggle {
                         Layout.preferredWidth: root.fxToggleWidth
-                        visible: !root.minimal
                         accent: Theme.effectColor
                         glyph: "FX"
                         on: fxEnabledControl.value > 0
+                        visible: !root.minimal
 
                         onToggled: fxEnabledControl.value = !fxEnabledControl.value
                     }
                     Skin.ControlMiniKnob {
                         Layout.preferredHeight: root.miniKnobSize
                         Layout.preferredWidth: root.miniKnobSize
-                        visible: !root.minimal
                         arcStart: Knob.ArcStart.Minimum
                         color: Theme.effectColor
                         group: cell.fxGroup
                         key: "super1"
                         opacity: fxEnabledControl.value ? 1 : 0.5
+                        visible: !root.minimal
                     }
                     Skin.OpaqueComboBox {
                         id: fxPreset
 
-                        // Takes whatever width is left in the cell, within reason.
-                        // Hidden in the compact layout; Layouts exclude invisible
-                        // items, so the row closes up rather than leaving a gap.
-                        visible: !root.compact
                         Layout.fillWidth: true
                         Layout.maximumWidth: 180
                         Layout.minimumWidth: root.comboMinWidth
@@ -249,6 +238,11 @@ Item {
                         opacity: fxEnabledControl.value ? 1 : 0.6
                         popupWidth: 160
                         textRole: "display"
+
+                        // Takes whatever width is left in the cell, within reason.
+                        // Hidden in the compact layout; Layouts exclude invisible
+                        // items, so the row closes up rather than leaving a gap.
+                        visible: !root.compact
 
                         onActivated: index => {
                             fxPresetControl.value = index;

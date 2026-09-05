@@ -8,12 +8,12 @@ Item {
 
     Text {
         anchors.fill: parent
-        text: root.spec.label ?? ""
         color: root.spec.color ?? Theme.deckTextColor
-        font.pixelSize: Math.max(9, root.height * 0.7)
-        font.bold: true
         elide: Text.ElideRight
+        font.bold: true
+        font.pixelSize: Math.max(9, root.height * 0.7)
         horizontalAlignment: Text.AlignHCenter
+        text: root.spec.label ?? ""
         verticalAlignment: Text.AlignVCenter
     }
 }

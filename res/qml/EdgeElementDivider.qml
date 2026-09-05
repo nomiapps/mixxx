@@ -14,10 +14,10 @@ Item {
     // dark groove
     Rectangle {
         anchors.centerIn: parent
-        width: root.vertical ? 3 : parent.width
-        height: root.vertical ? parent.height : 3
         color: "#000000"
+        height: root.vertical ? parent.height : 3
         opacity: 0.55
+        width: root.vertical ? 3 : parent.width
     }
 
     // lit edge beside the groove
@@ -25,9 +25,9 @@ Item {
         anchors.centerIn: parent
         anchors.horizontalCenterOffset: root.vertical ? 2 : 0
         anchors.verticalCenterOffset: root.vertical ? 0 : 2
-        width: root.vertical ? 1 : parent.width
-        height: root.vertical ? parent.height : 1
         color: Theme.pureWhite
+        height: root.vertical ? parent.height : 1
         opacity: 0.08
+        width: root.vertical ? 1 : parent.width
     }
 }

@@ -12,20 +12,16 @@ import "Theme"
 Window {
     id: root
 
-    width: 2560
-    height: 720
-    color: Theme.backgroundColor
-    title: "Mixxx - Edge Surface"
-    flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus
-    opacity: 0
-
+    // Deck slots: layouts may write @left / @right anywhere a group appears
+    // (including inside rack groups like [EqualizerRack1_@left_Effect1]), and
+    // a 'deckswitch' element retargets a slot at runtime - hardware-style
+    // deck select. Reassigning the object notifies every bound element.
+    property var deckAssign: ({
+            "@left": "[Channel1]",
+            "@right": "[Channel2]"
+        })
     property var layoutDef: null
     property bool placementReady: false
-
-    function revealIfReady() {
-        if (root.visible && root.placementReady && root.layoutDef)
-            revealTimer.restart();
-    }
 
     // The strip display this surface is built for: a screen whose physical
     // size is 2560x720 (any scaling), or failing that the widest-aspect
@@ -44,104 +40,6 @@ Window {
         }
         return best;
     }
-
-    // Opening: put the surface ON the Edge, filling it, instead of wherever Qt
-    // cascades a new window (the top of the main monitor). With no Edge
-    // attached, clamp onto whatever screen we landed on so the title bar is
-    // never offscreen. Deferred, because the window manager assigns the real
-    // position after the visibility change.
-    function placeOnScreen() {
-        const edge = edgeScreen();
-        if (edge) {
-            root.screen = edge;
-            root.x = edge.virtualX;
-            root.y = edge.virtualY;
-            root.width = edge.width;
-            root.height = edge.height;
-            root.raise();
-            root.placementReady = true;
-            root.revealIfReady();
-            return ;
-        }
-        const s = root.screen;
-        if (!s) {
-            root.opacity = 1;
-            return ;
-        }
-
-        root.width = Math.min(root.width, s.desktopAvailableWidth);
-        root.height = Math.min(root.height, s.desktopAvailableHeight);
-        root.x = Math.min(Math.max(root.x, s.virtualX),
-                s.virtualX + s.desktopAvailableWidth - root.width);
-        root.y = Math.min(Math.max(root.y, s.virtualY),
-                s.virtualY + s.desktopAvailableHeight - root.height);
-        root.raise();
-        root.placementReady = true;
-        root.revealIfReady();
-    }
-
-    onVisibleChanged: {
-        if (visible) {
-            root.opacity = 0;
-            root.placementReady = false;
-            clampTimer.start();
-        } else {
-            root.opacity = 0;
-        }
-    }
-
-    Timer {
-        id: clampTimer
-
-        interval: 250
-        onTriggered: root.placeOnScreen()
-    }
-
-    Timer {
-        id: revealTimer
-
-        interval: 0
-        onTriggered: {
-            root.raise();
-            root.opacity = 1;
-        }
-    }
-
-    Connections {
-        target: root.transientParent
-        ignoreUnknownSignals: true
-
-        function onActiveChanged() {
-            if (root.visible && root.transientParent && root.transientParent.active)
-                root.raise();
-        }
-    }
-
-    // Deck slots: layouts may write @left / @right anywhere a group appears
-    // (including inside rack groups like [EqualizerRack1_@left_Effect1]), and
-    // a 'deckswitch' element retargets a slot at runtime - hardware-style
-    // deck select. Reassigning the object notifies every bound element.
-    property var deckAssign: ({
-            "@left": "[Channel1]",
-            "@right": "[Channel2]"
-        })
-
-    function resolveGroup(group) {
-        if (!group)
-            return "";
-
-        let resolved = group;
-        for (const slot in deckAssign)
-            resolved = resolved.split(slot).join(deckAssign[slot]);
-        return resolved;
-    }
-
-    function setDeck(slot, group) {
-        const next = Object.assign({}, deckAssign);
-        next[slot] = group;
-        deckAssign = next;
-    }
-
     function elementFile(type) {
         switch (type) {
         case "platter":
@@ -173,12 +71,11 @@ Window {
             return "";
         }
     }
-
     function loadLayout(url) {
         const xhr = new XMLHttpRequest();
         xhr.onreadystatechange = () => {
             if (xhr.readyState !== XMLHttpRequest.DONE)
-                return ;
+                return;
 
             try {
                 root.layoutDef = root.resolveThemeColors(JSON.parse(xhr.responseText));
@@ -189,6 +86,48 @@ Window {
         };
         xhr.open("GET", url);
         xhr.send();
+    }
+
+    // Opening: put the surface ON the Edge, filling it, instead of wherever Qt
+    // cascades a new window (the top of the main monitor). With no Edge
+    // attached, clamp onto whatever screen we landed on so the title bar is
+    // never offscreen. Deferred, because the window manager assigns the real
+    // position after the visibility change.
+    function placeOnScreen() {
+        const edge = edgeScreen();
+        if (edge) {
+            root.screen = edge;
+            root.x = edge.virtualX;
+            root.y = edge.virtualY;
+            root.width = edge.width;
+            root.height = edge.height;
+            root.raise();
+            root.placementReady = true;
+            root.revealIfReady();
+            return;
+        }
+        const s = root.screen;
+        if (!s) {
+            root.opacity = 1;
+            return;
+        }
+
+        root.width = Math.min(root.width, s.desktopAvailableWidth);
+        root.height = Math.min(root.height, s.desktopAvailableHeight);
+        root.x = Math.min(Math.max(root.x, s.virtualX), s.virtualX + s.desktopAvailableWidth - root.width);
+        root.y = Math.min(Math.max(root.y, s.virtualY), s.virtualY + s.desktopAvailableHeight - root.height);
+        root.raise();
+        root.placementReady = true;
+        root.revealIfReady();
+    }
+    function resolveGroup(group) {
+        if (!group)
+            return "";
+
+        let resolved = group;
+        for (const slot in deckAssign)
+            resolved = resolved.split(slot).join(deckAssign[slot]);
+        return resolved;
     }
 
     // An element's "color" may name a Theme property ("amber", "red") instead of
@@ -206,16 +145,28 @@ Window {
         }
         return def;
     }
-
-    ListModel {
-        id: layoutList
+    function revealIfReady() {
+        if (root.visible && root.placementReady && root.layoutDef)
+            revealTimer.restart();
     }
+    function setDeck(slot, group) {
+        const next = Object.assign({}, deckAssign);
+        next[slot] = group;
+        deckAssign = next;
+    }
+
+    color: Theme.backgroundColor
+    flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus
+    height: 720
+    opacity: 0
+    title: "Mixxx - Edge Surface"
+    width: 2560
 
     Component.onCompleted: {
         const xhr = new XMLHttpRequest();
         xhr.onreadystatechange = () => {
             if (xhr.readyState !== XMLHttpRequest.DONE)
-                return ;
+                return;
 
             try {
                 const index = JSON.parse(xhr.responseText);
@@ -236,26 +187,63 @@ Window {
         xhr.open("GET", Qt.resolvedUrl("edge-layouts/index.json"));
         xhr.send();
     }
+    onVisibleChanged: {
+        if (visible) {
+            root.opacity = 0;
+            root.placementReady = false;
+            clampTimer.start();
+        } else {
+            root.opacity = 0;
+        }
+    }
 
+    Timer {
+        id: clampTimer
+
+        interval: 250
+
+        onTriggered: root.placeOnScreen()
+    }
+    Timer {
+        id: revealTimer
+
+        interval: 0
+
+        onTriggered: {
+            root.raise();
+            root.opacity = 1;
+        }
+    }
+    Connections {
+        function onActiveChanged() {
+            if (root.visible && root.transientParent && root.transientParent.active)
+                root.raise();
+        }
+
+        ignoreUnknownSignals: true
+        target: root.transientParent
+    }
+    ListModel {
+        id: layoutList
+    }
     Rectangle {
         id: header
 
-        width: parent.width
-        height: 32
         color: Theme.toolbarBackgroundColor
+        height: 32
+        width: parent.width
 
         Row {
             anchors.verticalCenter: parent.verticalCenter
-            x: 8
             spacing: 10
+            x: 8
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "LAYOUT"
                 color: Theme.deckTextColor
                 font.pixelSize: 12
+                text: "LAYOUT"
             }
-
             OpaqueComboBox {
                 id: layoutPicker
 
@@ -273,25 +261,24 @@ Window {
             }
         }
     }
-
     Item {
         id: canvasArea
 
-        anchors.top: header.bottom
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-
-        readonly property real canvasW: root.layoutDef ? root.layoutDef.canvas[0] : 2560
         readonly property real canvasH: root.layoutDef ? root.layoutDef.canvas[1] : 720
+        readonly property real canvasW: root.layoutDef ? root.layoutDef.canvas[0] : 2560
+        readonly property real dpr: root.screen ? root.screen.devicePixelRatio : 1
         readonly property real ui: Math.min(width / canvasW, height / canvasH)
         readonly property real xOff: (width - canvasW * ui) / 2
         readonly property real yOff: (height - canvasH * ui) / 2
-        readonly property real dpr: root.screen ? root.screen.devicePixelRatio : 1
 
         function pixelAligned(value) {
             return Math.round(value * dpr) / dpr;
         }
+
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: header.bottom
 
         Repeater {
             model: root.layoutDef ? root.layoutDef.elements : []
@@ -299,10 +286,11 @@ Window {
             Loader {
                 required property var modelData
 
+                height: canvasArea.pixelAligned(canvasArea.yOff + (modelData.rect[1] + modelData.rect[3]) * canvasArea.ui) - y
+                width: canvasArea.pixelAligned(canvasArea.xOff + (modelData.rect[0] + modelData.rect[2]) * canvasArea.ui) - x
                 x: canvasArea.pixelAligned(canvasArea.xOff + modelData.rect[0] * canvasArea.ui)
                 y: canvasArea.pixelAligned(canvasArea.yOff + modelData.rect[1] * canvasArea.ui)
-                width: canvasArea.pixelAligned(canvasArea.xOff + (modelData.rect[0] + modelData.rect[2]) * canvasArea.ui) - x
-                height: canvasArea.pixelAligned(canvasArea.yOff + (modelData.rect[1] + modelData.rect[3]) * canvasArea.ui) - y
+
                 Component.onCompleted: {
                     const file = root.elementFile(modelData.type);
                     if (file)

@@ -5,28 +5,27 @@ import "Theme"
 Item {
     id: root
 
+    readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "") : (spec.group ?? "")
     required property var spec
     property var surface: null
-    readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "") : (spec.group ?? "")
 
     Text {
         id: label
 
-        anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
-        text: root.spec.label ?? ""
+        anchors.top: parent.top
         color: Theme.deckTextColor
         font.pixelSize: Math.max(9, root.height * 0.18)
+        text: root.spec.label ?? ""
     }
-
     Skin.ControlKnob {
+        anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: label.bottom
         anchors.topMargin: 2
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: Math.min(root.width, root.height * 0.75)
-        height: width
-        group: root.groupResolved
-        key: root.spec.key
         color: root.spec.color ?? Theme.deckActiveColor
+        group: root.groupResolved
+        height: width
+        key: root.spec.key
+        width: Math.min(root.width, root.height * 0.75)
     }
 }
