@@ -18,6 +18,7 @@ Rectangle {
     property string activeQuery: ""
 
     signal saved(string query)
+    signal cleared
 
     signal activated(string query)
 
@@ -51,6 +52,15 @@ Rectangle {
                     font.pixelSize: 11
                     font.weight: Font.Bold
                     text: qsTr("SMART CRATES")
+                }
+                // Clicking the active crate again also clears it, but nothing said so.
+                // An explicit way out beats a hidden toggle.
+                Skin.FormButton {
+                    implicitHeight: 22
+                    text: qsTr("Show all")
+                    visible: root.activeQuery.length > 0
+
+                    onClicked: root.cleared()
                 }
                 Skin.FormButton {
                     enabled: root.searchText.trim().length > 0

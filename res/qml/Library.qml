@@ -251,13 +251,18 @@ Item {
                 searchText: searchField.text
 
                 onActivated: query => root.applySavedSearch(query)
-                // Saving turns the search INTO the crate: empty the box and scope to the
-                // new crate, so the view does not change but is now a crate rather than a
-                // search nobody can see.
-                onSaved: query => {
+                // Saving files the search away and returns to the full library. Leaving
+                // the new crate selected looked broken: the box emptied but the library
+                // stayed cut down, so it read as a search that had not cleared.
+                onSaved: {
                     searchDebounce.stop();
                     searchField.text = "";
-                    root.smartCrateQuery = query;
+                    root.smartCrateQuery = "";
+                    root.applySearch();
+                }
+                onCleared: {
+                    searchDebounce.stop();
+                    root.smartCrateQuery = "";
                     root.applySearch();
                 }
             }
