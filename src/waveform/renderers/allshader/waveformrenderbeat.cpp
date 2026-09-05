@@ -22,7 +22,12 @@ WaveformRenderBeat::WaveformRenderBeat(WaveformWidgetRenderer* waveformWidget,
         ::WaveformRendererAbstract::PositionSource type)
         : ::WaveformRendererAbstract(waveformWidget),
           m_isSlipRenderer(type == ::WaveformRendererAbstract::Slip),
-          m_pWaveformWidgetFactory(WaveformWidgetFactory::instance()) {
+          // Singleton::instance() itself trips a VERIFY_OR_DEBUG_ASSERT when
+          // the singleton was never created, which is fatal in builds with
+          // MIXXX_DEBUG_ASSERTIONS_FATAL. Ask isCreated() first.
+          m_pWaveformWidgetFactory(WaveformWidgetFactory::isCreated()
+                          ? WaveformWidgetFactory::instance()
+                          : nullptr) {
     initForRectangles<UniColorMaterial>(0);
     setUsePreprocess(true);
 }
@@ -54,8 +59,10 @@ bool WaveformRenderBeat::preprocessInner() {
 
     const bool isStemTrack = trackInfo && trackInfo->hasStem() &&
             trackInfo->getWaveform() && trackInfo->getWaveform()->hasStem();
-    // The factory singleton only exists in the QWidget UI; in the QML UI it
-    // is null and dereferencing it crashed on every stem track load.
+    // WaveformWidgetFactory is only created by the QWidget main window, so
+    // under --qml / --new-ui it is null and dereferencing it crashed on
+    // every stem track load. Plain tracks were unaffected because the
+    // deref sits behind the isStemTrack short-circuit.
     const bool splitStemTracks = isStemTrack && m_pWaveformWidgetFactory &&
             m_pWaveformWidgetFactory->isStemSplitTracks();
 

@@ -34,7 +34,12 @@ WaveformRendererSlipMode::WaveformRendererSlipMode(
         : ::WaveformRendererAbstract(waveformWidget),
           m_slipBorderTopOutlineSize(10.f),
           m_slipBorderBottomOutlineSize(10.f),
-          m_pWaveformWidgetFactory(WaveformWidgetFactory::instance()) {
+          // Singleton::instance() itself trips a VERIFY_OR_DEBUG_ASSERT when
+          // the singleton was never created, which is fatal in builds with
+          // MIXXX_DEBUG_ASSERTIONS_FATAL. Ask isCreated() first.
+          m_pWaveformWidgetFactory(WaveformWidgetFactory::isCreated()
+                          ? WaveformWidgetFactory::instance()
+                          : nullptr) {
     initForRectangles<RGBAMaterial>(0);
     setUsePreprocess(true);
 }
