@@ -8,6 +8,11 @@ import Qt5Compat.GraphicalEffects
 import "Theme"
 import "Settings" as Settings
 
+// The settings window wears the same chrome as the rest of the New UI: the
+// main-window ground, sunken panels behind a 1px Theme.panelBorderColor hairline
+// with a 4px corner, a 28px toolbar-coloured header strip with an 11px bold label
+// and a blue underline, and rows that highlight in Theme.blue at 16%. The
+// reference is Library/Browser.qml; the deck and mixer restyle set the values.
 Popup {
     id: root
 
@@ -22,8 +27,6 @@ Popup {
         root.activeCategory?.activated();
     }
 
-    horizontalPadding: 20
-    verticalPadding: 20
     // Stated rather than inherited: this popup had no close button and no declared
     // policy, so the only way out was Escape -- and nothing on screen said so. When it
     // fills the window there is no "outside" left to click either.
@@ -32,10 +35,14 @@ Popup {
     // did nothing: Escape closed nested dialogs, which take focus themselves, but never
     // this window.
     focus: true
+    horizontalPadding: 20
+    verticalPadding: 20
 
     background: Rectangle {
         anchors.fill: parent
-        color: Theme.darkGray2
+        border.color: Theme.panelBorderColor
+        border.width: 1
+        color: Theme.backgroundColor
         opacity: parent.radius < 0 ? Math.max(0.1, 1 + parent.radius / 8) : 1
         radius: 8
     }
@@ -44,39 +51,48 @@ Popup {
         height: parent.height - 40
         width: parent.width - 40
 
-        Skin.Button {
-            id: closeButton
-
-            activeColor: Theme.white
-            fontPixelSize: 14
-            implicitHeight: 26
-            implicitWidth: 26
-            text: "✕"
-            z: 1
-
-            anchors {
-                right: parent.right
-                top: parent.top
-            }
-
-            onClicked: root.close()
-        }
         RowLayout {
             anchors.fill: parent
-            spacing: 0
+            spacing: 12
 
+            // Category panel: the browse-tree panel from Library/Browser.qml.
             Rectangle {
                 Layout.fillHeight: true
                 Layout.preferredWidth: 280
-                border.color: Theme.darkGray3
-                border.width: 6
-                color: Theme.darkGray
+                border.color: Theme.panelBorderColor
+                border.width: 1
+                color: Theme.sunkenBackgroundColor
+                radius: 4
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 6
-                    spacing: 0
+                    anchors.margins: 1
+                    spacing: 5
 
+                    Rectangle {
+                        Layout.fillWidth: true
+                        color: Theme.toolbarBackgroundColor
+                        implicitHeight: 28
+                        radius: 4
+
+                        Label {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: Theme.deckTextColor
+                            font.bold: true
+                            font.pixelSize: 11
+                            text: qsTr("SETTINGS")
+                        }
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            color: Theme.blue
+                            height: 1
+                            opacity: 0.35
+                        }
+                    }
                     Rectangle {
                         id: searchSetting
 
@@ -84,23 +100,37 @@ Popup {
                         property alias input: searchInput
 
                         Layout.fillWidth: true
-                        color: Theme.midGray
-                        height: 30
+                        Layout.leftMargin: 6
+                        Layout.preferredHeight: 28
+                        Layout.rightMargin: 6
+                        border.color: active ? Theme.accentColor : Theme.panelBorderColor
+                        border.width: 1
+                        color: Theme.backgroundColor
+                        radius: 4
 
                         Text {
                             id: searchInputPlaceholder
 
+                            anchors.left: parent.left
+                            anchors.leftMargin: 8
                             anchors.verticalCenter: parent.verticalCenter
-                            color: Theme.white
-                            text: 'Search...'
+                            color: Theme.midGray
+                            font.pixelSize: 12
+                            text: qsTr("Search...")
                             visible: !parent.active
                         }
                         TextInput {
                             id: searchInput
 
+                            anchors.left: parent.left
+                            anchors.leftMargin: 8
+                            anchors.right: parent.right
+                            anchors.rightMargin: 8
                             anchors.verticalCenter: parent.verticalCenter
+                            clip: true
+                            color: Theme.white
+                            font.pixelSize: 12
                             visible: parent.active
-                            width: parent.width
 
                             onActiveFocusChanged: {
                                 parent.active = activeFocus;
@@ -119,8 +149,11 @@ Popup {
                     ListView {
                         id: categoryList
 
+                        Layout.bottomMargin: 6
                         Layout.fillHeight: true
                         Layout.fillWidth: true
+                        Layout.leftMargin: 6
+                        Layout.rightMargin: 6
                         clip: true
                         currentIndex: 0
                         focus: true
@@ -128,13 +161,20 @@ Popup {
                         visible: !searchSetting.active
 
                         delegate: Rectangle {
+                            id: categoryRow
+
+                            readonly property bool current: ListView.isCurrentItem
                             required property int index
                             required property var label
 
-                            color: ListView.isCurrentItem ? Theme.darkGray3 : Theme.darkGray2
+                            color: current ? Qt.alpha(Theme.blue, 0.16) : (rowHover.hovered ? Qt.alpha(Theme.white, 0.05) : "transparent")
                             height: 38
+                            radius: 4
                             width: ListView.view.width
 
+                            HoverHandler {
+                                id: rowHover
+                            }
                             Image {
                                 id: handleImage
 
@@ -142,22 +182,29 @@ Popup {
                                 anchors.leftMargin: 8
                                 anchors.verticalCenter: parent.verticalCenter
                                 fillMode: Image.PreserveAspectFit
-                                height: 24
+                                height: 20
                                 source: "images/gear.svg"
                                 visible: false
                             }
                             ColorOverlay {
                                 anchors.fill: handleImage
                                 antialiasing: true
-                                color: parent.ListView.isCurrentItem ? Theme.accentColor : Theme.midGray
+                                color: categoryRow.current ? Theme.blue : Theme.textColor
+                                // Sidebar icons sit back at 0.7 and lift on hover, full on the
+                                // current row -- same as the browse tree.
+                                opacity: categoryRow.current ? 1 : (rowHover.hovered ? 0.85 : 0.7)
                                 source: handleImage
                             }
                             Text {
                                 anchors.left: handleImage.right
-                                anchors.leftMargin: 8
+                                anchors.leftMargin: 10
+                                anchors.right: parent.right
+                                anchors.rightMargin: 8
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: Theme.white
-                                font.bold: parent.ListView.isCurrentItem
+                                elide: Text.ElideRight
+                                font.bold: categoryRow.current
+                                font.pixelSize: 12
                                 text: label
                             }
                             TapHandler {
@@ -170,8 +217,11 @@ Popup {
                     ListView {
                         id: settingResultList
 
+                        Layout.bottomMargin: 6
                         Layout.fillHeight: true
                         Layout.fillWidth: true
+                        Layout.leftMargin: 6
+                        Layout.rightMargin: 6
                         clip: true
                         focus: true
                         model: root.manager.model
@@ -183,18 +233,26 @@ Popup {
                             required property var toolTip
                             required property var whatsThis
 
-                            color: Theme.darkGray2
+                            color: resultHover.hovered ? Qt.alpha(Theme.white, 0.05) : "transparent"
                             height: 40
+                            radius: 4
                             width: ListView.view.width
 
+                            HoverHandler {
+                                id: resultHover
+                            }
                             ColumnLayout {
                                 anchors.fill: parent
+                                anchors.leftMargin: 8
                                 anchors.margins: 4
+                                anchors.rightMargin: 8
 
                                 Text {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: implicitHeight
                                     color: Theme.white
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 12
                                     text: searchSetting.input.text ? display.replace(searchSetting.input.text, `<b>${searchSetting.input.text}</b>`) : display
                                     textFormat: Text.RichText
                                 }
@@ -202,6 +260,7 @@ Popup {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: implicitHeight
                                     color: Theme.midGray
+                                    elide: Text.ElideRight
                                     font.pixelSize: 10
                                     text: searchSetting.input.text ? whatsThis.replace(searchSetting.input.text, `<b>${searchSetting.input.text}</b>`) : whatsThis
                                     textFormat: Text.RichText
@@ -219,19 +278,57 @@ Popup {
                     }
                 }
             }
+            // Page pane: header strip naming the active category, then its tabs,
+            // then the page itself on the main-window ground so the pages' own
+            // sunken boxes keep their contrast.
             ColumnLayout {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
+                spacing: 8
 
-                Text {
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.preferredHeight: 36
-                    color: Theme.white
-                    font.pixelSize: 16
-                    font.weight: Font.DemiBold
-                    text: "Settings"
-                }
                 Rectangle {
+                    Layout.fillWidth: true
+                    color: Theme.toolbarBackgroundColor
+                    implicitHeight: 28
+                    radius: 4
+
+                    Label {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 8
+                        anchors.right: closeButton.left
+                        anchors.rightMargin: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: Theme.deckTextColor
+                        elide: Text.ElideRight
+                        font.bold: true
+                        font.capitalization: Font.AllUppercase
+                        font.pixelSize: 11
+                        text: root.activeCategory?.label ?? qsTr("Settings")
+                    }
+                    Skin.Button {
+                        id: closeButton
+
+                        activeColor: Theme.white
+                        anchors.right: parent.right
+                        anchors.rightMargin: 3
+                        anchors.verticalCenter: parent.verticalCenter
+                        fontPixelSize: 12
+                        implicitHeight: 22
+                        implicitWidth: 26
+                        text: "✕"
+
+                        onClicked: root.close()
+                    }
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        color: Theme.blue
+                        height: 1
+                        opacity: 0.35
+                    }
+                }
+                Item {
                     id: tabBar
 
                     readonly property int selectedIndex: root.activeCategory?.selectedIndex ?? 0
@@ -239,7 +336,6 @@ Popup {
 
                     Layout.fillWidth: true
                     Layout.preferredHeight: 30
-                    color: Theme.darkGray3
                     visible: tabs?.length > 0
 
                     RowLayout {
@@ -329,6 +425,5 @@ Popup {
 
     ListModel {
         id: sectionProperties
-
     }
 }
