@@ -1,13 +1,16 @@
 #include "qmlapplication.h"
 
 #include <QCoreApplication>
+#include <QGuiApplication>
 #include <QLocale>
 #include <QMessageBox>
 #include <QQmlEngineExtensionPlugin>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QScreen>
 #include <QSurfaceFormat>
 #include <QTextDocument>
+#include <algorithm>
 #include <utility>
 
 #include "control/controlproxy.h"
@@ -72,11 +75,43 @@ QmlApplication::QmlApplication(
     // XMLHttpRequest, which Qt6 blocks for local files unless this is set.
     qputenv("QML_XHR_ALLOW_FILE_READ", "1");
 
+    // Deliver window update requests one frame period of the slowest screen
+    // after they are made, not 5 ms after (Qt's default on Windows, where the
+    // platform has no vsync-driven requestUpdate). With the threaded render
+    // loop the GUI thread blocks on a window's render thread when it asks it
+    // to sync, and that thread is busy until its screen's vblank; a request
+    // that lands mid-period therefore parks the GUI thread for the rest of
+    // the period. Qt itself makes such a request after every sync while any
+    // animation runs, so with the Edge surface on a 60 Hz panel the GUI
+    // thread spent ~60% of its time parked and both windows stuttered. One
+    // period of delay makes every request land after the previous frame is
+    // out. Cost: the fastest screen renders at the slowest one's rate.
+    if (!qEnvironmentVariableIsSet("QT_QPA_UPDATE_IDLE_TIME")) {
+        double slowestHz = 0.0;
+        const auto screens = QGuiApplication::screens();
+        for (const QScreen* pScreen : screens) {
+            const double hz = pScreen->refreshRate();
+            if (hz > 1.0 && (slowestHz <= 0.0 || hz < slowestHz)) {
+                slowestHz = hz;
+            }
+        }
+        const int idleMs = slowestHz > 1.0
+                ? std::clamp(static_cast<int>(1000.0 / slowestHz), 5, 33)
+                : 16;
+        qputenv("QT_QPA_UPDATE_IDLE_TIME", QByteArray::number(idleMs));
+    }
+
     // 4x MSAA so QtQuick.Shapes strokes (knob value arcs, waveform markers)
     // are antialiased; the Shape "antialiasing" property is a no-op without a
     // multisampled surface. Must be set before any QQuickWindow is created.
     QSurfaceFormat format = QSurfaceFormat::defaultFormat();
     format.setSamples(4);
+    // Keep vsync. Tried swapInterval 0 to stop the GUI thread waiting on the
+    // Edge panel's 60 Hz vblank: the Edge surface is a topmost borderless
+    // window covering its whole screen, Windows scans such a window out
+    // directly, and without vsync it tore on every frame (beat markers
+    // flickered). The GUI-thread wait is avoided on the QML side instead, by
+    // not letting per-callback control updates request frames mid-period.
     QSurfaceFormat::setDefaultFormat(format);
 
     QQuickStyle::setStyle("Basic");

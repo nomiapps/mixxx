@@ -1,23 +1,23 @@
 import Mixxx 1.0 as Mixxx
-import QtQuick 2.12
+import QtQuick
 import QtQuick.Shapes 1.12
 import QtQuick.Window 2.12
 
 Item {
     id: root
 
+    property string color: "white"
     required property string group
     required property string key
-    property string color: "white"
 
     Shape {
         id: shape
 
-        visible: control.value >= 0
         anchors.fill: parent
         antialiasing: true
-        layer.smooth: true
         layer.samples: 2
+        layer.smooth: true
+        visible: control.value >= 0
 
         ShapePath {
             startX: marker.x
@@ -35,15 +35,26 @@ Item {
             }
         }
     }
-
     Mixxx.ControlProxy {
         id: control
 
         group: root.group
         key: root.key
-        onValueChanged: (value) => {
+    }
+
+    // Moved once per frame of this window rather than on every control update:
+    // a render request that lands mid-frame parks the GUI thread until the
+    // window's render thread is free for the rest of that frame period.
+    // Driven by the window's own afterFrameEnd, not FrameAnimation, which the
+    // global animation driver ticks at the fastest window's rate.
+    Connections {
+        function onAfterFrameEnd() {
             // Math.round saves tons of CPU by avoiding redrawing for fractional pixel positions.
-            marker.x = Math.round(root.width * value * Screen.devicePixelRatio) / Screen.devicePixelRatio;
+            const x = Math.round(root.width * control.value * Screen.devicePixelRatio) / Screen.devicePixelRatio;
+            if (x !== marker.x)
+                marker.x = x;
         }
+
+        target: root.Window.window
     }
 }

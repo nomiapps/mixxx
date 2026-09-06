@@ -21,6 +21,16 @@ Item {
     required property string group
     property real lastCoPos: 0
     property double lastCoTime: 0
+
+    // One step per frame of the window the platter is in, driven by that
+    // window's own render loop (afterFrameEnd, delivered queued on the GUI
+    // thread right after the frame ends, while its render thread is idle).
+    // This used to be a FrameAnimation, which ticks from the global animation
+    // driver: every window's frame loop advances that, so the 240 Hz main
+    // window rotated this disc 240 times a second, and each of those writes
+    // asked the 60 Hz Edge window for a frame mid-period, parking the GUI
+    // thread until the Edge's vblank. That was the Edge stutter.
+    property double lastFrameTime: 0
     readonly property real positionSeconds: {
         const s = samplesControl.value / 2 / sampleRateControl.value * playPositionControl.value;
         return isNaN(s) ? 0 : s;
@@ -41,11 +51,11 @@ Item {
         lastCoTime = now;
     }
 
-    FrameAnimation {
-        running: root.visible
-
-        onTriggered: {
+    Connections {
+        function onAfterFrameEnd() {
             const now = Date.now() / 1000;
+            const frameTime = root.lastFrameTime > 0 ? Math.min(0.1, now - root.lastFrameTime) : 0;
+            root.lastFrameTime = now;
             if (now - root.lastCoTime > 0.3) {
                 // no updates: paused/stopped - stop the disc
                 root.velocitySeconds = 0;
@@ -55,6 +65,8 @@ Item {
             const predicted = root.lastCoPos + root.velocitySeconds * (now - root.lastCoTime);
             root.displaySeconds += (predicted - root.displaySeconds) * 0.15;
         }
+
+        target: root.Window.window
     }
     Mixxx.ControlProxy {
         id: playPositionControl

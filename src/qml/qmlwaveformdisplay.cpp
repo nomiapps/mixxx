@@ -148,7 +148,16 @@ void QmlWaveformDisplay::slotWindowChanged(QQuickWindow* window) {
 
     m_dirtyFlag.setFlag(DirtyFlag::Window, true);
     if (window) {
-        connect(window, &QQuickWindow::afterFrameEnd, this, &QmlWaveformDisplay::slotFrameSwapped);
+        // Direct so it runs on the render thread the moment the frame ends.
+        // Queued, the frame reference that the visual play position
+        // extrapolates from arrived only when the GUI thread got round to it,
+        // which on a busy GUI thread was a frame late and jittery.
+        // updatePaintNode() reads m_timer on that same render thread.
+        connect(window,
+                &QQuickWindow::afterFrameEnd,
+                this,
+                &QmlWaveformDisplay::slotFrameSwapped,
+                Qt::DirectConnection);
     }
     m_timer.restart();
 }
@@ -171,16 +180,22 @@ std::chrono::microseconds QmlWaveformDisplay::fromTimerToNextSync(const Performa
 }
 
 void QmlWaveformDisplay::slotFrameSwapped() {
+    // Render thread (Qt::DirectConnection): the frame has just ended.
     const auto frameMicros = m_timer.restart().toIntegerMicros();
-    if (frameMicros >= 5000 && frameMicros <= 50000) {
+    // 2 ms admits 240 Hz panels (4.2 ms frames); the previous 5 ms floor
+    // silently pinned a 240 Hz window to the 60 Hz default interval.
+    if (frameMicros >= 2000 && frameMicros <= 50000) {
         // Smooth over compositor jitter while adapting independently to the
         // refresh rate of whichever screen owns this window.
         m_syncInterval = std::chrono::microseconds(
                 (m_syncInterval.count() * 7 + frameMicros) / 8);
     }
 
-    // continuous redraw
-    update();
+    // Continuous redraw. Requested right at frame end, while the render
+    // thread is idle, so the sync it triggers never waits on a vblank; vsync
+    // throttles it to the screen's refresh rate. QQuickItem::update() is
+    // GUI-thread only, hence queued.
+    QMetaObject::invokeMethod(this, &QQuickItem::update, Qt::QueuedConnection);
 }
 
 void QmlWaveformDisplay::geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry) {

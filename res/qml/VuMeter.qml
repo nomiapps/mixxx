@@ -1,6 +1,7 @@
 import Mixxx 1.0 as Mixxx
 import Qt5Compat.GraphicalEffects
-import QtQuick 2.12
+import QtQuick
+import QtQuick.Window
 import "Theme"
 
 Rectangle {
@@ -8,9 +9,19 @@ Rectangle {
 
     required property string group
     required property string key
+    // Sampled once per frame of the window this meter is in, instead of bound
+    // to the control. A binding requests a render on every engine callback,
+    // and a request that lands mid-frame parks the GUI thread until that
+    // window's render thread is free: on the 60 Hz Edge panel, most of a
+    // frame period, dozens of times a second. Not a FrameAnimation either:
+    // that ticks from the global animation driver, which every window's frame
+    // loop advances, so a 240 Hz main window drove it 240 times a second.
+    // afterFrameEnd is the window's own render loop, delivered queued on the
+    // GUI thread right after its frame ended, while its render thread is idle.
+    property real level: 0
 
-    radius: width / 2
     color: "black"
+    radius: width / 2
 
     Mixxx.ControlProxy {
         id: control
@@ -18,7 +29,15 @@ Rectangle {
         group: root.group
         key: root.key
     }
+    Connections {
+        function onAfterFrameEnd() {
+            const v = control.parameter;
+            if (v !== root.level)
+                root.level = v;
+        }
 
+        target: root.Window.window
+    }
     Item {
         id: meterMask
 
@@ -26,54 +45,48 @@ Rectangle {
         visible: false
 
         Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
             anchors.bottom: parent.bottom
+            anchors.left: parent.left
             anchors.margins: 1
+            anchors.right: parent.right
             antialiasing: false // for performance reasons
-            height: control.parameter * (parent.height - 2 * anchors.margins)
+            height: root.level * (parent.height - 2 * anchors.margins)
             radius: width / 2
         }
     }
-
     Rectangle {
         id: meterGradient
 
-        antialiasing: false // for performance reasons
         anchors.fill: parent
+        antialiasing: false // for performance reasons
         visible: false
 
         gradient: Gradient {
             GradientStop {
-                position: 0.1
                 color: Theme.red
+                position: 0.1
             }
-
             GradientStop {
+                color: Theme.yellow
                 position: 0.15
-                color: Theme.yellow
             }
-
             GradientStop {
+                color: Theme.yellow
                 position: 0.25
-                color: Theme.yellow
             }
-
             GradientStop {
+                color: Theme.green
                 position: 0.3
-                color: Theme.green
             }
-
             GradientStop {
-                position: 1
                 color: Theme.green
+                position: 1
             }
         }
     }
-
     OpacityMask {
         anchors.fill: parent
-        source: meterGradient
         maskSource: meterMask
+        source: meterGradient
     }
 }

@@ -124,6 +124,11 @@ Item {
             rotation: root.vertical ? -90 : 0
             splitStemTracks: root.splitStems
             width: root.vertical ? waveHost.height : waveHost.width
+            // The Edge keeps its own zoom: "zoom" in the layout sets it (1-10)
+            // and the wheel over this waveform changes only this display. The
+            // deck's waveform_zoom control, which the main window follows, is
+            // left alone. A layout can set zoom to 0 to follow it instead.
+            zoomOverride: root.spec.zoom ?? 3
         }
     }
     // Inner shadow frame: seats the waveform behind the surface plane.

@@ -52,6 +52,9 @@ class WaveformRendererAbstract {
 
     WaveformWidgetRenderer* m_waveformRenderer;
     float m_lastPlayMarkerPos;
+    // Breadth the play marker was last built for; it spans the whole display
+    // and has to follow a resize even when its position does not move.
+    float m_lastPlayMarkerBreadth;
 
   private:
 

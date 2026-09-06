@@ -454,17 +454,23 @@ void allshader::WaveformRenderMark::update() {
 
     const float playMarkerPos = static_cast<float>(m_waveformRenderer->getPlayMarkerPosition() *
             m_waveformRenderer->getLength());
-    if (m_lastPlayMarkerPos != playMarkerPos) {
+    const float playMarkerBreadth = static_cast<float>(m_waveformRenderer->getBreadth());
+    // The rectangle spans the display's breadth, so it has to be rebuilt when
+    // the breadth changes too, not only when the marker moves along the
+    // length: growing a waveform's height used to leave the old, shorter
+    // play marker in place.
+    if (m_lastPlayMarkerPos != playMarkerPos || m_lastPlayMarkerBreadth != playMarkerBreadth) {
         const float drawOffset = roundToPixel(playMarkerPos + kPlayPosOffset);
         TexturedVertexUpdater vertexUpdater{
                 m_pPlayPosNode->geometry()
                         .vertexDataAs<Geometry::TexturedPoint2D>()};
         vertexUpdater.addRectangle({drawOffset, 0.f},
-                {drawOffset + kPlayPosWidth, static_cast<float>(m_waveformRenderer->getBreadth())},
+                {drawOffset + kPlayPosWidth, playMarkerBreadth},
                 {0.f, 0.f},
                 {1.f, 1.f});
         m_pPlayPosNode->markDirtyGeometry();
         m_lastPlayMarkerPos = playMarkerPos;
+        m_lastPlayMarkerBreadth = playMarkerBreadth;
     }
 
     if (m_untilMarkShowBeats || m_untilMarkShowTime) {

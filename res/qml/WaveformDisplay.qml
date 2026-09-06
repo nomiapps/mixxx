@@ -28,6 +28,10 @@ Item {
     // positioned every label at NaN and drew nothing, with no error anywhere.
     readonly property real laneHeight: root.height / Math.max(1, stemCountControl.value)
     readonly property string zoomGroup: Mixxx.Config.waveformZoomSynchronization ? "[Channel1]" : group
+    // Above 0, this display zooms on its own instead of following the deck's
+    // waveform_zoom control, and the wheel over it changes this value only. The
+    // Edge surface uses it so its waveforms are not tied to the main window's.
+    property real zoomOverride: 0
 
     Mixxx.ControlProxy {
         id: stemCountControl
@@ -42,7 +46,7 @@ Item {
         // [Waveform] preferences: High detail / split stereo, same keys the
         // legacy UI writes, so the choice follows the user across both.
         options: Mixxx.Config.waveformOptions
-        zoom: zoomControl.value
+        zoom: root.zoomOverride > 0 ? root.zoomOverride : zoomControl.value
 
         Behavior on zoom {
             SmoothedAnimation {
@@ -270,13 +274,20 @@ Item {
             mouseStatus = WaveformDisplay.MouseStatus.Normal;
         }
         onWheel: mouse => {
+            if (root.zoomOverride > 0) {
+                if (mouse.angleDelta.y < 0 && root.zoomOverride > 1)
+                    root.zoomOverride -= 1;
+                else if (mouse.angleDelta.y > 0 && root.zoomOverride < 10.0)
+                    root.zoomOverride += 1;
+                return;
+            }
             if (mouse.angleDelta.y < 0 && zoomControl.value > 1) {
                 zoomControl.value -= 1;
             } else if (mouse.angleDelta.y > 0 && zoomControl.value < 10.0) {
                 zoomControl.value += 1;
             }
         }
-    }
+    }
 
     // Drawn over the waveform rather than in a gutter: the main window has no spare
     // horizontal room, and the Edge lays these out per-layout with an explicit gutter.
