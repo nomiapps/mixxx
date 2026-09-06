@@ -135,9 +135,21 @@ class ControllerScriptEngineLegacyTest : public ControllerScriptEngineLegacy,
 #endif
                 false);
         m_pEngine->process(1024);
-        while (!deck->getEngineDeck()->getEngineBuffer()->isTrackLoaded()) {
+        // Wait for THIS track, not merely for "a track": on a second load the
+        // buffer still holds the previous one, so isTrackLoaded() is already true
+        // and we would return before newTrackLoaded had been delivered.
+        auto* pBuffer = deck->getEngineDeck()->getEngineBuffer();
+        constexpr int kLoadTimeoutMs = 10000;
+        int waitedMs = 0;
+        while (!(pBuffer->isTrackLoaded() && pBuffer->getLoadedTrack() == pTrack1) &&
+                waitedMs < kLoadTimeoutMs) {
             QTest::qSleep(100);
+            waitedMs += 100;
+            m_pEngine->process(1024);
         }
+        ASSERT_TRUE(pBuffer->getLoadedTrack() == pTrack1)
+                << "the deck did not load " << trackLocation.toStdString()
+                << " within " << kLoadTimeoutMs << " ms";
         processEvents();
     }
 
@@ -219,15 +231,19 @@ class ControllerScriptEngineLegacyTest : public ControllerScriptEngineLegacy,
 class ControllerScriptEngineLegacyTimerTest : public ControllerScriptEngineLegacyTest {
   protected:
     std::unique_ptr<ControlPotmeter> m_pCo;
-    std::unique_ptr<ControlPotmeter> m_pCoTimerId;
+    std::unique_ptr<ControlObject> m_pCoTimerId;
 
     void SetUp() override {
         ControllerScriptEngineLegacyTest::SetUp();
         m_pCo = std::make_unique<ControlPotmeter>(ConfigKey("[Test]", "co"), -10.0, 10.0);
         m_pCo->setParameter(0.0);
-        m_pCoTimerId = std::make_unique<ControlPotmeter>(
-                ConfigKey("[Test]", "coTimerId"), -10.0, 50.0);
-        m_pCoTimerId->setParameter(0.0);
+        // A plain ControlObject rather than a potmeter: this control carries a Qt
+        // timer id, and a potmeter clamps whatever is written to its range. Timer
+        // ids are handed out per process, so once enough earlier tests have used
+        // them the id -- and the `id + 10` the callbacks write back -- runs past
+        // any fixed maximum and silently reads back as that maximum instead.
+        m_pCoTimerId = std::make_unique<ControlObject>(ConfigKey("[Test]", "coTimerId"));
+        m_pCoTimerId->set(0.0);
         EXPECT_TRUE(evaluateAndAssert("engine.setValue('[Test]', 'co', 0.0);"));
         EXPECT_DOUBLE_EQ(0.0, m_pCo->get());
     }
