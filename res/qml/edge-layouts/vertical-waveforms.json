@@ -1,0 +1,557 @@
+{
+    "name": "Vertical Waveforms",
+    "_comment": "Two tall waveforms flank a slim mixer in the centre; each deck's performance block (platter, transport, pads, tempo, EQ) sits on its own side. A waveform or overview rect taller than it is wide renders vertically, future at the top.",
+    "canvas": [
+        2560,
+        720
+    ],
+    "elements": [
+        {
+            "type": "text",
+            "field": "titleinfo",
+            "group": "@left",
+            "fontSize": 18,
+            "rect": [
+                10,
+                4,
+                860,
+                26
+            ]
+        },
+        {
+            "type": "deckswitch",
+            "slot": "@left",
+            "options": [
+                "[Channel1]",
+                "[Channel3]"
+            ],
+            "rect": [
+                10,
+                200,
+                115,
+                50
+            ]
+        },
+        {
+            "type": "button",
+            "group": "@left",
+            "key": "cue_default",
+            "label": "CUE",
+            "rect": [
+                10,
+                270,
+                115,
+                60
+            ]
+        },
+        {
+            "type": "button",
+            "group": "@left",
+            "key": "play",
+            "label": "PLAY",
+            "toggle": true,
+            "rect": [
+                10,
+                340,
+                115,
+                90
+            ]
+        },
+        {
+            "type": "platter",
+            "group": "@left",
+            "rect": [
+                140,
+                36,
+                600,
+                372
+            ]
+        },
+        {
+            "type": "pads",
+            "group": "@left",
+            "rows": 2,
+            "columns": 4,
+            "rect": [
+                180,
+                420,
+                520,
+                176
+            ],
+            "modes": [
+                "hotcue",
+                "beatloop",
+                "beatjump",
+                "sampler",
+                "stems"
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "GAIN",
+            "color": "edgeGainColor",
+            "group": "@left",
+            "key": "pregain",
+            "rect": [
+                190,
+                612,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "TREBLE",
+            "group": "[EqualizerRack1_@left_Effect1]",
+            "key": "parameter3",
+            "rect": [
+                294,
+                612,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "MID",
+            "group": "[EqualizerRack1_@left_Effect1]",
+            "key": "parameter2",
+            "rect": [
+                398,
+                612,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "BASS",
+            "group": "[EqualizerRack1_@left_Effect1]",
+            "key": "parameter1",
+            "rect": [
+                502,
+                612,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "FILTER",
+            "color": "edgeQuickFxColor",
+            "group": "[QuickEffectRack1_@left]",
+            "key": "super1",
+            "rect": [
+                606,
+                612,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "tempo",
+            "group": "@left",
+            "key": "rate",
+            "rect": [
+                788,
+                40,
+                70,
+                420
+            ]
+        },
+        {
+            "type": "button",
+            "group": "@left",
+            "key": "sync_enabled",
+            "label": "SYNC",
+            "toggle": true,
+            "rect": [
+                773,
+                476,
+                100,
+                40
+            ]
+        },
+        {
+            "type": "button",
+            "group": "@left",
+            "key": "pfl",
+            "label": "CUE 1",
+            "toggle": true,
+            "rect": [
+                773,
+                528,
+                100,
+                40
+            ]
+        },
+        {
+            "type": "overview",
+            "group": "@left",
+            "rect": [
+                885,
+                8,
+                26,
+                704
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "@left",
+            "stemLabels": true,
+            "stemLabelSize": 11,
+            "stemLabelGutter": 24,
+            "splitStems": true,
+            "rect": [
+                917,
+                8,
+                278,
+                704
+            ]
+        },
+        {
+            "type": "deckswitch",
+            "slots": {
+                "@left": [
+                    "[Channel1]",
+                    "[Channel3]"
+                ],
+                "@right": [
+                    "[Channel2]",
+                    "[Channel4]"
+                ]
+            },
+            "rect": [
+                1216,
+                8,
+                128,
+                30
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "volume",
+            "group": "@left",
+            "key": "volume",
+            "rect": [
+                1205,
+                50,
+                60,
+                300
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "@left",
+            "key": "vu_meter",
+            "rect": [
+                1268,
+                60,
+                12,
+                280
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "@right",
+            "key": "vu_meter",
+            "rect": [
+                1280,
+                60,
+                12,
+                280
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "volume",
+            "group": "@right",
+            "key": "volume",
+            "rect": [
+                1295,
+                50,
+                60,
+                300
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "crossfader",
+            "group": "[Master]",
+            "key": "crossfader",
+            "rect": [
+                1205,
+                362,
+                150,
+                44
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "PH MIX",
+            "color": "edgeGainColor",
+            "group": "[Master]",
+            "key": "headMix",
+            "rect": [
+                1214,
+                418,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "PH VOL",
+            "color": "edgeGainColor",
+            "group": "[Master]",
+            "key": "headGain",
+            "rect": [
+                1294,
+                418,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "button",
+            "label": "SPLIT",
+            "group": "[Master]",
+            "key": "headSplit",
+            "toggle": true,
+            "rect": [
+                1235,
+                500,
+                90,
+                36
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Master]",
+            "key": "vu_meter_left",
+            "rect": [
+                1258,
+                550,
+                14,
+                150
+            ]
+        },
+        {
+            "type": "vumeter",
+            "group": "[Master]",
+            "key": "vu_meter_right",
+            "rect": [
+                1288,
+                550,
+                14,
+                150
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "@right",
+            "stemLabels": true,
+            "stemLabelSize": 11,
+            "stemLabelGutter": 24,
+            "splitStems": true,
+            "rect": [
+                1365,
+                8,
+                278,
+                704
+            ]
+        },
+        {
+            "type": "overview",
+            "group": "@right",
+            "rect": [
+                1649,
+                8,
+                26,
+                704
+            ]
+        },
+        {
+            "type": "text",
+            "field": "titleinfo",
+            "group": "@right",
+            "fontSize": 18,
+            "rect": [
+                1690,
+                4,
+                860,
+                26
+            ]
+        },
+        {
+            "type": "slider",
+            "style": "tempo",
+            "group": "@right",
+            "key": "rate",
+            "rect": [
+                1702,
+                40,
+                70,
+                420
+            ]
+        },
+        {
+            "type": "button",
+            "group": "@right",
+            "key": "sync_enabled",
+            "label": "SYNC",
+            "toggle": true,
+            "rect": [
+                1687,
+                476,
+                100,
+                40
+            ]
+        },
+        {
+            "type": "button",
+            "group": "@right",
+            "key": "pfl",
+            "label": "CUE 2",
+            "toggle": true,
+            "rect": [
+                1687,
+                528,
+                100,
+                40
+            ]
+        },
+        {
+            "type": "platter",
+            "group": "@right",
+            "rect": [
+                1820,
+                36,
+                600,
+                372
+            ]
+        },
+        {
+            "type": "pads",
+            "group": "@right",
+            "rows": 2,
+            "columns": 4,
+            "rect": [
+                1860,
+                420,
+                520,
+                176
+            ],
+            "modes": [
+                "hotcue",
+                "beatloop",
+                "beatjump",
+                "sampler",
+                "stems"
+            ],
+            "samplerOffset": 4
+        },
+        {
+            "type": "knob",
+            "label": "GAIN",
+            "color": "edgeGainColor",
+            "group": "@right",
+            "key": "pregain",
+            "rect": [
+                1902,
+                612,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "TREBLE",
+            "group": "[EqualizerRack1_@right_Effect1]",
+            "key": "parameter3",
+            "rect": [
+                2006,
+                612,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "MID",
+            "group": "[EqualizerRack1_@right_Effect1]",
+            "key": "parameter2",
+            "rect": [
+                2110,
+                612,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "BASS",
+            "group": "[EqualizerRack1_@right_Effect1]",
+            "key": "parameter1",
+            "rect": [
+                2214,
+                612,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "knob",
+            "label": "FILTER",
+            "color": "edgeQuickFxColor",
+            "group": "[QuickEffectRack1_@right]",
+            "key": "super1",
+            "rect": [
+                2318,
+                612,
+                52,
+                70
+            ]
+        },
+        {
+            "type": "deckswitch",
+            "slot": "@right",
+            "options": [
+                "[Channel2]",
+                "[Channel4]"
+            ],
+            "rect": [
+                2435,
+                200,
+                115,
+                50
+            ]
+        },
+        {
+            "type": "button",
+            "group": "@right",
+            "key": "cue_default",
+            "label": "CUE",
+            "rect": [
+                2435,
+                270,
+                115,
+                60
+            ]
+        },
+        {
+            "type": "button",
+            "group": "@right",
+            "key": "play",
+            "label": "PLAY",
+            "toggle": true,
+            "rect": [
+                2435,
+                340,
+                115,
+                90
+            ]
+        }
+    ]
+}
