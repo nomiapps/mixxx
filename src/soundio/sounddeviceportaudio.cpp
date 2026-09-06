@@ -219,6 +219,31 @@ SoundDeviceStatus SoundDevicePortAudio::open(bool isClkRefDevice, int syncBuffer
         }
     }
 
+    // WASAPI shared mode only accepts a stream whose channel count equals the
+    // endpoint's Windows mix format, which is what PortAudio reports as the
+    // device's max channel count. A 4-channel DJ controller therefore refused
+    // to open ("Invalid number of channels") with only Main wired to channels
+    // 1-2 until Headphones was wired to 3-4 as well. Open every channel the
+    // endpoint has instead: composeOutputBuffer() zero-fills the channels no
+    // output is assigned to, and composeInputBuffer() ignores the extra input
+    // channels.
+    if (m_deviceTypeId == paWASAPI && m_deviceInfo) {
+        if (m_outputParams.channelCount > 0 &&
+                m_outputParams.channelCount < m_deviceInfo->maxOutputChannels) {
+            qDebug() << "WASAPI: opening all" << m_deviceInfo->maxOutputChannels
+                     << "output channels of the endpoint instead of"
+                     << m_outputParams.channelCount;
+            m_outputParams.channelCount = m_deviceInfo->maxOutputChannels;
+        }
+        if (m_inputParams.channelCount > 0 &&
+                m_inputParams.channelCount < m_deviceInfo->maxInputChannels) {
+            qDebug() << "WASAPI: opening all" << m_deviceInfo->maxInputChannels
+                     << "input channels of the endpoint instead of"
+                     << m_inputParams.channelCount;
+            m_inputParams.channelCount = m_deviceInfo->maxInputChannels;
+        }
+    }
+
     // Sample rate
     if (!m_sampleRate.isValid()) {
         m_sampleRate = SoundManagerConfig::kMixxxDefaultSampleRate;
