@@ -155,6 +155,11 @@ class ControllerScriptEngineLegacyTest : public ControllerScriptEngineLegacy,
 
     void TearDown() override {
         mixxx::Time::setTestMode(false);
+        // KeyUtils holds the custom notation map in a global, so a test that
+        // installs one leaks it into every later test in the process: keys then
+        // format as their enum names ("B_FLAT_MINOR" rather than "B♭m").
+        // Reset it here rather than in each of the tests that set it.
+        KeyUtils::setNotation({});
 #ifdef MIXXX_USE_QML
         m_rootItems.clear();
 #endif
