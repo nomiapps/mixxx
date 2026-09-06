@@ -24,6 +24,9 @@
 #endif
 #include "waveform/renderers/allshader/waveformrendermark.h"
 #include "waveform/renderers/allshader/waveformrendermarkrange.h"
+#ifdef __SCENEGRAPH__
+#include "waveform/renderers/scenegraph/waveformrendererfilteredcached.h"
+#endif
 
 namespace {
 QString waveformMarkerErrorToString(
@@ -187,8 +190,16 @@ QmlWaveformRendererFactory::Renderer QmlWaveformRendererFiltered::create(
                       "on scene graph backend. Ignoring";
         options ^= allshader::WaveformRendererSignalBase::Option::HighDetail;
     }
-    pRenderer.reset(new allshader::WaveformRendererFiltered(
-            waveformWidget, m_stacked, options));
+#ifdef __SCENEGRAPH__
+    if (m_cached) {
+        pRenderer.reset(new allshader::WaveformRendererFilteredCached(
+                waveformWidget, m_stacked, options));
+    } else
+#endif
+    {
+        pRenderer.reset(new allshader::WaveformRendererFiltered(
+                waveformWidget, m_stacked, options));
+    }
     setup(dynamic_cast<allshader::WaveformRendererSignalBase*>(pRenderer.get()));
 
     return QmlWaveformRendererFactory::Renderer{

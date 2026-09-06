@@ -167,6 +167,9 @@ class QmlWaveformRendererFiltered
         : public QmlWaveformRendererSignal {
     Q_OBJECT
     Q_PROPERTY(bool stacked MEMBER m_stacked FINAL)
+    // Scene graph only: cache the column geometry in tiles and scroll them
+    // instead of rebuilding every frame. See WaveformRendererFilteredCached.
+    Q_PROPERTY(bool cached MEMBER m_cached FINAL)
 
     QML_NAMED_ELEMENT(WaveformRendererFiltered)
 
@@ -180,6 +183,7 @@ class QmlWaveformRendererFiltered
 
   private:
     bool m_stacked{false};
+    bool m_cached{false};
 };
 
 class QmlWaveformRendererHSV

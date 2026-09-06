@@ -87,6 +87,7 @@ Item {
         }
         Mixxx.WaveformRendererFiltered {
             axesColor: '#a1a1a1a1'
+            cached: true
             gainAll: 1.0
             gainHigh: 1.0
             gainLow: 1.0

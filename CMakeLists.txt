@@ -1714,6 +1714,7 @@ add_library(
   src/waveform/renderers/waveformrendererhsv.cpp
   src/waveform/renderers/waveformrendererpreroll.cpp
   src/waveform/renderers/waveformrendererrgb.cpp
+  src/waveform/renderers/waveformfilteredcolumns.cpp
   src/waveform/renderers/waveformrenderersignalbase.cpp
   src/waveform/renderers/waveformrenderersimplesignal.cpp
   src/waveform/renderers/waveformrendermark.cpp
@@ -3024,6 +3025,7 @@ if(BUILD_TESTING)
       src/test/ringdelaybuffer_test.cpp
       src/test/sampleutiltest.cpp
       src/test/waveform_upgrade_test.cpp
+    src/test/waveformfilteredcolumns_test.cpp
     )
   endif()
 
@@ -4063,6 +4065,7 @@ if(QML)
       src/qml/qmltrackproxy.cpp
       src/qml/qmlvisibleeffectsmodel.cpp
       src/qml/qmlwaveformdisplay.cpp
+      src/waveform/renderers/scenegraph/waveformrendererfilteredcached.cpp
       src/qml/qmlwaveformoverview.cpp
       src/qml/qmlwaveformrenderer.cpp
       src/qml/qmlsettingparameter.cpp
