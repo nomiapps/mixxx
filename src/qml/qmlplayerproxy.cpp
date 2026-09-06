@@ -40,7 +40,11 @@ void QmlPlayerProxy::loadTrack(QmlTrackProxy* track, bool play) {
     }
     emit loadTrackRequested(track->internal(),
 #ifdef __STEM__
-            mixxx::StemChannel::All,
+            // Load a stem file as its four separate stems (empty selection = full stem
+            // mode), NOT StemChannel::All, which SoundSourceSTEM reads as "downmix the
+            // selected stems to stereo" -- that gave a 2-channel deck where the per-stem
+            // mute/volume/solo controls do nothing.
+            mixxx::StemChannelSelection(),
 #endif
             play);
 }
