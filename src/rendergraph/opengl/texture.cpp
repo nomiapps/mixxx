@@ -53,6 +53,10 @@ Texture::Texture(Context*, const QImage& image)
     m_pTexture->setWrapMode(QOpenGLTexture::ClampToEdge);
 }
 
+void Texture::setNearestFiltering() {
+    m_pTexture->setMinMagFilters(QOpenGLTexture::Nearest, QOpenGLTexture::Nearest);
+}
+
 qint64 Texture::comparisonKey() const {
     return static_cast<qint64>(m_pTexture->textureId());
 }

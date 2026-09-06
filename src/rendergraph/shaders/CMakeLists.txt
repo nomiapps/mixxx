@@ -12,6 +12,10 @@ set(
   texture.vert
   unicolor.frag
   unicolor.vert
+  waveformtextured.vert
+  waveformtexturedfiltered.frag
+  waveformtexturedrgb.frag
+  waveformtexturedstacked.frag
 )
 
 if(TARGET rendergraph_sg)

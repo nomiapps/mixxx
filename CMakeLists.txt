@@ -1715,6 +1715,7 @@ add_library(
   src/waveform/renderers/waveformrendererpreroll.cpp
   src/waveform/renderers/waveformrendererrgb.cpp
   src/waveform/renderers/waveformfilteredcolumns.cpp
+  src/waveform/renderers/waveformtextureimage.cpp
   src/waveform/renderers/waveformrenderersignalbase.cpp
   src/waveform/renderers/waveformrenderersimplesignal.cpp
   src/waveform/renderers/waveformrendermark.cpp
@@ -2007,6 +2008,7 @@ if(QOPENGL)
       src/waveform/renderers/allshader/waveformrendererendoftrack.cpp
       src/waveform/renderers/allshader/waveformrendererslipmode.cpp
       src/waveform/renderers/allshader/waveformrendererfiltered.cpp
+      src/waveform/renderers/allshader/waveformrendererhighdetail.cpp
       src/waveform/renderers/allshader/waveformrendererhsv.cpp
       src/waveform/renderers/allshader/waveformrendererpreroll.cpp
       src/waveform/renderers/allshader/waveformrendererrgb.cpp
@@ -3026,6 +3028,7 @@ if(BUILD_TESTING)
       src/test/sampleutiltest.cpp
       src/test/waveform_upgrade_test.cpp
     src/test/waveformfilteredcolumns_test.cpp
+    src/test/waveformtextureimage_test.cpp
     )
   endif()
 
@@ -4084,6 +4087,7 @@ if(QML)
       src/waveform/renderers/allshader/waveformrendermarkrange.cpp
       src/waveform/renderers/allshader/waveformrendererslipmode.cpp
       src/waveform/renderers/allshader/waveformrendererfiltered.cpp
+      src/waveform/renderers/allshader/waveformrendererhighdetail.cpp
       src/waveform/renderers/allshader/waveformrendererhsv.cpp
       src/waveform/renderers/allshader/waveformrenderersimple.cpp
       # The following sources need to be in this target to get QML_ELEMENT properly interpreted

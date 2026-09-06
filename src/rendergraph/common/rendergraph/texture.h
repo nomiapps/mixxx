@@ -21,6 +21,10 @@ class rendergraph::Texture {
     // used by Material::compare
     qint64 comparisonKey() const;
 
+    /// Sample the nearest texel instead of blending neighbours, for
+    /// textures that carry data rather than pictures.
+    void setNearestFiltering();
+
   private:
     const std::unique_ptr<BaseTexture> m_pTexture{};
 };

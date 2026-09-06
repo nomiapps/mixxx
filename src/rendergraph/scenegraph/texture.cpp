@@ -13,6 +13,11 @@ Texture::Texture(Context* pContext, const QImage& image)
     DEBUG_ASSERT(!m_pTexture->textureSize().isNull());
 }
 
+void Texture::setNearestFiltering() {
+    m_pTexture->setFiltering(QSGTexture::Nearest);
+    m_pTexture->setMipmapFiltering(QSGTexture::None);
+}
+
 qint64 Texture::comparisonKey() const {
     return m_pTexture->comparisonKey();
 }

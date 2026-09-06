@@ -12,6 +12,7 @@
 #include "waveform/renderers/allshader/waveformrenderbeat.h"
 #include "waveform/renderers/allshader/waveformrendererendoftrack.h"
 #include "waveform/renderers/allshader/waveformrendererfiltered.h"
+#include "waveform/renderers/allshader/waveformrendererhighdetail.h"
 #include "waveform/renderers/allshader/waveformrendererhsv.h"
 #include "waveform/renderers/allshader/waveformrendererpreroll.h"
 #include "waveform/renderers/allshader/waveformrendererrgb.h"
@@ -160,15 +161,13 @@ QmlWaveformRendererFactory::Renderer QmlWaveformRendererRGB::create(
     std::unique_ptr<rendergraph::BaseNode> pRenderer;
 
     if (options & allshader::WaveformRendererSignalBase::Option::HighDetail) {
-        // FIXME WaveformRendererTextured is currently not supported on SG (#14990)
-        // pRenderer.reset(new allshader::WaveformRendererTextured(
-        //     waveformWidget, ::WaveformWidgetType::RGB, m_position, options));
-        qWarning() << "Waveform high details option is currently not supported "
-                      "on scene graph backend. Ignoring";
-        options ^= allshader::WaveformRendererSignalBase::Option::HighDetail;
+        // The textured look on rendergraph (#14990).
+        pRenderer.reset(new allshader::WaveformRendererHighDetail(
+                waveformWidget, ::WaveformWidgetType::RGB, m_position, options));
+    } else {
+        pRenderer.reset(new allshader::WaveformRendererRGB(
+                waveformWidget, m_position, options));
     }
-    pRenderer.reset(new allshader::WaveformRendererRGB(
-            waveformWidget, m_position, options));
     setup(dynamic_cast<allshader::WaveformRendererSignalBase*>(pRenderer.get()));
 
     return QmlWaveformRendererFactory::Renderer{
@@ -182,16 +181,14 @@ QmlWaveformRendererFactory::Renderer QmlWaveformRendererFiltered::create(
     std::unique_ptr<rendergraph::BaseNode> pRenderer;
 
     if (options & allshader::WaveformRendererSignalBase::Option::HighDetail) {
-        // FIXME WaveformRendererTextured is currently not supported on SG
-        // (#14990) pRenderer.reset(new allshader::WaveformRendererTextured(
-        //     waveformWidget, m_stacked ? ::WaveformWidgetType::Stacked :
-        //     ::WaveformWidgetType::Filtered, m_position, options));
-        qWarning() << "Waveform high details option is currently not supported "
-                      "on scene graph backend. Ignoring";
-        options ^= allshader::WaveformRendererSignalBase::Option::HighDetail;
-    }
+        // The textured look on rendergraph (#14990).
+        pRenderer.reset(new allshader::WaveformRendererHighDetail(waveformWidget,
+                m_stacked ? ::WaveformWidgetType::Stacked : ::WaveformWidgetType::Filtered,
+                m_position,
+                options));
+    } else
 #ifdef __SCENEGRAPH__
-    if (m_cached) {
+            if (m_cached) {
         pRenderer.reset(new allshader::WaveformRendererFilteredCached(
                 waveformWidget, m_stacked, options));
     } else

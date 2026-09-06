@@ -24,6 +24,8 @@ set(
   ../common/rendergraph/material/texturematerial.h
   ../common/rendergraph/material/unicolormaterial.cpp
   ../common/rendergraph/material/unicolormaterial.h
+  ../common/rendergraph/material/waveformtexturedmaterial.cpp
+  ../common/rendergraph/material/waveformtexturedmaterial.h
   ../common/rendergraph/materialshader.h
   ../common/rendergraph/materialtype.h
   ../common/rendergraph/node.h

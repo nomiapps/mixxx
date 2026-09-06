@@ -39,6 +39,9 @@ Item {
         anchors.fill: parent
         backgroundColor: "transparent"
         group: root.group
+        // [Waveform] preferences: High detail / split stereo, same keys the
+        // legacy UI writes, so the choice follows the user across both.
+        options: Mixxx.Config.waveformOptions
         zoom: zoomControl.value
 
         Behavior on zoom {
