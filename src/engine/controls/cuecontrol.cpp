@@ -107,9 +107,6 @@ CueControl::CueControl(const QString& group,
     m_pTrackSamples = ControlObject::getControl(ConfigKey(group, "track_samples"));
 
     m_pQuantizeEnabled = ControlObject::getControl(ConfigKey(group, "quantize"));
-    connect(m_pQuantizeEnabled, &ControlObject::valueChanged,
-            this, &CueControl::quantizeChanged,
-            Qt::DirectConnection);
 
     m_pClosestBeat = ControlObject::getControl(ConfigKey(group, "beat_closest"));
     m_pLoopStartPosition = make_parented<ControlProxy>(group, "loop_start_position", this);
@@ -792,8 +789,8 @@ void CueControl::loadCuesFromTrack() {
     }
 
     if (pIntroCue) {
-        const auto startPosition = quantizeCuePoint(pIntroCue->getPosition());
-        const auto endPosition = quantizeCuePoint(pIntroCue->getEndPosition());
+        const auto startPosition = pIntroCue->getPosition();
+        const auto endPosition = pIntroCue->getEndPosition();
 
         m_pIntroStartPosition->set(startPosition.toEngineSamplePosMaybeInvalid());
         m_pIntroStartEnabled->forceSet(startPosition.isValid());
@@ -807,8 +804,8 @@ void CueControl::loadCuesFromTrack() {
     }
 
     if (pOutroCue) {
-        const auto startPosition = quantizeCuePoint(pOutroCue->getPosition());
-        const auto endPosition = quantizeCuePoint(pOutroCue->getEndPosition());
+        const auto startPosition = pOutroCue->getPosition();
+        const auto endPosition = pOutroCue->getEndPosition();
 
         m_pOutroStartPosition->set(startPosition.toEngineSamplePosMaybeInvalid());
         m_pOutroStartEnabled->forceSet(startPosition.isValid());
@@ -852,8 +849,7 @@ void CueControl::loadCuesFromTrack() {
     }
 
     DEBUG_ASSERT(mainCuePosition.isValid());
-    const auto quantizedMainCuePosition = quantizeCuePoint(mainCuePosition);
-    m_pCuePoint->set(quantizedMainCuePosition.toEngineSamplePosMaybeInvalid());
+    m_pCuePoint->set(mainCuePosition.toEngineSamplePosMaybeInvalid());
 }
 
 void CueControl::trackAnalyzed() {
@@ -897,36 +893,6 @@ void CueControl::trackCuesUpdated() {
 void CueControl::trackBeatsUpdated(mixxx::BeatsPointer pBeats) {
     Q_UNUSED(pBeats);
     loadCuesFromTrack();
-}
-
-void CueControl::quantizeChanged(double v) {
-    Q_UNUSED(v);
-
-    // check if we were at the cue point before
-    bool wasTrackAtCue = getTrackAt() == TrackAt::Cue;
-    bool wasTrackAtIntro = isTrackAtIntroCue();
-
-    loadCuesFromTrack();
-
-    // if we are playing (no matter what reason for) do not seek
-    if (m_pPlay->toBool()) {
-        return;
-    }
-
-    // Retrieve new cue pos and follow
-    const auto cuePosition =
-            mixxx::audio::FramePos::fromEngineSamplePosMaybeInvalid(
-                    m_pCuePoint->get());
-    if (wasTrackAtCue && cuePosition.isValid()) {
-        seekExact(cuePosition);
-    }
-    // Retrieve new intro start pos and follow
-    const auto introPosition =
-            mixxx::audio::FramePos::fromEngineSamplePosMaybeInvalid(
-                    m_pIntroStartPosition->get());
-    if (wasTrackAtIntro && introPosition.isValid()) {
-        seekExact(introPosition);
-    }
 }
 
 mixxx::RgbColor CueControl::colorFromConfig(const ConfigKey& configKey) {
@@ -2438,14 +2404,6 @@ mixxx::audio::FramePos CueControl::quantizeCuePoint(mixxx::audio::FramePos posit
     }
 
     return position;
-}
-
-bool CueControl::isTrackAtIntroCue() {
-    const auto introStartPosition =
-            mixxx::audio::FramePos::fromEngineSamplePosMaybeInvalid(
-                    m_pIntroStartPosition->get());
-    return introStartPosition.isValid() &&
-            (fabs(frameInfo().currentPosition - introStartPosition) < 0.5);
 }
 
 SeekOnLoadMode CueControl::getSeekOnLoadPreference() {

@@ -208,7 +208,6 @@ class CueControl : public EngineControl {
     void hintReader(gsl::not_null<HintVector*> pHintList) override;
     bool updateIndicatorsAndModifyPlay(bool newPlay, bool oldPlay, bool playPossible);
     void updateIndicators();
-    bool isTrackAtIntroCue();
     void resetIndicators();
     bool isPlayingByPlayButton();
     bool getPlayFlashingAtPause();
@@ -225,7 +224,6 @@ class CueControl : public EngineControl {
     void slotLoopUpdated(mixxx::audio::FramePos startPosition, mixxx::audio::FramePos endPosition);
 
   private slots:
-    void quantizeChanged(double v);
     void slotCueModeChanged(double v);
 
     void trackAnalyzed();

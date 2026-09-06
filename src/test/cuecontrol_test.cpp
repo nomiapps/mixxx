@@ -188,6 +188,9 @@ TEST_F(CueControlTest, LoadTrackWithIntroEndAndOutroStart) {
     EXPECT_FALSE(m_pOutroEndEnabled->toBool());
 }
 
+// Loading cues never quantizes, even with Quantize enabled: the positions
+// below are deliberately off-grid and must survive the load unchanged.
+// See mixxxdj/mixxx#16988.
 TEST_F(CueControlTest, LoadAutodetectedCues_QuantizeEnabled) {
     m_pQuantizeEnabled->set(1);
 
@@ -198,16 +201,13 @@ TEST_F(CueControlTest, LoadAutodetectedCues_QuantizeEnabled) {
     const double bpm = pTrack->getBpm();
     const double beatLengthFrames = (60.0 * sampleRate / bpm);
 
+    const auto kMainCuePosition = mixxx::audio::FramePos(1.9 * beatLengthFrames);
     const auto kIntroStartPosition = mixxx::audio::FramePos(2.1 * beatLengthFrames);
-    const auto kQuantizedIntroStartPosition = mixxx::audio::FramePos(2.0 * beatLengthFrames);
     const auto kIntroEndPosition = mixxx::audio::FramePos(3.7 * beatLengthFrames);
-    const auto kQuantizedIntroEndPosition = mixxx::audio::FramePos(4.0 * beatLengthFrames);
     const auto kOutroStartPosition = mixxx::audio::FramePos(11.1 * beatLengthFrames);
-    const auto kQuantizedOutroStartPosition = mixxx::audio::FramePos(11.0 * beatLengthFrames);
     const auto kOutroEndPosition = mixxx::audio::FramePos(15.5 * beatLengthFrames);
-    const auto kQuantizedOutroEndPosition = mixxx::audio::FramePos(16.0 * beatLengthFrames);
 
-    pTrack->setMainCuePosition(mixxx::audio::FramePos(1.9 * beatLengthFrames));
+    pTrack->setMainCuePosition(kMainCuePosition);
 
     auto pIntro = pTrack->createAndAddCue(
             mixxx::CueType::Intro,
@@ -223,11 +223,13 @@ TEST_F(CueControlTest, LoadAutodetectedCues_QuantizeEnabled) {
 
     loadTrack(pTrack);
 
-    EXPECT_FRAMEPOS_EQ_CONTROL(kQuantizedIntroStartPosition, m_pCuePoint);
-    EXPECT_FRAMEPOS_EQ_CONTROL(kQuantizedIntroStartPosition, m_pIntroStartPosition);
-    EXPECT_FRAMEPOS_EQ_CONTROL(kQuantizedIntroEndPosition, m_pIntroEndPosition);
-    EXPECT_FRAMEPOS_EQ_CONTROL(kQuantizedOutroStartPosition, m_pOutroStartPosition);
-    EXPECT_FRAMEPOS_EQ_CONTROL(kQuantizedOutroEndPosition, m_pOutroEndPosition);
+    // Quantize must not move stored cues when they are loaded
+    // (mixxxdj/mixxx#16988); it only applies when a cue is set.
+    EXPECT_FRAMEPOS_EQ_CONTROL(kMainCuePosition, m_pCuePoint);
+    EXPECT_FRAMEPOS_EQ_CONTROL(kIntroStartPosition, m_pIntroStartPosition);
+    EXPECT_FRAMEPOS_EQ_CONTROL(kIntroEndPosition, m_pIntroEndPosition);
+    EXPECT_FRAMEPOS_EQ_CONTROL(kOutroStartPosition, m_pOutroStartPosition);
+    EXPECT_FRAMEPOS_EQ_CONTROL(kOutroEndPosition, m_pOutroEndPosition);
 }
 
 TEST_F(CueControlTest, LoadAutodetectedCues_QuantizeEnabledNoBeats) {
@@ -368,7 +370,12 @@ TEST_F(CueControlTest, SeekOnLoadDefault_CueInPreroll) {
     EXPECT_FRAMEPOS_EQ(mixxx::audio::FramePos(-200.0), getCurrentFramePos());
 }
 
-TEST_F(CueControlTest, FollowCueOnQuantize) {
+// Toggling Quantize must move neither a stored cue nor the play position.
+// Covers mixxxdj/mixxx#16988 (an existing main cue snapped to the beatgrid
+// when Quantize was enabled) and LP1855321 (the deck jumped to the main cue).
+// Nothing listens to the quantize control in CueControl any more, so this is
+// the guard against either behaviour coming back.
+TEST_F(CueControlTest, MainCueUnchangedOnQuantizeToggle) {
     m_pQuantizeEnabled->set(0);
     config()->set(ConfigKey("[Controls]", "CueRecall"),
             ConfigValue(static_cast<int>(SeekOnLoadMode::MainCue)));
@@ -379,7 +386,6 @@ TEST_F(CueControlTest, FollowCueOnQuantize) {
     const double bpm = pTrack->getBpm();
     const mixxx::audio::FrameDiff_t beatLengthFrames = (60.0 * sampleRate / bpm);
     const auto cuePos = mixxx::audio::FramePos(1.8 * beatLengthFrames);
-    const auto quantizedCuePos = mixxx::audio::FramePos(2.0 * beatLengthFrames);
     pTrack->setMainCuePosition(cuePos);
 
     loadTrack(pTrack);
@@ -387,11 +393,11 @@ TEST_F(CueControlTest, FollowCueOnQuantize) {
     EXPECT_FRAMEPOS_EQ_CONTROL(cuePos, m_pCuePoint);
     EXPECT_FRAMEPOS_EQ(cuePos, getCurrentFramePos());
 
-    // enable quantization and expect current position to follow
+    // enable quantization and expect cue position to remain at cuePos
     m_pQuantizeEnabled->set(1);
     ProcessBuffer();
-    EXPECT_FRAMEPOS_EQ_CONTROL(quantizedCuePos, m_pCuePoint);
-    EXPECT_FRAMEPOS_EQ(quantizedCuePos, getCurrentFramePos());
+    EXPECT_FRAMEPOS_EQ_CONTROL(cuePos, m_pCuePoint);
+    EXPECT_FRAMEPOS_EQ(cuePos, getCurrentFramePos());
 
     // move current position to track start
     m_pQuantizeEnabled->set(0);
@@ -400,10 +406,10 @@ TEST_F(CueControlTest, FollowCueOnQuantize) {
     ProcessBuffer();
     EXPECT_FRAMEPOS_EQ(mixxx::audio::kStartFramePos, getCurrentFramePos());
 
-    // enable quantization again and expect play position to stay at track start
+    // enable quantization again and expect play position to stay at track start and cue to stay at cuePos
     m_pQuantizeEnabled->set(1);
     ProcessBuffer();
-    EXPECT_FRAMEPOS_EQ_CONTROL(quantizedCuePos, m_pCuePoint);
+    EXPECT_FRAMEPOS_EQ_CONTROL(cuePos, m_pCuePoint);
     EXPECT_FRAMEPOS_EQ(mixxx::audio::kStartFramePos, getCurrentFramePos());
 }
 
