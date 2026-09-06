@@ -150,7 +150,14 @@ TEST_F(ThemeQmlTest, ImagePropertiesReferenceExistingSvgs) {
         const QString imagePath = property.read(pTheme).toString();
         ASSERT_FALSE(imagePath.isEmpty());
 
-        const QFileInfo imageFileInfo(qmlResourceDir.filePath(imagePath));
+        // Theme.qml resolves these against its own directory, so they arrive as
+        // absolute file: URLs, the same shape as the asset* properties above. A
+        // bare relative path is still accepted, resolved against res/qml as a
+        // consumer sitting there would resolve it.
+        const QUrl imageUrl(imagePath);
+        const QFileInfo imageFileInfo(imageUrl.isLocalFile()
+                        ? imageUrl.toLocalFile()
+                        : qmlResourceDir.filePath(imagePath));
         EXPECT_QSTRING_EQ(QStringLiteral("svg"), imageFileInfo.suffix());
         EXPECT_TRUE(imageFileInfo.exists())
                 << qPrintable(imageFileInfo.absoluteFilePath());
