@@ -183,8 +183,20 @@ Popup {
                                 anchors.verticalCenter: parent.verticalCenter
                                 fillMode: Image.PreserveAspectFit
                                 height: 20
+                                // gear.svg states its size in MILLIMETRES, which Qt resolves
+                                // at 90 dpi: it rasterised at 113x113 and was then sampled
+                                // down to 20, a 5.6x bilinear minification, so the sidebar
+                                // icon was soft and its teeth stair-stepped. An SVG renders at
+                                // sourceSize, so ask for 2x the drawn size and let the
+                                // downsample be clean. (Measured with qml.exe: the box was
+                                // already 20 wide -- PreserveAspectFit derives width from the
+                                // height -- so pinning width only makes that explicit.)
+                                smooth: true
                                 source: "images/gear.svg"
+                                sourceSize.height: 40
+                                sourceSize.width: 40
                                 visible: false
+                                width: 20
                             }
                             ColorOverlay {
                                 anchors.fill: handleImage

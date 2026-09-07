@@ -120,18 +120,18 @@ Item {
                 visible: !nameInput.visible
             }
             Shape {
-                // Qt 6.6+ resolution-independent antialiasing; the older
-                // geometry renderer stair-steps curves on some displays.
-                preferredRendererType: Shape.CurveRenderer
                 id: editButton
 
                 anchors.right: label.right
+                // Qt 6.6+ resolution-independent antialiasing; the older
+                // geometry renderer stair-steps curves on some displays.
+                preferredRendererType: Shape.CurveRenderer
                 visible: root.editable && !nameInput.visible
                 width: 20
 
                 ShapePath {
                     capStyle: ShapePath.RoundCap
-                    fillColor: "white"
+                    fillColor: Theme.white
                     startX: 0
                     startY: 20
                     strokeColor: Theme.midGray
@@ -340,6 +340,10 @@ Item {
 
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectFit
+                // Mapping artwork is whatever size the mapping shipped, scaled
+                // into a fixed card. Without mipmaps that minification is a
+                // straight bilinear sample and the artwork shimmers and aliases.
+                mipmap: true
                 source: modelData.visualUrl
                 visible: !!modelData.sinceVersion
             }
@@ -348,10 +352,10 @@ Item {
                 visible: controllerVisual.status != Image.Ready || root.editable
 
                 Shape {
+                    anchors.fill: parent
                     // Qt 6.6+ resolution-independent antialiasing; the older
                     // geometry renderer stair-steps curves on some displays.
                     preferredRendererType: Shape.CurveRenderer
-                    anchors.fill: parent
                     visible: controllerVisual.status != Image.Ready || !controllerVisual.source
 
                     ShapePath {
@@ -592,26 +596,53 @@ Item {
                 background: Rectangle {
                     color: itemDlgt.highlighted ? Theme.deckLineColor : "transparent"
                 }
-                contentItem: Row {
+                // Was a Row whose badge set anchors.right -- a positioner refuses
+                // left/right/fill anchors on its children and disables itself, so the
+                // badge never reached the right edge and the name never elided for
+                // want of a width. RowLayout gives the name the slack instead.
+                contentItem: RowLayout {
+                    // availableWidth, not width: the delegate pads itself by 4, and a
+                    // contentItem given the full width hangs that padding off the right,
+                    // which now matters because the badge is genuinely right-aligned.
                     height: itemDlgt.height
-                    width: itemDlgt.width
+                    spacing: 4
+                    width: itemDlgt.availableWidth
 
                     Text {
+                        Layout.fillWidth: true
                         color: Theme.deckTextColor
                         elide: Text.ElideRight
                         font: mappingsCombobox.font
-                        text: modelData.name
+                        text: itemDlgt.modelData.name
                         verticalAlignment: Text.AlignVCenter
                     }
-                    Image {
-                        height: 18
-                        source: "../images/work@2x.png"
-                        visible: modelData.isUserMapping(Mixxx.Config)
-                        width: 18
+                    Item {
+                        Layout.preferredHeight: 18
+                        Layout.preferredWidth: 18
+                        visible: itemDlgt.modelData.isUserMapping(Mixxx.Config)
 
-                        anchors {
-                            margins: 4
-                            right: parent.right
+                        Image {
+                            id: userMappingBadge
+
+                            anchors.fill: parent
+                            fillMode: Image.PreserveAspectFit
+                            // A 96x96 bitmap drawn at 18 px: a 5x minification with no
+                            // mipmap, sampled bilinear, so its edges crawled. It is also
+                            // solid #FFFFFF -- the only pure white in the row, next to
+                            // labels on Theme.deckTextColor -- and its antialiased rim is
+                            // white too, which is what specked when it aliased. Rasterise
+                            // at 2x and tint it like every other icon in the chrome.
+                            smooth: true
+                            source: "../images/work@2x.png"
+                            sourceSize.height: 36
+                            sourceSize.width: 36
+                            visible: false
+                        }
+                        ColorOverlay {
+                            anchors.fill: userMappingBadge
+                            antialiasing: true
+                            color: Theme.deckTextColor
+                            source: userMappingBadge
                         }
                     }
                 }
