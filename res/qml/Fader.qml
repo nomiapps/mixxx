@@ -30,13 +30,14 @@ EdgeControls.Fader {
         source: backgroundImage.source
         visible: false
     }
-    background: Image {
+    // RasterImage buckets the raster size. This one fills the fader, so with a
+    // plain sourceSize binding it re-decoded its SVG on every pixel of a window
+    // resize; the fader art is stretched by design, so bucketing costs nothing.
+    background: RasterImage {
         id: backgroundImage
 
         anchors.fill: parent
         anchors.margins: root.backgroundMargin
-        sourceSize.height: height * Screen.devicePixelRatio
-        sourceSize.width: width * Screen.devicePixelRatio
     }
     handle: Item {
         id: handleItem
@@ -47,17 +48,12 @@ EdgeControls.Fader {
         x: root.horizontal ? (root.visualPosition * (root.width - width)) : ((root.width - width) / 2)
         y: root.vertical ? (root.visualPosition * (root.height - height)) : ((root.height - height) / 2)
 
-        Image {
+        RasterImage {
             id: handleSharp
 
             anchors.fill: parent
             fillMode: Image.PreserveAspectFit
             source: handleImage.source
-            // SVGs rasterise at sourceSize, so an icon left unset is drawn at its
-            // natural size and rescaled -- visibly jagged. Rasterise at the size it
-            // is actually drawn, times the screen's DPR.
-            sourceSize.height: height * Screen.devicePixelRatio
-            sourceSize.width: width * Screen.devicePixelRatio
             visible: !root.showHandleShadow
         }
         DropShadow {

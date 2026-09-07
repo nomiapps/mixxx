@@ -21,7 +21,10 @@ EdgeControls.Knob {
     implicitHeight: implicitWidth
     implicitWidth: background.width
 
-    background: Image {
+    // RasterImage, not Image: it rasterises at device resolution (a plain SVG
+    // is drawn at logical size and upscaled, which looks blurry) but buckets the
+    // raster size, so a window resize does not re-decode the SVG on every pixel.
+    background: RasterImage {
         id: background
 
         anchors.left: parent.left
@@ -29,10 +32,6 @@ EdgeControls.Knob {
         anchors.top: parent.top
         height: width
         source: root.backgroundSource
-        // rasterize the SVG at device resolution; without this it is drawn at
-        // logical size and upscaled on HiDPI screens, which looks blurry
-        sourceSize.height: height * Screen.devicePixelRatio
-        sourceSize.width: width * Screen.devicePixelRatio
         visible: root.showDefaultBackground
     }
     foreground: Item {
@@ -51,7 +50,7 @@ EdgeControls.Knob {
         }
     }
 
-    Image {
+    RasterImage {
         id: shadow
 
         anchors.left: parent.left
@@ -60,8 +59,6 @@ EdgeControls.Knob {
         fillMode: Image.PreserveAspectFit
         height: width * 7 / 6
         source: root.shadowSource
-        sourceSize.height: height * Screen.devicePixelRatio
-        sourceSize.width: width * Screen.devicePixelRatio
         visible: root.showDefaultBackground
     }
 }

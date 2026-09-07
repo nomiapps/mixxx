@@ -127,14 +127,12 @@ Item {
                 width: disc.width * (0.92 - index * 0.07)
             }
         }
-        Image {
+        RasterImage {
             id: cover
 
             anchors.centerIn: parent
             height: width
             source: root.deckPlayer?.currentTrack?.coverArtUrl ?? ""
-            sourceSize.height: height * Screen.devicePixelRatio
-            sourceSize.width: width * Screen.devicePixelRatio
             visible: false
             width: parent.width * 0.5
         }

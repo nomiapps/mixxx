@@ -4,6 +4,7 @@ import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
 import QtQuick.Controls 2.12
 import QtQuick.Shapes
+import ".." as Skin
 import "../Theme"
 
 Item {
@@ -113,7 +114,7 @@ Item {
                     radius: width / 2
                     width: parent.width * 0.54
                 }
-                Image {
+                Skin.RasterImage {
                     id: coverArt
 
                     anchors.centerIn: parent
@@ -121,8 +122,6 @@ Item {
                     fillMode: Image.PreserveAspectCrop
                     height: width
                     source: root.currentTrack?.coverArtUrl ?? ""
-                    sourceSize.height: height * Screen.devicePixelRatio
-                    sourceSize.width: width * Screen.devicePixelRatio
                     visible: false
                     width: parent.width * 0.52
                 }
