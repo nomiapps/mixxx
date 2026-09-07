@@ -307,13 +307,31 @@ Window {
     ListModel {
         id: layoutList
     }
+    // The layout picker. Off the strip it is an ordinary toolbar and takes its own
+    // height. ON the strip it must not: the canvas scales as one locked unit, so 32px
+    // taken off a 720px panel scaled the WHOLE surface to 95.6% and left a 57px black
+    // bar down each side -- the layout was never using the display it was built for.
+    // There it floats over the canvas instead and stays invisible until the pointer
+    // reaches the top edge. Hidden by opacity, not visible: a zero-opacity item still
+    // receives hover, which is what brings it back.
     Rectangle {
         id: header
 
         color: Theme.toolbarBackgroundColor
         height: 32
+        opacity: (!root.onStrip || headerHover.hovered) ? 1 : 0
         width: parent.width
+        z: 1
 
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 120
+            }
+        }
+
+        HoverHandler {
+            id: headerHover
+        }
         Row {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 10
@@ -359,7 +377,7 @@ Window {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.top: header.bottom
+        anchors.top: root.onStrip ? parent.top : header.bottom
 
         Repeater {
             model: root.layoutDef ? root.layoutDef.elements : []

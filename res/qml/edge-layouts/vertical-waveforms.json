@@ -1,6 +1,6 @@
 {
     "name": "Vertical Waveforms",
-    "_comment": "CDJ/DJM style: two IDENTICAL player surfaces -- deck 2 is deck 1 translated by +1450px, not mirrored -- flanking a real two-channel mixer. Each player keeps only what a CDJ has (vertical waveform + overview, platter, transport, pads, tempo); trim, EQ, filter, fader, VU and cue all live on the mixer strip in the centre, with the headphone/master column beside them. A waveform or overview rect taller than it is wide renders vertically, future at the top.",
+    "_comment": "CDJ/DJM style: two IDENTICAL player surfaces -- deck 2 is deck 1 translated by +1460px, not mirrored -- flanking a real two-channel mixer. Each player keeps only what a CDJ has (vertical waveform + overview, platter, transport, pads, tempo); trim, EQ, filter, fader, VU and cue all live on the mixer bay in the centre. The bay is one column of the surface: deck select, the three strips, and the crossfader all share its 1144..1416 edges, and its bands are the decks' own -- knobs start where the platters do, the crossfader ends where the pads do. A waveform or overview rect taller than it is wide renders vertically, future at the top.",
     "canvas": [
         2560,
         720
@@ -148,10 +148,10 @@
                 ]
             },
             "rect": [
-                1216,
-                6,
-                128,
-                28
+                1144,
+                4,
+                272,
+                26
             ]
         },
         {
@@ -161,7 +161,7 @@
             "key": "pregain",
             "rect": [
                 1150,
-                44,
+                36,
                 52,
                 66
             ],
@@ -174,7 +174,7 @@
             "key": "parameter3",
             "rect": [
                 1150,
-                116,
+                108,
                 52,
                 66
             ]
@@ -186,7 +186,7 @@
             "key": "parameter2",
             "rect": [
                 1150,
-                188,
+                180,
                 52,
                 66
             ]
@@ -198,7 +198,7 @@
             "key": "parameter1",
             "rect": [
                 1150,
-                260,
+                252,
                 52,
                 66
             ]
@@ -210,7 +210,7 @@
             "key": "super1",
             "rect": [
                 1150,
-                332,
+                324,
                 52,
                 66
             ]
@@ -221,8 +221,8 @@
             "group": "@left",
             "key": "volume",
             "rect": [
-                1144,
-                420,
+                1146,
+                402,
                 44,
                 180
             ]
@@ -232,8 +232,8 @@
             "group": "@left",
             "key": "vu_meter",
             "rect": [
-                1192,
-                421,
+                1194,
+                403,
                 12,
                 178
             ]
@@ -246,7 +246,7 @@
             "toggle": true,
             "rect": [
                 1144,
-                610,
+                594,
                 64,
                 34
             ]
@@ -258,7 +258,7 @@
             "key": "pregain",
             "rect": [
                 1246,
-                44,
+                36,
                 52,
                 66
             ],
@@ -271,7 +271,7 @@
             "key": "parameter3",
             "rect": [
                 1246,
-                116,
+                108,
                 52,
                 66
             ]
@@ -283,7 +283,7 @@
             "key": "parameter2",
             "rect": [
                 1246,
-                188,
+                180,
                 52,
                 66
             ]
@@ -295,7 +295,7 @@
             "key": "parameter1",
             "rect": [
                 1246,
-                260,
+                252,
                 52,
                 66
             ]
@@ -307,7 +307,7 @@
             "key": "super1",
             "rect": [
                 1246,
-                332,
+                324,
                 52,
                 66
             ]
@@ -318,8 +318,8 @@
             "group": "@right",
             "key": "volume",
             "rect": [
-                1240,
-                420,
+                1242,
+                402,
                 44,
                 180
             ]
@@ -329,8 +329,8 @@
             "group": "@right",
             "key": "vu_meter",
             "rect": [
-                1288,
-                421,
+                1290,
+                403,
                 12,
                 178
             ]
@@ -343,7 +343,7 @@
             "toggle": true,
             "rect": [
                 1240,
-                610,
+                594,
                 64,
                 34
             ]
@@ -353,9 +353,9 @@
             "group": "[Master]",
             "key": "vu_meter_left",
             "rect": [
-                1358,
-                44,
-                20,
+                1359,
+                36,
+                22,
                 354
             ]
         },
@@ -364,9 +364,9 @@
             "group": "[Master]",
             "key": "vu_meter_right",
             "rect": [
-                1390,
-                44,
-                20,
+                1387,
+                36,
+                22,
                 354
             ]
         },
@@ -378,7 +378,7 @@
             "key": "headMix",
             "rect": [
                 1358,
-                420,
+                402,
                 52,
                 66
             ]
@@ -391,7 +391,7 @@
             "key": "headGain",
             "rect": [
                 1358,
-                500,
+                516,
                 52,
                 66
             ]
@@ -404,7 +404,7 @@
             "toggle": true,
             "rect": [
                 1352,
-                610,
+                594,
                 64,
                 34
             ]
@@ -416,7 +416,7 @@
             "key": "crossfader",
             "rect": [
                 1144,
-                664,
+                662,
                 272,
                 40
             ]
@@ -424,19 +424,28 @@
         {
             "type": "divider",
             "rect": [
-                1114,
-                40,
+                1325,
+                36,
                 6,
-                640
+                592
+            ]
+        },
+        {
+            "type": "divider",
+            "rect": [
+                1114,
+                4,
+                6,
+                698
             ]
         },
         {
             "type": "divider",
             "rect": [
                 1440,
-                40,
+                4,
                 6,
-                640
+                698
             ]
         },
         {
