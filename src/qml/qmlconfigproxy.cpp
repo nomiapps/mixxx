@@ -2,12 +2,15 @@
 
 #include <Qt>
 
+#include "control/controlobject.h"
 #include "library/basetracktablemodel.h"
 #include "library/library.h"
 #include "library/library_prefs.h"
 #include "moc_qmlconfigproxy.cpp"
 #include "preferences/colorpalettesettings.h"
 #include "preferences/constants.h"
+#include "preferences/keydetectionsettings.h"
+#include "track/keyutils.h"
 #include "util/color/predefinedcolorpalettes.h"
 
 #define PROPERTY_IMPL_GETTER(GROUP, KEY, TYPE, NAME, DEFAULT) \
@@ -334,6 +337,69 @@ PROPERTY_IMPL_CONFIGKEY(mixxx::library::prefs::kBpmColumnPrecisionConfigKey,
         BaseTrackTableModel::kBpmColumnPrecisionDefault);
 PROPERTY_IMPL(kLibraryGroup, kRowHeightKey, double, libraryRowHeight, Library::kDefaultRowHeightPx);
 PROPERTY_IMPL(kLibraryGroup, kShowFeatureIconsKey, bool, libraryShowFeatureIcons, true);
+
+namespace {
+// Inverse of KeyUtils::keyNotationFromString for the notations the New UI offers.
+// The strings are the ones the legacy DlgPrefKey writes, so the two dialogs stay
+// interchangeable. Custom is deliberately not writable from here: the New UI has no
+// editor for the 24 custom names, so it can only preserve what the legacy dialog set.
+QString keyNotationToString(KeyUtils::KeyNotation notation) {
+    switch (notation) {
+    case KeyUtils::KeyNotation::OpenKey:
+        return QStringLiteral(KEY_NOTATION_OPEN_KEY);
+    case KeyUtils::KeyNotation::Lancelot:
+        return QStringLiteral(KEY_NOTATION_LANCELOT);
+    case KeyUtils::KeyNotation::Traditional:
+        return QStringLiteral(KEY_NOTATION_TRADITIONAL);
+    case KeyUtils::KeyNotation::OpenKeyAndTraditional:
+        return QStringLiteral(KEY_NOTATION_OPEN_KEY_AND_TRADITIONAL);
+    case KeyUtils::KeyNotation::LancelotAndTraditional:
+        return QStringLiteral(KEY_NOTATION_LANCELOT_AND_TRADITIONAL);
+    default:
+        return QString();
+    }
+}
+} // namespace
+
+int QmlConfigProxy::keyNotation() const {
+    return static_cast<int>(KeyUtils::keyNotationFromString(
+            KeyDetectionSettings(m_pConfig).getKeyNotation()));
+}
+
+void QmlConfigProxy::set_keyNotation(int value) {
+    const auto notation = KeyUtils::keyNotationFromNumericValue(value);
+    const QString name = keyNotationToString(notation);
+    if (name.isEmpty()) {
+        qWarning() << "Ignoring unsupported key notation" << value;
+        return;
+    }
+    if (notation == KeyUtils::keyNotationFromNumericValue(keyNotation())) {
+        return;
+    }
+
+    KeyDetectionSettings(m_pConfig).setKeyNotation(name);
+
+    // Mirror what DlgPrefKey::loadSettings does at startup, otherwise the change
+    // only lands after a restart: Track::getKeyText() and the library's key column
+    // render through the process-wide map, and the library sorts (and the JS
+    // player proxy formats) by the [Library] key_notation control.
+    QMap<mixxx::track::io::key::ChromaticKey, QString> notationMap;
+    for (int keyValue = mixxx::track::io::key::ChromaticKey_MIN;
+            keyValue <= mixxx::track::io::key::ChromaticKey_MAX;
+            ++keyValue) {
+        const auto key = KeyUtils::keyFromNumericValue(keyValue);
+        if (key == mixxx::track::io::key::INVALID) {
+            continue;
+        }
+        notationMap[key] = KeyUtils::keyToString(key, notation);
+    }
+    KeyUtils::setNotation(notationMap);
+    ControlObject::set(mixxx::library::prefs::kKeyNotationConfigKey,
+            static_cast<double>(notation));
+
+    emit keyNotationChanged();
+}
+
 PROPERTY_IMPL(kLibraryGroup, kRhythmboxEnabled, bool, libraryRhythmboxEnabled, false);
 PROPERTY_IMPL(kLibraryGroup, kBansheeEnabled, bool, libraryBansheeEnabled, false);
 PROPERTY_IMPL(kLibraryGroup, kITunesEnabled, bool, libraryITunesEnabled, false);
