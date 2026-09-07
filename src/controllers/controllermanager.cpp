@@ -208,9 +208,12 @@ void ControllerManager::slotShutdown() {
 
 void ControllerManager::updateControllerList() {
     DEBUG_ASSERT_THIS_QOBJECT_THREAD_AFFINITY();
-    // NOTE: Currently this function is only called on startup. If hotplug is added, changes to the
-    // controller list must be synchronized with dlgprefcontrollers to avoid dangling connections
-    // and possible crashes.
+    // NOTE: this runs on startup and again whenever a rescan is requested, e.g. from
+    // the Controllers settings page after replugging a device. Every Controller is
+    // destroyed and rebuilt here, so anything holding one must rebuild on
+    // devicesChanged() and must not assume its pointers survive. DlgPrefControllers
+    // and QmlControllerManagerProxy both do; there is still no automatic hotplug, so
+    // a device that appears while Mixxx runs is picked up only by a rescan.
     auto locker = lockMutex(&m_mutex);
     if (m_enumerators.empty()) {
         qWarning() << "updateControllerList called but no enumerators have been added!";

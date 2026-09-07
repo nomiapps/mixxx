@@ -25,6 +25,14 @@ Category {
         root.dirty = false;
         errorMessage.text = "";
     }
+    // Mixxx scans for controllers only while it is starting, so a controller that
+    // was unplugged and plugged back in is never reopened and never runs its
+    // mapping's init routine. On hardware like the Mixtrack that init is what ends
+    // the standalone demo lightshow, so without this the only cure was a restart.
+    function rescan() {
+        errorMessage.text = "";
+        root.manager.rescanDevices();
+    }
     function save() {
         for (let controller of root.editedControllers) {
             controller.save(Mixxx.Config);
@@ -39,6 +47,19 @@ Category {
         load();
     }
 
+    // A rescan replaces every device card, so anything held here may be a card that
+    // no longer exists. Drop the references outright rather than calling load(),
+    // which would reach into them.
+    Connections {
+        function onDeviceListChanged() {
+            root.selectedController = null;
+            root.editedControllers = new Set();
+            root.dirty = false;
+            errorMessage.text = "";
+        }
+
+        target: root.manager
+    }
     ScrollView {
         id: scrollView
 
@@ -206,8 +227,17 @@ Category {
         anchors.leftMargin: 14
         anchors.right: parent.right
         anchors.rightMargin: 14
-        visible: root.dirty || root.selectedController
 
+        Skin.FormButton {
+            activeColor: "#999999"
+            backgroundColor: Theme.darkGray3
+            opacity: enabled ? 1.0 : 0.5
+            text: "Rescan"
+
+            onPressed: {
+                root.rescan();
+            }
+        }
         Skin.FormButton {
             activeColor: "#999999"
             backgroundColor: "#7D3B3B"
@@ -236,6 +266,9 @@ Category {
             backgroundColor: Theme.darkGray3
             opacity: enabled ? 1.0 : 0.5
             text: "Cancel"
+            // The row itself is always shown now, because Rescan is useful whether
+            // or not anything has been edited.
+            visible: root.dirty || !!root.selectedController
 
             onPressed: {
                 root.selectedController = null;
@@ -247,6 +280,7 @@ Category {
             backgroundColor: root.dirty ? Theme.blue : Theme.darkGray3
             opacity: enabled ? 1.0 : 0.5
             text: "Save"
+            visible: root.dirty || !!root.selectedController
 
             onPressed: {
                 errorMessage.text = "";

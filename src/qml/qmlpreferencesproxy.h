@@ -318,7 +318,16 @@ class QmlControllerDeviceProxy : public QObject {
     QString m_editedFriendlyName;
     QUrl m_editedVisualUrl;
     std::optional<bool> m_enabled;
+    /// Null once the device is gone. A rescan destroys every Controller and builds
+    /// new ones, so this can be cleared while a settings card is still on screen;
+    /// the constructor subscribes to the controller's destroyed() to clear it, and
+    /// every use below is guarded. QPointer would need Controller to be a complete
+    /// type here, which would drag controller.h into everything.
     Controller* m_pInternal;
+    /// Cached at construction, so the card can still name and classify itself once
+    /// its device is gone, and so the two hottest accessors never touch the pointer.
+    QString m_deviceName;
+    Type m_deviceType;
     std::optional<ProductInfo> m_productInfo;
     QSet<QmlControllerMappingProxy*> m_mappings;
     QmlControllerMappingProxy* m_pMapping;
@@ -354,6 +363,13 @@ class QmlControllerManagerProxy : public QObject {
         return m_knownMappings.value(type);
     }
 
+    /// Re-enumerate controllers and re-apply their mappings without restarting
+    /// Mixxx. Devices are otherwise scanned only during startup, so a controller
+    /// unplugged and plugged back in is never reopened and never runs its mapping's
+    /// init routine, which on some hardware is what takes it out of its standalone
+    /// demo lightshow.
+    Q_INVOKABLE void rescanDevices();
+
     static QmlControllerManagerProxy* create(QQmlEngine* pQmlEngine, QJSEngine* pJsEngine);
     static void registerManager(std::shared_ptr<ControllerManager> pManager,
             bool controllerPreviewScreens = false) {
@@ -378,6 +394,10 @@ class QmlControllerManagerProxy : public QObject {
 
     void loadMappingFromEnumerator(QSharedPointer<MappingInfoEnumerator> enumerator);
 
+    /// Which controllers already have a card. Rebuilt from the surviving cards on
+    /// every refresh rather than appended to, because a rescan frees every
+    /// Controller and a new one can land on a freed address, which would make a
+    /// stale entry match a device that has no card yet.
     QList<Controller*> m_knownControllers;
     QHash<ProductInfo, QSet<QmlControllerMappingProxy*>> m_knownDevices;
     QHash<QmlControllerDeviceProxy::Type, QList<QmlControllerMappingProxy*>> m_knownMappings;

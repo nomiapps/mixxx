@@ -167,9 +167,11 @@ void DlgPrefControllers::rescanControllers() {
 }
 
 void DlgPrefControllers::destroyControllerWidgets() {
-    // NOTE: this assumes that the list of controllers does not change during the lifetime of Mixxx.
-    // This is currently true, but once we support hotplug, we will need better lifecycle management
-    // to keep this dialog and the controllermanager consistent.
+    // NOTE: the controller list does change during the lifetime of Mixxx, because a
+    // rescan destroys and rebuilds every Controller. This is called from
+    // rescanControllers() on devicesChanged(), by which point the old controllers are
+    // already gone, so the list read below is the new one and the pages built against
+    // the old one are all torn down here.
     QList<Controller*> controllerList =
             m_pControllerManager->getControllerList(false, true);
     for (auto* pController : std::as_const(controllerList)) {

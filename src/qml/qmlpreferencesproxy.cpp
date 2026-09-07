@@ -6,6 +6,7 @@
 #include <qstringliteral.h>
 #include <qvideosink.h>
 
+#include <QSet>
 #include <QVideoFrame>
 #include <QVideoFrameFormat>
 #include <algorithm>
@@ -328,6 +329,9 @@ QmlControllerDeviceProxy::QmlControllerDeviceProxy(Controller* pInternal,
         QObject* parent)
         : QObject(parent),
           m_pInternal(pInternal),
+          m_deviceName(pInternal->getName()),
+          m_deviceType(static_cast<QmlControllerDeviceProxy::Type>(
+                  pInternal->getDataRepresentationProtocol())),
           m_productInfo(productInfo),
           m_mappings(mappings),
           m_edited(false),
@@ -335,11 +339,18 @@ QmlControllerDeviceProxy::QmlControllerDeviceProxy(Controller* pInternal,
           m_pMapping(nullptr) {
     clear();
     connect(m_pInternal, &Controller::openChanged, this, &QmlControllerDeviceProxy::enabledChanged);
+    // A rescan destroys every Controller and builds replacements. Forget the device
+    // as it goes so this card cannot dereference freed memory before the list is
+    // rebuilt. Controllers live on the ControllerManager thread, so this arrives
+    // queued, ahead of the devicesChanged() that triggers the rebuild.
+    connect(m_pInternal, &QObject::destroyed, this, [this]() {
+        m_pInternal = nullptr;
+        emit enabledChanged();
+    });
 }
 
 QmlControllerDeviceProxy::Type QmlControllerDeviceProxy::getType() const {
-    return static_cast<QmlControllerDeviceProxy::Type>(
-            m_pInternal->getDataRepresentationProtocol());
+    return m_deviceType;
 }
 QString QmlControllerDeviceProxy::getName() const {
     if (!m_editedFriendlyName.trimmed().isEmpty()) {
@@ -348,7 +359,7 @@ QString QmlControllerDeviceProxy::getName() const {
     if (m_productInfo.has_value() && !m_productInfo.value().friendlyName.trimmed().isEmpty()) {
         return m_productInfo.value().friendlyName;
     }
-    return m_pInternal->getName();
+    return m_deviceName;
 }
 void QmlControllerDeviceProxy::setName(const QString& name) {
     if (getName() == name) {
@@ -373,7 +384,7 @@ void QmlControllerDeviceProxy::setVisualUrl(const QUrl& url) {
     emit visualUrlChanged();
 }
 bool QmlControllerDeviceProxy::getEnabled() const {
-    return m_enabled.value_or(m_pInternal->isOpen());
+    return m_enabled.value_or(m_pInternal && m_pInternal->isOpen());
 }
 void QmlControllerDeviceProxy::setEnabled(bool state) {
     if (getEnabled() == state) {
@@ -395,6 +406,9 @@ void QmlControllerDeviceProxy::setMapping(QmlControllerMappingProxy* pMapping) {
     setEdited();
 }
 QString QmlControllerDeviceProxy::vendor() const {
+    if (!m_pInternal) {
+        return tr("N/A");
+    }
     auto vendorId = m_pInternal->getVendorId();
     if (!vendorId) {
         return tr("N/A");
@@ -405,6 +419,9 @@ QString QmlControllerDeviceProxy::vendor() const {
                     QString::number(id, 16).leftJustified(4, '0').toUpper());
 }
 QString QmlControllerDeviceProxy::product() const {
+    if (!m_pInternal) {
+        return tr("N/A");
+    }
     auto productId = m_pInternal->getProductId();
     if (!productId) {
         return tr("N/A");
@@ -415,6 +432,9 @@ QString QmlControllerDeviceProxy::product() const {
                     QString::number(id, 16).leftJustified(4, '0').toUpper());
 }
 QString QmlControllerDeviceProxy::serialNumber() const {
+    if (!m_pInternal) {
+        return tr("N/A");
+    }
     auto sn = m_pInternal->getSerialNumber().trimmed();
     if (!sn.isEmpty()) {
         return sn;
@@ -429,7 +449,8 @@ void QmlControllerDeviceProxy::clear() {
     m_editedVisualUrl.clear();
     emit visualUrlChanged();
 
-    std::shared_ptr<LegacyControllerMapping> pSelectedMapping = m_pInternal->getMapping();
+    std::shared_ptr<LegacyControllerMapping> pSelectedMapping =
+            m_pInternal ? m_pInternal->getMapping() : nullptr;
     for (const auto& pMapping : std::as_const(m_mappings)) {
         if (pSelectedMapping && pSelectedMapping->filePath() == pMapping->definition().getPath()) {
             m_pMapping = pMapping;
@@ -449,6 +470,13 @@ void QmlControllerDeviceProxy::clear() {
 bool QmlControllerDeviceProxy::save(const QmlConfigProxy* pConfig) {
     if (!m_edited) {
         return true;
+    }
+    if (!m_pInternal) {
+        // The device went away between editing this card and saving it, so there is
+        // no controller left to key the settings to or to apply the mapping on.
+        qWarning() << "Not saving controller settings for" << m_deviceName
+                   << "because the device is no longer connected";
+        return false;
     }
 
     std::shared_ptr<LegacyControllerMapping> mapping;
@@ -674,6 +702,39 @@ void QmlControllerManagerProxy::refreshMappings() {
 }
 void QmlControllerManagerProxy::refreshKnownDevices() {
     const auto controllers = m_pControllerManager->getControllers();
+    const QSet<Controller*> live(controllers.cbegin(), controllers.cend());
+
+    // Drop the cards whose device is gone before adding any. This used to be purely
+    // additive, which was fine while devices were only ever enumerated once at
+    // startup. A rescan frees every Controller, so without this the page keeps a
+    // card bound to freed memory and shows it next to the new card for the very
+    // same device.
+    const auto pruneDeparted = [&live](QList<QmlControllerDeviceProxy*>& devices) {
+        for (auto it = devices.begin(); it != devices.end();) {
+            QmlControllerDeviceProxy* pDevice = *it;
+            if (pDevice->internal() && live.contains(pDevice->internal())) {
+                ++it;
+                continue;
+            }
+            it = devices.erase(it);
+            // deleteLater, not delete: QML may still be unwinding a binding on this
+            // card while we are called.
+            pDevice->deleteLater();
+        }
+    };
+    pruneDeparted(m_knownDevicesFound);
+    pruneDeparted(m_unknownDevicesFound);
+
+    // Rebuilt from the survivors rather than appended to, so a freed address cannot
+    // linger here and make a new device look like it already has a card.
+    m_knownControllers.clear();
+    for (const auto* pDevice : std::as_const(m_knownDevicesFound)) {
+        m_knownControllers.append(pDevice->internal());
+    }
+    for (const auto* pDevice : std::as_const(m_unknownDevicesFound)) {
+        m_knownControllers.append(pDevice->internal());
+    }
+
     for (auto* pController : std::as_const(controllers)) {
         if (m_knownControllers.contains(pController)) {
             continue;
@@ -756,6 +817,13 @@ void QmlControllerManagerProxy::refreshKnownDevices() {
                 &QmlControllerManagerProxy::updateExistingMapping);
     }
     emit deviceListChanged();
+}
+
+void QmlControllerManagerProxy::rescanDevices() {
+    // Asynchronous: this asks the ControllerManager thread to re-enumerate, re-apply
+    // mappings and reopen whatever is enabled. The device cards rebuild when it
+    // answers with devicesChanged().
+    m_pControllerManager->setUpDevices();
 }
 
 QQmlListProperty<QmlControllerDeviceProxy> QmlControllerManagerProxy::knownDevices() {
