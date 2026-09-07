@@ -1,0 +1,195 @@
+{
+    "name": "Library",
+    "_comment": "The library, full surface. WAVEFORMS switches on a monitor strip along the top -- both decks' waveform, overview, title and transport -- and the library gives up the space for it; switch it off and the browser is the whole panel again. The strip is off by default, so this opens as a pure browsing view. Mechanism: a 'surfacetoggle' element flips a named flag, elements with \"showIf\" exist only while it is on, and the library's \"rectIf\" gives its shrunken rect for that case.",
+    "canvas": [
+        2560,
+        720
+    ],
+    "toggles": {
+        "waveforms": false
+    },
+    "elements": [
+        {
+            "type": "surfacetoggle",
+            "flag": "waveforms",
+            "label": "WAVEFORMS",
+            "rect": [
+                12,
+                4,
+                160,
+                30
+            ]
+        },
+        {
+            "type": "deckswitch",
+            "slots": {
+                "@left": [
+                    "[Channel1]",
+                    "[Channel3]"
+                ],
+                "@right": [
+                    "[Channel2]",
+                    "[Channel4]"
+                ]
+            },
+            "showIf": "waveforms",
+            "rect": [
+                184,
+                4,
+                160,
+                30
+            ]
+        },
+        {
+            "type": "text",
+            "field": "titleinfo",
+            "group": "@left",
+            "fontSize": 16,
+            "showIf": "waveforms",
+            "rect": [
+                8,
+                44,
+                1000,
+                24
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "@left",
+            "showIf": "waveforms",
+            "rect": [
+                8,
+                72,
+                1140,
+                120
+            ]
+        },
+        {
+            "type": "overview",
+            "group": "@left",
+            "showIf": "waveforms",
+            "rect": [
+                8,
+                198,
+                1140,
+                44
+            ]
+        },
+        {
+            "type": "button",
+            "group": "@left",
+            "key": "cue_default",
+            "label": "CUE",
+            "showIf": "waveforms",
+            "rect": [
+                1160,
+                72,
+                108,
+                78
+            ]
+        },
+        {
+            "type": "button",
+            "group": "@left",
+            "key": "play",
+            "label": "PLAY",
+            "toggle": true,
+            "showIf": "waveforms",
+            "rect": [
+                1160,
+                160,
+                108,
+                82
+            ]
+        },
+        {
+            "type": "text",
+            "field": "titleinfo",
+            "group": "@right",
+            "fontSize": 16,
+            "showIf": "waveforms",
+            "rect": [
+                1292,
+                44,
+                1000,
+                24
+            ]
+        },
+        {
+            "type": "waveform",
+            "group": "@right",
+            "showIf": "waveforms",
+            "rect": [
+                1292,
+                72,
+                1140,
+                120
+            ]
+        },
+        {
+            "type": "overview",
+            "group": "@right",
+            "showIf": "waveforms",
+            "rect": [
+                1292,
+                198,
+                1140,
+                44
+            ]
+        },
+        {
+            "type": "button",
+            "group": "@right",
+            "key": "cue_default",
+            "label": "CUE",
+            "showIf": "waveforms",
+            "rect": [
+                2444,
+                72,
+                108,
+                78
+            ]
+        },
+        {
+            "type": "button",
+            "group": "@right",
+            "key": "play",
+            "label": "PLAY",
+            "toggle": true,
+            "showIf": "waveforms",
+            "rect": [
+                2444,
+                160,
+                108,
+                82
+            ]
+        },
+        {
+            "type": "divider",
+            "showIf": "waveforms",
+            "rect": [
+                8,
+                246,
+                2544,
+                4
+            ]
+        },
+        {
+            "type": "library",
+            "rect": [
+                8,
+                44,
+                2544,
+                668
+            ],
+            "rectIf": {
+                "waveforms": [
+                    8,
+                    256,
+                    2544,
+                    456
+                ]
+            }
+        }
+    ]
+}

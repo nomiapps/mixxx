@@ -38,6 +38,7 @@ WaveformRendererStem::WaveformRendererStem(
         : WaveformRendererSignalBase(waveformWidget, options),
           m_isSlipRenderer(type == ::WaveformRendererAbstract::Slip),
           m_splitStemTracks(false),
+          m_stemIndex(-1),
           m_outlineOpacity(0.15f),
           m_opacity(0.75f) {
     initForRectangles<RGBAMaterial>(0);
@@ -169,8 +170,11 @@ bool WaveformRendererStem::preprocessInner() {
     getGains(&allGain, nullptr, nullptr, nullptr);
 
     const float breadth = static_cast<float>(m_waveformRenderer->getBreadth());
-    const float stemBreadth = m_splitStemTracks ? breadth / 4.0f : 0;
-    const float halfBreadth = (m_splitStemTracks ? stemBreadth : breadth) / 2.0f;
+    // A single-stem view is laid out like an unsplit waveform: its one stem
+    // gets the whole breadth rather than a quarter of it.
+    const bool splitLanes = m_splitStemTracks && m_stemIndex < 0;
+    const float stemBreadth = splitLanes ? breadth / 4.0f : 0;
+    const float halfBreadth = (splitLanes ? stemBreadth : breadth) / 2.0f;
 
     const float heightFactor = allGain * halfBreadth / m_maxValue;
 
@@ -231,6 +235,13 @@ bool WaveformRendererStem::preprocessInner() {
                 // Cast to float
                 float max = static_cast<float>(u8max) * allGain;
 
+                // A single-stem view hides the others outright, outline layer
+                // included. They still emit their (now degenerate) rectangles,
+                // so the reserved vertex count below stays exact.
+                if (m_stemIndex >= 0 && stemIdx != m_stemIndex) {
+                    max = 0;
+                }
+
                 // Apply the gains
                 if (layerIdx) {
                     if (selectedStems) {
@@ -250,10 +261,10 @@ bool WaveformRendererStem::preprocessInner() {
                 // Lines are thin rectangles
                 // shadow
                 float height = heightFactor * max;
-                if (m_splitStemTracks) {
+                if (splitLanes) {
                     height = std::min(height, halfBreadth);
                 }
-                const int yIndex = m_splitStemTracks ? stemIdx : stemLayer;
+                const int yIndex = splitLanes ? stemIdx : stemLayer;
                 vertexUpdater.addRectangle(
                         {fVisualIdx - halfStripSize,
                                 yIndex * stemBreadth + halfBreadth - height},

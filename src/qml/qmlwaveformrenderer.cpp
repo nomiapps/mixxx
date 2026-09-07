@@ -326,6 +326,7 @@ QmlWaveformRendererFactory::Renderer QmlWaveformRendererStem::create(
 
     pRenderer->setAllChannelVisualGain(m_gainAll);
     pRenderer->setSplitStemTracks(m_splitStemTracks);
+    pRenderer->setStemIndex(m_stemIndex);
     connect(this,
             &QmlWaveformRendererStem::gainAllChanged,
             pRenderer.get(),
@@ -334,6 +335,10 @@ QmlWaveformRendererFactory::Renderer QmlWaveformRendererStem::create(
             &QmlWaveformRendererStem::splitStemTracksChanged,
             pRenderer.get(),
             &allshader::WaveformRendererStem::setSplitStemTracks);
+    connect(this,
+            &QmlWaveformRendererStem::stemIndexChanged,
+            pRenderer.get(),
+            &allshader::WaveformRendererStem::setStemIndex);
     return QmlWaveformRendererFactory::Renderer{pRenderer.get(), std::move(pRenderer)};
 }
 #endif

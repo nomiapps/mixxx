@@ -9,6 +9,7 @@ Item {
     property alias focusWidget: focusedWidgetControl.value
 
     signal moveVertical(int offset)
+    signal scrollVertical(int offset)
     signal loadSelectedTrack(string group, bool play)
     signal loadSelectedTrackIntoNextAvailableDeck(bool play)
 
@@ -75,6 +76,36 @@ Item {
         onValueChanged: (value) => {
             if (value != 0 && root.focusWidget == Skin.FocusedWidgetControl.WidgetKind.LibraryView)
                 root.moveVertical(value);
+        }
+    }
+
+    // [Library] ScrollVertical/ScrollUp/ScrollDown are the PGUP/PGDN half of a
+    // browse encoder (shift + browse on most controllers). The New UI handled
+    // only the Move* half, so shifted browsing did nothing at all here.
+    Mixxx.ControlProxy {
+        group: "[Library]"
+        key: "ScrollVertical"
+        onValueChanged: (value) => {
+            if (value != 0 && root.focusWidget == Skin.FocusedWidgetControl.WidgetKind.LibraryView)
+                root.scrollVertical(value);
+        }
+    }
+
+    Mixxx.ControlProxy {
+        group: "[Library]"
+        key: "ScrollUp"
+        onValueChanged: (value) => {
+            if (value != 0 && root.focusWidget == Skin.FocusedWidgetControl.WidgetKind.LibraryView)
+                root.scrollVertical(-1);
+        }
+    }
+
+    Mixxx.ControlProxy {
+        group: "[Library]"
+        key: "ScrollDown"
+        onValueChanged: (value) => {
+            if (value != 0 && root.focusWidget == Skin.FocusedWidgetControl.WidgetKind.LibraryView)
+                root.scrollVertical(1);
         }
     }
 

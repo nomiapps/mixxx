@@ -325,6 +325,9 @@ Rectangle {
         onMoveVertical: offset => {
             view.selectionModel.moveSelectionVertical(offset);
         }
+        onScrollVertical: offset => {
+            view.selectionModel.moveSelectionPage(offset);
+        }
     }
     Rectangle {
         id: headerBackground
@@ -674,6 +677,13 @@ Rectangle {
                 const oldRow = (selected.length == 0) ? 0 : selected[0].row;
                 this.selectRow(oldRow + value);
             }
+
+            // A detent of [Library] ScrollVertical is PGUP/PGDN, i.e. a whole visible
+            // page. Routed through moveSelectionVertical so both halves of a browse
+            // knob wrap at the ends by the same rule.
+            function moveSelectionPage(value) {
+                this.moveSelectionVertical(value * Math.max(1, view.bottomRow - view.topRow));
+            }
             function selectRow(row) {
                 const rowCount = this.model.rowCount();
                 if (rowCount == 0) {
@@ -682,6 +692,12 @@ Rectangle {
                 }
                 const newRow = Mixxx.MathUtils.positiveModulo(row, rowCount);
                 this.select(this.model.index(newRow, 0), ItemSelectionModel.Rows | ItemSelectionModel.Select | ItemSelectionModel.Clear | ItemSelectionModel.Current);
+                // Selecting a row does not bring it into view. A browse knob (and the
+                // arrow keys) therefore walked the selection off the bottom of the page
+                // and the table stayed where it was. Contain scrolls the least it can:
+                // stepping inside the page moves nothing, stepping past its edge
+                // advances by a row, and a wrap jumps to the other end.
+                view.positionViewAtRow(newRow, TableView.Contain);
             }
             function selectedTrackUrls() {
                 return this.selectedIndexes.map(index => {

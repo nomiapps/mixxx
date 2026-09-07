@@ -42,6 +42,15 @@ class allshader::WaveformRendererStem final
             markDirtyGeometry();
         }
     }
+    // -1 draws every stem (the normal case). A stem index draws only that
+    // stem, across the full breadth, so a layout can give each stem its own
+    // full-height waveform instead of a quarter-height lane.
+    void setStemIndex(int stemIndex) {
+        if (m_stemIndex != stemIndex) {
+            m_stemIndex = stemIndex;
+            markDirtyGeometry();
+        }
+    }
     void setReorderOnChange(bool value) {
         m_reorderOnChange = value;
         // Reset the stem layer stack to the natural order
@@ -59,6 +68,7 @@ class allshader::WaveformRendererStem final
   private:
     bool m_isSlipRenderer;
     bool m_splitStemTracks;
+    int m_stemIndex;
 
     bool m_reorderOnChange;
     float m_outlineOpacity;

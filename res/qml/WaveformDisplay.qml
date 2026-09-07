@@ -16,13 +16,17 @@ Item {
     required property string group
     property color beatColor: "#a1a1a1a1"
     property bool splitStemTracks: false
+    // -1 draws every stem. A stem index draws only that stem, full height.
+    property int stemIndex: -1
     // Stem lanes are unlabelled while split, so which band is which is guesswork. Same
     // treatment as the Edge surface: a name per lane, level with the lane it belongs to.
     readonly property var player: Mixxx.PlayerManager.getPlayer(root.group)
     readonly property bool hasStems: stemCountControl.value > 0
     readonly property var stemsModel: root.hasStems && root.player && root.player.currentTrack ? root.player.currentTrack.stemsModel : []
     // [Waveform]/StemLabels: bit 0 is the main window, bit 1 is the Edge surface.
-    readonly property bool laneLabelsVisible: root.splitStemTracks && root.hasStems && (Mixxx.Config.waveformStemLabels & 1)
+    // stemIndex >= 0 is a single-stem view: one stem fills the breadth, so the
+    // per-lane positions these names use do not correspond to anything.
+    readonly property bool laneLabelsVisible: root.splitStemTracks && root.stemIndex < 0 && root.hasStems && (Mixxx.Config.waveformStemLabels & 1)
     // Lane count comes from the CONTROL, not from stemsModel: that model is not a JS
     // array, so .length is undefined and this whole binding evaluated to NaN -- which
     // positioned every label at NaN and drew nothing, with no error anywhere.
@@ -106,6 +110,7 @@ Item {
         Mixxx.WaveformRendererStem {
             gainAll: root.splitStemTracks ? 2.0 : 1.0
             splitStemTracks: root.splitStemTracks
+            stemIndex: root.stemIndex
         }
         Mixxx.WaveformRendererBeat {
             color: root.beatColor

@@ -22,7 +22,10 @@
 
 [CmdletBinding()]
 param(
-    [string]$Root = 'C:\StreamDeck\src\mixxx-shared',
+    # The tree this copy of the script lives in. It was hardcoded to mixxx-shared,
+    # so running it from a session tree silently audited the SHARED build instead --
+    # a wrong answer that looks exactly like a right one.
+    [string]$Root = $PSScriptRoot,
     [switch]$Quiet
 )
 
@@ -84,6 +87,9 @@ $newer | Sort-Object Modified -Descending | Select-Object -First 12 |
     ForEach-Object { Write-Host ("    {0}  {1}" -f $_.Modified.ToString('HH:mm:ss'), $_.File) }
 if ($newer.Count -gt 12) { Write-Host "    ... and $($newer.Count - 12) more" }
 Write-Host ""
-Write-Host "  Rebuild:  build-shared.bat" -ForegroundColor Cyan
+$leaf = Split-Path $Root -Leaf
+$rebuild = if ($leaf -eq 'mixxx-shared') { 'build-shared.bat' }
+          else { "mixxx-pr-kit\build-session.ps1 -Name $($leaf -replace '^mixxx-', '')" }
+Write-Host "  Rebuild:  $rebuild" -ForegroundColor Cyan
 Write-Host ""
 exit 1

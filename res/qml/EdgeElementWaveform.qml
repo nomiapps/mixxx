@@ -18,6 +18,9 @@ Item {
 
     readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "") : (spec.group ?? "")
     readonly property bool hasStems: stemCountControl.value > 0
+    // The gutter is shared: lane names when split, the single stem's name when
+    // this element is one stem of a per-stem layout.
+    readonly property bool gutterVisible: root.labelsVisible || root.stemLabelConfigured
     // Beside the waveform when horizontal, above it when vertical: the default
     // is sized for a name at the side, so a vertical layout usually sets its own.
     readonly property real labelGutter: root.spec.stemLabelGutter ?? (root.vertical ? 22 : 64)
@@ -25,6 +28,11 @@ Item {
     // lanes, so an unsplit waveform gets no gutter and no labels.
     // [Waveform]/StemLabels bit 1 is the Edge surface (main window is bit 0). The layout
     // still opts in per surface; this is the global veto over it.
+    // Mirrored decks put the name on the OUTER edge: deck 1 left of its
+    // waveform, deck 2 right of its own. Per-stem elements only -- the lane
+    // labels of a split waveform still sit left, and a vertical waveform
+    // gutters above regardless.
+    readonly property bool labelsOnRight: root.spec.stemLabelSide === "right" && !root.vertical
     readonly property bool labelsVisible: root.spec.stemLabels === true && root.splitStems && root.hasStems && (Mixxx.Config.waveformStemLabels & 2)
     // Lanes stack along the waveform's breadth: down the height when horizontal,
     // across the width when vertical (the rotation turns the top lane into the
@@ -36,6 +44,19 @@ Item {
     readonly property var player: root.groupResolved ? Mixxx.PlayerManager.getPlayer(root.groupResolved) : null
     required property var spec
     readonly property bool splitStems: root.spec.splitStems === true
+    // One stem per element, each at full height, instead of one element split
+    // into quarter-height lanes. -1 (the default) keeps the whole-track view.
+    readonly property int stemIndex: root.spec.stemIndex ?? -1
+    // A literal name from the layout rather than the track's stem model: a
+    // single-stem element has one lane, so there is nothing to line up with.
+    readonly property string stemLabel: root.spec.stemLabel ?? ""
+    readonly property bool stemLabelConfigured: root.stemIndex >= 0 && root.stemLabel !== ""
+    // Off by default: a per-stem layout says which row is which by its order,
+    // so the name is on demand only. Double right-click on the waveform flips
+    // splitStemTracks, which is inert in a single-stem view, so it serves as
+    // the reveal gesture here -- the same gesture that shows lane names in a
+    // split waveform.
+    readonly property bool stemLabelVisible: root.stemLabelConfigured && root.hasStems && wave.splitStemTracks && (Mixxx.Config.waveformStemLabels & 2)
     // The stems model lives on the loaded track, so re-resolve it per track.
     readonly property var stemsModel: (root.hasStems && root.player && root.player.currentTrack) ? root.player.currentTrack.stemsModel : []
     property var surface: null
@@ -99,6 +120,25 @@ Item {
             }
         }
     }
+    // A single-stem element names itself in the gutter, styled like the lane
+    // labels above so the two kinds of layout read the same.
+    Text {
+        color: Theme.pureWhite
+        elide: Text.ElideRight
+        font.bold: true
+        font.capitalization: Font.AllUppercase
+        font.family: Theme.fontFamily
+        font.pixelSize: root.spec.stemLabelSize ?? 11
+        height: root.vertical ? root.labelGutter - 4 : waveHost.height
+        horizontalAlignment: root.vertical ? Text.AlignHCenter : (root.labelsOnRight ? Text.AlignLeft : Text.AlignRight)
+        opacity: 0.85
+        text: root.stemLabel
+        verticalAlignment: root.vertical ? Text.AlignBottom : Text.AlignVCenter
+        visible: root.stemLabelVisible
+        width: root.vertical ? waveHost.width : root.labelGutter - 8
+        x: root.vertical ? waveHost.x : (root.labelsOnRight ? waveHost.x + waveHost.width + 8 : 0)
+        y: root.vertical ? 0 : waveHost.y
+    }
     // The waveform's footprint on the canvas. The display itself is a child so
     // that the vertical rotation is confined to it and the frame below stays
     // axis-aligned.
@@ -107,10 +147,11 @@ Item {
 
         anchors.bottom: parent.bottom
         anchors.left: parent.left
-        anchors.leftMargin: root.labelsVisible && !root.vertical ? root.labelGutter : 0
+        anchors.leftMargin: root.gutterVisible && !root.vertical && !root.labelsOnRight ? root.labelGutter : 0
         anchors.right: parent.right
+        anchors.rightMargin: root.gutterVisible && root.labelsOnRight ? root.labelGutter : 0
         anchors.top: parent.top
-        anchors.topMargin: root.labelsVisible && root.vertical ? root.labelGutter : 0
+        anchors.topMargin: root.gutterVisible && root.vertical ? root.labelGutter : 0
 
         Skin.WaveformDisplay {
             id: wave
@@ -123,6 +164,7 @@ Item {
             height: root.vertical ? waveHost.width : waveHost.height
             rotation: root.vertical ? -90 : 0
             splitStemTracks: root.splitStems
+            stemIndex: root.stemIndex
             width: root.vertical ? waveHost.height : waveHost.width
             // The Edge keeps its own zoom: "zoom" in the layout sets it (1-10)
             // and the wheel over this waveform changes only this display. The

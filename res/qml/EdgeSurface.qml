@@ -29,6 +29,10 @@ Window {
     // changing flags re-creates the native window.
     property bool onStrip: false
     property bool placementReady: false
+    // Layout-local view flags flipped by 'surfacetoggle' elements. Nothing here
+    // reaches the engine: a flag only decides which elements exist and where.
+    // Seeded from the layout's top-level "toggles" object; unnamed flags are off.
+    property var toggles: ({})
 
     // The strip display this surface is built for: a screen whose physical
     // size is 2560x720 (any scaling), or failing that the widest-aspect
@@ -46,6 +50,12 @@ Window {
                 best = s;
         }
         return best;
+    }
+    // An element with "showIf" exists only while that flag is on. Loader.active,
+    // not visible: a hidden waveform should stop rendering, not draw off-screen.
+    function elementActive(el) {
+        const flag = el.showIf ?? "";
+        return flag === "" || root.toggleOn(flag);
     }
     function elementFile(type) {
         switch (type) {
@@ -67,6 +77,10 @@ Window {
             return "EdgeElementVuMeter.qml";
         case "waveform":
             return "EdgeElementWaveform.qml";
+        case "library":
+            return "EdgeElementLibrary.qml";
+        case "surfacetoggle":
+            return "EdgeElementSurfaceToggle.qml";
         case "overview":
             return "EdgeElementOverview.qml";
         case "deckswitch":
@@ -79,6 +93,18 @@ Window {
             console.warn("edge-layout: unknown element type", type);
             return "";
         }
+    }
+
+    // "rectIf": {"<flag>": [x, y, w, h]} -- the rect to use while that flag is on,
+    // so switching a section on can reflow the element it displaces. First match
+    // wins; with no match the element keeps its own rect.
+    function elementRect(el) {
+        const alt = el.rectIf ?? {};
+        for (const flag in alt) {
+            if (root.toggleOn(flag))
+                return alt[flag];
+        }
+        return el.rect;
     }
 
     // No strip attached, so derive the window from the display we are on rather
@@ -117,7 +143,9 @@ Window {
                 return;
 
             try {
-                root.layoutDef = root.resolveThemeColors(JSON.parse(xhr.responseText));
+                const def = root.resolveThemeColors(JSON.parse(xhr.responseText));
+                root.toggles = Object.assign({}, def.toggles ?? {});
+                root.layoutDef = def;
                 root.revealIfReady();
             } catch (e) {
                 console.warn("edge-layout: failed to parse", url, e);
@@ -189,6 +217,14 @@ Window {
         const next = Object.assign({}, deckAssign);
         next[slot] = group;
         deckAssign = next;
+    }
+    function setToggle(flag, on) {
+        const next = Object.assign({}, toggles);
+        next[flag] = on === true;
+        toggles = next;
+    }
+    function toggleOn(flag) {
+        return flag !== "" && root.toggles[flag] === true;
     }
 
     color: Theme.backgroundColor
@@ -329,20 +365,34 @@ Window {
             model: root.layoutDef ? root.layoutDef.elements : []
 
             Loader {
+                id: elementLoader
+
+                // The rect in force right now, which "rectIf" may swap out. Reading it
+                // through the surface is what re-lays the element when a flag changes.
+                readonly property var box: root.elementRect(modelData)
                 required property var modelData
 
-                height: canvasArea.pixelAligned(canvasArea.yOff + (modelData.rect[1] + modelData.rect[3]) * canvasArea.ui) - y
-                width: canvasArea.pixelAligned(canvasArea.xOff + (modelData.rect[0] + modelData.rect[2]) * canvasArea.ui) - x
-                x: canvasArea.pixelAligned(canvasArea.xOff + modelData.rect[0] * canvasArea.ui)
-                y: canvasArea.pixelAligned(canvasArea.yOff + modelData.rect[1] * canvasArea.ui)
-
-                Component.onCompleted: {
+                function loadElement() {
                     const file = root.elementFile(modelData.type);
                     if (file)
                         setSource(file, {
                             "spec": modelData,
                             "surface": root
                         });
+                }
+
+                active: root.elementActive(modelData)
+                height: canvasArea.pixelAligned(canvasArea.yOff + (box[1] + box[3]) * canvasArea.ui) - y
+                width: canvasArea.pixelAligned(canvasArea.xOff + (box[0] + box[2]) * canvasArea.ui) - x
+                x: canvasArea.pixelAligned(canvasArea.xOff + box[0] * canvasArea.ui)
+                y: canvasArea.pixelAligned(canvasArea.yOff + box[1] * canvasArea.ui)
+
+                Component.onCompleted: elementLoader.loadElement()
+                // An element that starts switched off has no source yet; give it one the
+                // first time it is switched on. After that the Loader reloads it itself.
+                onActiveChanged: {
+                    if (elementLoader.active && elementLoader.source == "")
+                        elementLoader.loadElement();
                 }
             }
         }

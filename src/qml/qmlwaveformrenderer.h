@@ -527,6 +527,7 @@ class QmlWaveformRendererStem
     Q_OBJECT
     Q_PROPERTY(double gainAll MEMBER m_gainAll NOTIFY gainAllChanged)
     Q_PROPERTY(bool splitStemTracks MEMBER m_splitStemTracks NOTIFY splitStemTracksChanged)
+    Q_PROPERTY(int stemIndex MEMBER m_stemIndex NOTIFY stemIndexChanged)
     QML_NAMED_ELEMENT(WaveformRendererStem)
 
   public:
@@ -553,10 +554,12 @@ class QmlWaveformRendererStem
   signals:
     void gainAllChanged(double);
     void splitStemTracksChanged(bool);
+    void stemIndexChanged(int);
 
   private:
     double m_gainAll{1.0};
     bool m_splitStemTracks{false};
+    int m_stemIndex{-1};
 
     ::WaveformRendererAbstract::PositionSource m_position{::WaveformRendererAbstract::Play};
 };

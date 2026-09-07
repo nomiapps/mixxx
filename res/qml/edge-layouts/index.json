@@ -6,6 +6,8 @@
         "waveforms-xl.json",
         "waveforms-only.json",
         "vertical-waveforms.json",
+        "split-stems-4x.json",
+        "library.json",
         "quad-decks.json",
         "quad-decks-mixer.json",
         "synth.json",
