@@ -1,5 +1,6 @@
 import Mixxx 1.0 as Mixxx
 import QtQuick
+import QtQuick.Window
 
 Image {
     id: root
@@ -28,4 +29,9 @@ Image {
     }
 
     source: batterySource()
+    // The battery glyphs are SVGs; an SVG rasterises at sourceSize, so left unset
+    // it is drawn at its natural size and rescaled to the 24 px slot -- soft on a
+    // fractional-DPR screen. Rasterise at the size actually drawn, times DPR.
+    sourceSize.height: height * Screen.devicePixelRatio
+    sourceSize.width: width * Screen.devicePixelRatio
 }

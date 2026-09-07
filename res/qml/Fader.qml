@@ -48,6 +48,8 @@ EdgeControls.Fader {
         y: root.vertical ? (root.visualPosition * (root.height - height)) : ((root.height - height) / 2)
 
         Image {
+            id: handleSharp
+
             anchors.fill: parent
             fillMode: Image.PreserveAspectFit
             source: handleImage.source
@@ -62,7 +64,12 @@ EdgeControls.Fader {
             color: "#80000000"
             height: parent.height + 5
             radius: 5
-            source: handleImage
+            // Shadow the DPR-rasterised copy, not handleImage: that one is the
+            // natural-size probe the handle takes its dimensions from, and as a
+            // texture it is the SVG at 1x, upscaled on a fractional-DPR screen.
+            // handleSharp is hidden whenever this shadow is shown, so it serves
+            // as the source without drawing twice.
+            source: handleSharp
             verticalOffset: 5
             visible: root.showHandleShadow
             width: parent.width + 5

@@ -50,6 +50,10 @@ Rectangle {
         anchors.left: parent.left
         anchors.top: parent.top
         asynchronous: true
+        // Cover art arrives at whatever size the file embeds -- often 1000 px
+        // or more -- and is minified to the bar's height. Without mipmaps that
+        // is a straight bilinear sample and the art shimmers and aliases.
+        mipmap: true
         source: root.currentTrack?.coverArtUrl
         visible: false
         width: height

@@ -22,6 +22,9 @@ Mixxx.LibrarySourceTree {
                     asynchronous: true
                     clip: true
                     fillMode: Image.PreserveAspectCrop
+                    // Full-size cover art minified to a 30 px row; mipmaps
+                    // keep that downsample from aliasing.
+                    mipmap: true
                     source: cover_art
                 }
             }

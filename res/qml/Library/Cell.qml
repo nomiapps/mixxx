@@ -48,6 +48,9 @@ Rectangle {
                     asynchronous: true
                     clip: true
                     fillMode: Image.PreserveAspectFit
+                    // Full-size cover art minified to a 75 px cell; mipmaps
+                    // keep that downsample from aliasing.
+                    mipmap: true
                     source: cover_art
                 }
                 ColumnLayout {
