@@ -687,7 +687,6 @@ Rectangle {
             required property string file_url
             required property int row
             required property bool selected
-            required property var track
 
             implicitHeight: Mixxx.Config.libraryRowHeight
 
@@ -702,7 +701,19 @@ Rectangle {
                 property int row: item.row
                 property bool selected: item.selected
                 property var tableView: view
-                property var track: item.track
+                // Deliberately null. Declaring `required property var track` on the
+                // delegate made TableView fetch the model's Track role for EVERY
+                // cell, and that role calls TrackModel::getTrack(), which hydrates
+                // the track: a DB read plus SoundSourceProxy opening the audio file
+                // and TagLib parsing its tags -- synchronously, on the GUI thread.
+                // A window resize brings a screenful of new rows into view at once,
+                // so maximizing opened ~16 files and froze the UI for 1.7-2.2 s
+                // (measured; with this removed, 0.5 s). Nothing reads it: the two
+                // call sites below are commented-out workarounds, and every live
+                // column renders from the `display` role. A column that genuinely
+                // needs a Track must ask for it deliberately and know that it costs
+                // a file read per row.
+                property var track: null
 
                 anchors.fill: parent
                 focus: true

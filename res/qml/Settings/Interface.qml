@@ -1635,7 +1635,10 @@ Category {
                 }
             }
             SettingComponents.FormButton {
-                primary: root.hasChanges
+                // Was `root.hasChanges`, which Category does not define, so this was
+                // always undefined -- the Save button never highlighted, and once it fed
+                // a bool property Qt warned about it. Follow the same condition as enabled.
+                primary: enabled
                 enabled: root.selectedIndex == 0 && themeColorTab.dirty || root.selectedIndex == 1 && waveformTab.dirty || root.selectedIndex == 2 && decksTab.dirty
                 opacity: enabled ? 1.0 : 0.5
                 text: "Save"
