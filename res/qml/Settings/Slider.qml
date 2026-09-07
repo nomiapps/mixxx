@@ -152,14 +152,14 @@ Item {
                 id: handle
 
                 anchors.fill: parent
-                color: Theme.accentColor
+                color: Theme.blue
                 radius: 7
             }
             InnerShadow {
                 id: handleEffect1
 
                 anchors.fill: parent
-                color: "#0E2A54"
+                color: Qt.alpha(Theme.blue, 0.35)
                 horizontalOffset: 0
                 radius: 16.0
                 samples: 16

@@ -9,7 +9,7 @@ Rectangle {
 
     signal pressed
 
-    border.color: root.active ? Theme.accentColor : Theme.white
+    border.color: root.active ? Theme.blue : Theme.white
     border.width: 1
     color: 'transparent'
     radius: height / 2
@@ -23,7 +23,7 @@ Rectangle {
     }
     Text {
         anchors.centerIn: parent
-        color: root.active ? Theme.accentColor : Theme.white
+        color: root.active ? Theme.blue : Theme.white
         text: "!"
     }
 }

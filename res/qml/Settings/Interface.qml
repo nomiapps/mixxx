@@ -575,7 +575,7 @@ Category {
                                                 id: content
 
                                                 anchors.fill: parent
-                                                color: Theme.accentColor
+                                                color: Theme.blue
 
                                                 Text {
                                                     id: textLabel
@@ -592,7 +592,7 @@ Category {
                                                 id: bottomInnerEffect
 
                                                 anchors.fill: parent
-                                                color: "#0E2A54"
+                                                color: Qt.alpha(Theme.blue, 0.35)
                                                 horizontalOffset: -1
                                                 radius: 8
                                                 samples: 32
@@ -604,7 +604,7 @@ Category {
                                                 id: topInnerEffect
 
                                                 anchors.fill: parent
-                                                color: "#0E2A54"
+                                                color: Qt.alpha(Theme.blue, 0.35)
                                                 horizontalOffset: 1
                                                 radius: 8
                                                 samples: 32
@@ -1662,7 +1662,7 @@ Category {
             }
             SettingComponents.FormButton {
                 activeColor: "#999999"
-                backgroundColor: "#3F3F3F"
+                backgroundColor: Theme.darkGray3
                 enabled: root.selectedIndex == 0 && themeColorTab.dirty || root.selectedIndex == 1 && waveformTab.dirty || root.selectedIndex == 2 && decksTab.dirty
                 opacity: enabled ? 1.0 : 0.5
                 text: "Cancel"
@@ -1683,7 +1683,7 @@ Category {
             }
             SettingComponents.FormButton {
                 activeColor: "#999999"
-                backgroundColor: root.hasChanges ? "#3a60be" : "#3F3F3F"
+                backgroundColor: root.hasChanges ? Theme.blue : Theme.darkGray3
                 enabled: root.selectedIndex == 0 && themeColorTab.dirty || root.selectedIndex == 1 && waveformTab.dirty || root.selectedIndex == 2 && decksTab.dirty
                 opacity: enabled ? 1.0 : 0.5
                 text: "Save"

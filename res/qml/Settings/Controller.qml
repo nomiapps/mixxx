@@ -233,7 +233,7 @@ Category {
         }
         Skin.FormButton {
             activeColor: "#999999"
-            backgroundColor: "#3F3F3F"
+            backgroundColor: Theme.darkGray3
             opacity: enabled ? 1.0 : 0.5
             text: "Cancel"
 
@@ -244,7 +244,7 @@ Category {
         }
         Skin.FormButton {
             activeColor: "#999999"
-            backgroundColor: root.dirty ? "#3a60be" : "#3F3F3F"
+            backgroundColor: root.dirty ? Theme.blue : Theme.darkGray3
             opacity: enabled ? 1.0 : 0.5
             text: "Save"
 

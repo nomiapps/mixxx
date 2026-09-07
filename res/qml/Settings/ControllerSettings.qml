@@ -187,7 +187,7 @@ ColumnLayout {
                         id: content
 
                         anchors.fill: parent
-                        color: Theme.accentColor
+                        color: Theme.blue
 
                         Text {
                             id: textLabel
@@ -204,7 +204,7 @@ ColumnLayout {
                         id: bottomInnerEffect
 
                         anchors.fill: parent
-                        color: "#0E2A54"
+                        color: Qt.alpha(Theme.blue, 0.35)
                         horizontalOffset: -1
                         radius: 8
                         samples: 32
@@ -216,7 +216,7 @@ ColumnLayout {
                         id: topInnerEffect
 
                         anchors.fill: parent
-                        color: "#0E2A54"
+                        color: Qt.alpha(Theme.blue, 0.35)
                         horizontalOffset: 1
                         radius: 8
                         samples: 32

@@ -7,7 +7,7 @@ Text {
     property var url: null
     required property var value
 
-    color: url?.hostname ? Theme.accentColor : Theme.white
+    color: url?.hostname ? Theme.blue : Theme.white
     font.italic: !url?.hostname
     font.pixelSize: 12
     font.underline: !!url?.hostname

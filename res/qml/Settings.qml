@@ -103,7 +103,7 @@ Popup {
                         Layout.leftMargin: 6
                         Layout.preferredHeight: 28
                         Layout.rightMargin: 6
-                        border.color: active ? Theme.accentColor : Theme.panelBorderColor
+                        border.color: active ? Theme.blue : Theme.panelBorderColor
                         border.width: 1
                         color: Theme.backgroundColor
                         radius: 4

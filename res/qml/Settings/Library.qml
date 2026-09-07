@@ -284,7 +284,7 @@ Category {
                                 }
                                 SettingComponents.FormButton {
                                     activeColor: "#999999"
-                                    backgroundColor: "#3F3F3F"
+                                    backgroundColor: Theme.darkGray3
                                     opacity: enabled ? 1.0 : 0.5
                                     text: qsTr("Add")
 
@@ -336,7 +336,7 @@ Category {
                                     }
                                     Rectangle {
                                         anchors.fill: parent
-                                        color: index % 2 == 0 ? '#3F3F3F' : '#2B2B2B'
+                                        color: index % 2 == 0 ? Theme.darkGray3 : Theme.darkGray2
 
                                         // width: 180; height: 40
                                         RowLayout {
@@ -373,7 +373,7 @@ Category {
                                                 id: relinkButton
 
                                                 activeColor: "#999999"
-                                                backgroundColor: "#3F3F3F"
+                                                backgroundColor: Theme.darkGray3
                                                 opacity: enabled ? 1.0 : 0.5
                                                 text: modelData.relink ? qsTr("Save to proceed") : qsTr("Relink")
                                                 visible: selected && modelData.trackCount !== undefined && !Mixxx.Library.scanner.running
@@ -507,7 +507,7 @@ Category {
                             }
                             SettingComponents.FormButton {
                                 activeColor: "#999999"
-                                backgroundColor: Mixxx.Library.scanner.cancelling ? "#999999" : "#3a60be"
+                                backgroundColor: Mixxx.Library.scanner.cancelling ? Theme.midGray : Theme.blue
                                 enabled: !Mixxx.Library.scanner.cancelling
                                 text: qsTr("Cancel")
 
@@ -1029,7 +1029,7 @@ Category {
             }
             SettingComponents.FormButton {
                 activeColor: "#999999"
-                backgroundColor: "#3F3F3F"
+                backgroundColor: Theme.darkGray3
                 opacity: enabled ? 1.0 : 0.5
                 text: qsTr("Cancel")
                 visible: root.dirty
@@ -1040,7 +1040,7 @@ Category {
             }
             SettingComponents.FormButton {
                 activeColor: "#999999"
-                backgroundColor: root.dirty ? "#3a60be" : "#3F3F3F"
+                backgroundColor: root.dirty ? Theme.blue : Theme.darkGray3
                 enabled: root.dirty
                 opacity: enabled ? 1.0 : 0.5
                 text: qsTr("Save")
