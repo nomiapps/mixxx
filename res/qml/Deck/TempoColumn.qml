@@ -23,6 +23,15 @@ ColumnLayout {
         group: root.group
         key: "key"
     }
+    // Which notation to print the key in. Set from the Decks settings tab (and by
+    // the legacy preferences dialog); binding on it is what makes the readout
+    // switch live instead of on the next track load.
+    Mixxx.ControlProxy {
+        id: keyNotationCO
+
+        group: "[Library]"
+        key: "key_notation"
+    }
     RowLayout {
         Layout.fillWidth: true
         height: 22
@@ -99,7 +108,6 @@ ColumnLayout {
                 , "#b2d145" // 8m
                 , "#7499cd"  // 3m
             ]
-            readonly property variant textMap: ["1d", "8d", "3d", "10d", "5d", "12d", "7d", "2d", "9d", "4d", "11d", "6d", "10m", "5m", "12m", "7m", "2m", "9m", "4m", "11m", "6m", "1m", "8m", "3m"]
 
             Layout.fillWidth: true
             Layout.leftMargin: 0
@@ -123,7 +131,7 @@ ColumnLayout {
                 text: {
                     if (!trackLoadedControl.value || keyCO.value <= 0)
                         return "-";
-                    return pitchKey.textMap[keyCO.value - 1];
+                    return Mixxx.KeyUtils.keyToString(keyCO.value, keyNotationCO.value);
                 }
                 verticalAlignment: Text.AlignVCenter
             }

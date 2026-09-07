@@ -75,6 +75,15 @@ Item {
 
         target: Mixxx.Library
     }
+    // The Key column is formatted by the model, so a notation change needs the
+    // query re-run to repaint the rows that are already on screen.
+    Connections {
+        function onKeyNotationChanged() {
+            root.applySearch();
+        }
+
+        target: Mixxx.Config
+    }
 
     Timer {
         id: refreshDebounce

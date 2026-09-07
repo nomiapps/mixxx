@@ -38,7 +38,10 @@ Item {
     readonly property string elapsedText: formatTime(elapsedSeconds)
     readonly property string field: spec.field ?? "title"
     readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "") : (spec.group ?? "")
-    readonly property string keyText: (root.loaded && root.player.currentTrack?.keyText) ? root.player.currentTrack.keyText : "--"
+    // The deck's live key (follows pitch when keylock is off), printed in the
+    // notation chosen in Settings > Decks -- the same source the main-window
+    // deck uses, so the two readouts never disagree.
+    readonly property string keyText: (root.loaded && keyControl.value > 0) ? Mixxx.KeyUtils.keyToString(keyControl.value, keyNotationControl.value) : "--"
     readonly property bool loaded: root.player && root.player.isLoaded
     property var player: root.groupResolved ? Mixxx.PlayerManager.getPlayer(root.groupResolved) : null
     readonly property string remainingText: "-" + formatTime(durationSeconds - elapsedSeconds)
@@ -62,6 +65,18 @@ Item {
 
         group: root.groupResolved
         key: "bpm"
+    }
+    Mixxx.ControlProxy {
+        id: keyControl
+
+        group: root.groupResolved
+        key: "key"
+    }
+    Mixxx.ControlProxy {
+        id: keyNotationControl
+
+        group: "[Library]"
+        key: "key_notation"
     }
     Mixxx.ControlProxy {
         id: playPositionControl

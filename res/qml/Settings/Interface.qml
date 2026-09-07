@@ -39,6 +39,7 @@ Category {
         sliderOrientationInput.selected = Mixxx.Config.controlRateDir === -1 ? "down" : "up";
         keylockModeInput.selected = keylockModeInput.options[Mixxx.Config.controlKeylockMode];
         keyunlockModeInput.selected = keyunlockModeInput.options[Mixxx.Config.controlKeyunlockMode];
+        keyNotationInput.selected = keyNotationInput.options[keyNotationInput.values.indexOf(Mixxx.Config.keyNotation)] ?? null;
         pitchBendBehaviourInput.selected = pitchBendBehaviourInput.options[Mixxx.Config.controlPitchBendBehaviour];
         adjustmentButtonsTemporaryCoarseInput.value = Mixxx.Config.controlRateTempCoarse * 100;
         adjustmentButtonsTemporaryFineInput.value = Mixxx.Config.controlRateTempFine * 100;
@@ -108,6 +109,11 @@ Category {
         Mixxx.Config.controlRateDir = sliderOrientationInput.selected === "down" ? -1 : 1;
         Mixxx.Config.controlKeylockMode = keylockModeInput.options.indexOf(keylockModeInput.selected);
         Mixxx.Config.controlKeyunlockMode = keyunlockModeInput.options.indexOf(keyunlockModeInput.selected);
+        // A custom notation (only the legacy dialog can define one) shows as no
+        // selection here; leave it alone unless the user picked something.
+        if (keyNotationInput.options.indexOf(keyNotationInput.selected) !== -1) {
+            Mixxx.Config.keyNotation = keyNotationInput.values[keyNotationInput.options.indexOf(keyNotationInput.selected)];
+        }
         Mixxx.Config.controlPitchBendBehaviour = pitchBendBehaviourInput.options.indexOf(pitchBendBehaviourInput.selected);
         Mixxx.Config.controlRateTempCoarse = adjustmentButtonsTemporaryCoarseInput.value / 100;
         Mixxx.Config.controlRateTempFine = adjustmentButtonsTemporaryFineInput.value / 100;
@@ -1436,6 +1442,48 @@ Category {
 
                                         maxWidth: deckPane.width * 0.3
                                         options: ["reset key", "keep key"]
+
+                                        onSelectedChanged: decksTab.dirty = true
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.preferredWidth: speedKeyPane.width * 0.5
+
+                                    Mixxx.SettingParameter {
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: 32
+                                        label: "Key notation"
+
+                                        Column {
+                                            anchors.fill: parent
+
+                                            Text {
+                                                color: Theme.white
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                text: "Key notation"
+                                            }
+                                            Text {
+                                                color: Theme.white
+                                                font.italic: true
+                                                font.pixelSize: 11
+                                                font.weight: Font.Thin
+                                                text: "How keys read on the decks, in the library and on the Edge"
+                                            }
+                                        }
+                                    }
+                                    RatioChoice {
+                                        id: keyNotationInput
+
+                                        // KeyUtils::KeyNotation values, index-aligned with options.
+                                        // Open Key is 1d..12d/1m..12m, Lancelot (Camelot) is
+                                        // 1A..12B, traditional is Am / F#m / Bb.
+                                        readonly property var values: [2, 3, 4, 5, 6]
+
+                                        maxWidth: deckPane.width * 0.34
+                                        normalizedWidth: false
+                                        options: ["open key", "lancelot", "traditional", "open key + trad", "lancelot + trad"]
+                                        tooltips: ["1d..12d major, 1m..12m minor", "1B..12B major, 1A..12A minor (Camelot)", "C, Am, F#m, Bb", "Open Key with the traditional name after it", "Lancelot with the traditional name after it"]
 
                                         onSelectedChanged: decksTab.dirty = true
                                     }

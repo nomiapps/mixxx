@@ -114,6 +114,13 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     Q_PROPERTY(bool libraryShowFeatureIcons READ libraryShowFeatureIcons WRITE
                     set_libraryShowFeatureIcons NOTIFY
                             libraryShowFeatureIconsChanged);
+    // KeyUtils::KeyNotation as an int (OpenKey = 2, Lancelot = 3, Traditional = 4,
+    // OpenKeyAndTraditional = 5, LancelotAndTraditional = 6). Backed by the same
+    // [Key] KeyNotation setting the legacy preferences dialog uses, so both UIs agree.
+    // Writing it also swaps the process-wide notation map and the [Library] key_notation
+    // control, so every key readout (decks, library column, Edge) changes at once.
+    Q_PROPERTY(int keyNotation READ keyNotation WRITE set_keyNotation NOTIFY
+                    keyNotationChanged);
     Q_PROPERTY(mixxx::preferences::ScreenSaver libraryInhibitScreensaver READ
                     libraryInhibitScreensaver WRITE
                             set_libraryInhibitScreensaver NOTIFY
@@ -362,6 +369,7 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     // Library group
     PROPERTY_DECL_ACCESSOR(mixxx::preferences::Tooltips, libraryTooltips);
     PROPERTY_DECL_ACCESSOR(bool, libraryShowFeatureIcons);
+    PROPERTY_DECL_ACCESSOR(int, keyNotation);
     PROPERTY_DECL_ACCESSOR(mixxx::preferences::ScreenSaver, libraryInhibitScreensaver);
     PROPERTY_DECL_ACCESSOR(bool, libraryHideMenuBar);
     PROPERTY_DECL_ACCESSOR(bool, libraryEnableSearchCompletions);
@@ -468,6 +476,7 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     void waveformBeatGridAlphaChanged();
     void libraryTooltipsChanged();
     void libraryShowFeatureIconsChanged();
+    void keyNotationChanged();
     void libraryInhibitScreensaverChanged();
     void libraryHideMenuBarChanged();
     void libraryEnableSearchCompletionsChanged();
