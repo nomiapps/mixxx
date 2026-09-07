@@ -65,11 +65,7 @@ void AsyncImageResponse::run() {
         break;
     case CoverInfo::LoadedImage::Result::Ok:
         DEBUG_ASSERT(!loadedImage.image.isNull());
-        if (m_requestedSize.isValid()) {
-            m_image = loadedImage.image.scaled(m_requestedSize);
-        } else {
-            m_image = loadedImage.image;
-        }
+        m_image = fitImageToRequestedSize(loadedImage.image, m_requestedSize);
         break;
     default:
         qWarning() << "ImageProvider: Failed to load cover art" << trackRef;
