@@ -138,13 +138,36 @@ Rectangle {
         let changed = false;
         for (let index = 0; index < root.model.columns.length; ++index) {
             const explicitWidth = view.explicitColumnWidth(index);
-            if (explicitWidth >= 0 && Math.abs(root.model.columns[index].preferredWidth - explicitWidth) >= 0.5) {
-                root.model.columns[index].preferredWidth = explicitWidth;
+            if (explicitWidth < 0) {
+                continue;
+            }
+            // A drag sets a SCREEN width; the stored width is the natural one that,
+            // stretched to the view, gives that screen width. Storing it this way
+            // keeps the dragged column the size the user chose while the others
+            // shrink or grow around it, and the saved layout stays proportional
+            // when the window is a different size next time.
+            const naturalWidth = view.stretch > 0 ? explicitWidth / view.stretch : explicitWidth;
+            if (Math.abs(root.model.columns[index].preferredWidth - naturalWidth) >= 0.5) {
+                root.model.columns[index].preferredWidth = naturalWidth;
                 changed = true;
             }
         }
         if (changed) {
             widthSaveTimer.restart();
+            // Hand the column back to the scaling pool. Deferred: this runs inside the
+            // view's own layoutChanged, and clearing widths there re-enters layout.
+            // The screen width does not change at that moment -- the natural width
+            // was chosen so that natural * stretch == explicit -- so nothing jumps.
+            Qt.callLater(function () {
+                for (let index = 0; index < root.model.columns.length; ++index) {
+                    if (view.explicitColumnWidth(index) >= 0) {
+                        view.setColumnWidth(index, -1);
+                    }
+                }
+                if (view.updateColumnSize()) {
+                    view.forceLayout();
+                }
+            });
         }
     }
     function visibleColumnCount() {
@@ -554,6 +577,19 @@ Rectangle {
         id: view
 
         property int dynamicColumnCount: 0
+        // Screen pixels held by columns with an explicit (mid-drag) width. These are
+        // exactly what the user is dragging, so they are never scaled.
+        property real fixedWidth: 0
+        // Natural pixels of the columns that scale: every visible column with a
+        // preferred width. Multiplied by `stretch` on screen.
+        property real scalableWidth: 0
+        // How much the scalable columns are stretched or squeezed so that, together
+        // with the fixed ones, they fill the view exactly. 1 while any fill column
+        // (no preferred width) exists, since that column absorbs the difference on its
+        // own. Once the user has dragged a column, every column has a width, nothing
+        // is left to fill, and without this the table stopped short of the right edge
+        // on a wide window and overflowed on a narrow one.
+        property real stretch: 1
         property int usedWidth: 0
 
         function loadSelectedTrack(group, play) {
@@ -573,21 +609,35 @@ Rectangle {
         function updateColumnSize() {
             const oldUsedWidth = usedWidth;
             const oldDynamicColumnCount = dynamicColumnCount;
+            const oldStretch = stretch;
             usedWidth = 0;
+            fixedWidth = 0;
+            scalableWidth = 0;
             dynamicColumnCount = 0;
+            stretch = 1;
             if (model == null) {
                 return;
             }
             for (let c = 0; c < model.columns.length; c++) {
                 if (model.columns[c].hidden || model.columns[c].autoHideWidth > view.width) {
                     continue;
+                }
+                const explicitWidth = view.explicitColumnWidth(c);
+                if (explicitWidth >= 0) {
+                    fixedWidth += Math.max(explicitWidth, root.minimumColumnWidth);
                 } else if (model.columns[c].preferredWidth > 0) {
-                    usedWidth += model.columns[c].preferredWidth;
+                    // Floored the same way the provider floors it, so the sum here is
+                    // the sum that actually gets drawn.
+                    scalableWidth += Math.max(model.columns[c].preferredWidth, root.minimumColumnWidth);
                 } else {
                     dynamicColumnCount += model.columns[c].fillSpan || 1;
                 }
             }
-            return oldDynamicColumnCount != dynamicColumnCount || oldUsedWidth != usedWidth;
+            usedWidth = fixedWidth + scalableWidth;
+            if (dynamicColumnCount === 0 && scalableWidth > 0 && view.width > 0) {
+                stretch = Math.max((view.width - fixedWidth) / scalableWidth, 0);
+            }
+            return oldDynamicColumnCount != dynamicColumnCount || oldUsedWidth != usedWidth || Math.abs(oldStretch - stretch) > 0.0005;
         }
 
         anchors.bottom: parent.bottom
@@ -613,7 +663,9 @@ Rectangle {
                 return Math.max(explicitWidth, root.minimumColumnWidth);
             }
             if (columnDef.preferredWidth >= 0) {
-                return columnDef.preferredWidth;
+                // Scaled to the view, see `stretch`. The floor comes after scaling so
+                // a squeezed window never produces a column too thin to grab.
+                return Math.max(columnDef.preferredWidth * view.stretch, root.minimumColumnWidth);
             }
             const span = columnDef.fillSpan || 1;
             return span * (view.width - view.usedWidth) / view.dynamicColumnCount;

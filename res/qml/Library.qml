@@ -36,6 +36,14 @@ Item {
         searchField.forceActiveFocus(Qt.ShortcutFocusReason);
         searchField.selectAll();
     }
+    // Empties the box and shows the full library at once, without the typing debounce,
+    // and leaves the cursor in the box since clearing is usually the start of a new search.
+    function clearSearch() {
+        searchDebounce.stop();
+        searchField.text = "";
+        root.applySearch();
+        searchField.forceActiveFocus();
+    }
     function analyzeCurrentView() {
         if (!root.sidebar || !root.sidebar.tracklist) {
             analyzeToast.show(0);
@@ -103,6 +111,8 @@ Item {
         font.pixelSize: 13
         placeholderText: qsTranslate("WSearchLineEdit", "Search...")
         placeholderTextColor: Theme.midGray
+        // Keep typed text from running under the clear glyph.
+        rightPadding: clearButton.visible ? clearButton.width + 16 : 8
 
         background: Rectangle {
             border.color: searchField.activeFocus ? Theme.blue : Theme.midGray
@@ -111,6 +121,15 @@ Item {
             radius: 4
         }
 
+        // Escape empties the box, matching the desktop convention and the legacy
+        // search field. When the box is already empty the key is left alone.
+        Keys.onEscapePressed: event => {
+            if (searchField.text.length === 0) {
+                event.accepted = false;
+                return;
+            }
+            root.clearSearch();
+        }
         onTextChanged: searchDebounce.restart()
         // Reaching for the search box means searching the whole library, so drop any
         // crate scope rather than quietly searching inside it. Otherwise a search can
@@ -128,6 +147,29 @@ Item {
 
             interval: 300
             onTriggered: root.applySearch()
+        }
+        // Clear glyph, only while there is something to clear. Drawn flat rather than
+        // as a Skin.Button: a gradient box inside a text field reads as a second
+        // control, and the settings window's close button already uses this glyph.
+        Text {
+            id: clearButton
+
+            anchors.right: parent.right
+            anchors.rightMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            color: clearHover.hovered ? Theme.white : Theme.midGray
+            font.pixelSize: 13
+            text: "✕"
+            visible: searchField.text.length > 0
+
+            HoverHandler {
+                id: clearHover
+
+                cursorShape: Qt.PointingHandCursor
+            }
+            TapHandler {
+                onTapped: root.clearSearch()
+            }
         }
     }
     Skin.FormButton {
