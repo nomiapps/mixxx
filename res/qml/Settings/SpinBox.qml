@@ -1,8 +1,12 @@
 import QtQuick
 import QtQuick.Controls
-import Qt5Compat.GraphicalEffects
 import "../Theme"
 
+// A number field with steppers. Drawn as the chrome draws a field: window
+// ground behind a hairline that turns Theme.blue while it has focus, steppers
+// as small flat faces inside it. It used to show the value on a solid cyan
+// slab between shadowed squares, and although it said editable it had no text
+// input to edit.
 SpinBox {
     id: root
 
@@ -11,9 +15,13 @@ SpinBox {
     property double max: 1
     property double min: 0
     property int precision: 2
+    // Shown instead of the value when set; the BPM precision preview uses it.
+    property string previewText: ""
     property real realValue: 0
     property double step: 1 / decimalFactor
     property string suffix: ""
+    // Width the widest value needs, so a caller can size the field to its range.
+    readonly property real textWidth: widest.width
 
     function decimalToInt(decimal) {
         return decimal * decimalFactor;
@@ -21,6 +29,7 @@ SpinBox {
 
     editable: true
     from: decimalToInt(root.min)
+    implicitHeight: 26
     padding: 0
     spacing: 2
     stepSize: root.step * decimalFactor
@@ -33,59 +42,63 @@ SpinBox {
         return Math.round(Number.fromLocaleString(locale, text) * decimalFactor);
     }
 
-    background: Item {
-        implicitWidth: 140
+    TextMetrics {
+        id: widest
+
+        font: root.font
+        text: root.textFromValue(root.to, root.locale)
     }
-    contentItem: Item {
-        width: root.textWidth + 2 * root.spacing
+    // The suffix and the preview live in the background, not in the input's
+    // text: SpinBox re-parses its TextInput whenever the text stops matching
+    // displayText, so a suffix inside the text is a binding loop.
+    background: Rectangle {
+        border.color: root.activeFocus ? Theme.blue : Theme.panelBorderColor
+        border.width: 1
+        color: Theme.fieldBackgroundColor
+        implicitWidth: Math.max(140, root.textWidth + suffixText.width + 2 * 24 + 24)
+        radius: 4
 
-        Rectangle {
-            id: content
+        Text {
+            id: suffixText
 
-            anchors.fill: parent
-            color: Theme.blue
-
-            Text {
-                id: textLabel
-
-                anchors.fill: parent
-                color: Theme.white
-                font: root.font
-                horizontalAlignment: Text.AlignHCenter
-                text: `${root.textFromValue(root.value, root.locale)}${root.suffix}` ?? ""
-                verticalAlignment: Text.AlignVCenter
-            }
+            anchors.right: parent.right
+            anchors.rightMargin: 24 + 8
+            anchors.verticalCenter: parent.verticalCenter
+            color: Theme.deckTextColor
+            font: root.font
+            text: root.suffix
+            visible: root.suffix.length > 0
         }
-        InnerShadow {
-            id: bottomInnerEffect
-
-            anchors.fill: parent
-            color: Qt.alpha(Theme.blue, 0.35)
-            horizontalOffset: -1
-            radius: 8
-            samples: 32
-            source: content
-            spread: 0.4
-            verticalOffset: -1
+        Text {
+            anchors.centerIn: parent
+            color: Theme.white
+            font: root.font
+            text: root.previewText
+            visible: root.previewText.length > 0
         }
-        InnerShadow {
-            id: topInnerEffect
-
-            anchors.fill: parent
-            color: Qt.alpha(Theme.blue, 0.35)
-            horizontalOffset: 1
-            radius: 8
-            samples: 32
-            source: bottomInnerEffect
-            spread: 0.4
-            verticalOffset: 1
-        }
+    }
+    contentItem: TextInput {
+        color: Theme.white
+        font: root.font
+        horizontalAlignment: Qt.AlignHCenter
+        inputMethodHints: root.inputMethodHints
+        readOnly: !root.editable
+        rightPadding: suffixText.visible ? suffixText.width + 4 : 0
+        selectByMouse: true
+        selectedTextColor: Theme.white
+        selectionColor: Theme.blue
+        text: root.displayText
+        validator: root.validator
+        verticalAlignment: Qt.AlignVCenter
+        visible: root.previewText.length === 0
     }
     down.indicator: Indicator {
-        text: "-"
+        pressed: root.down.pressed
+        text: "−"
         x: root.mirrored ? parent.width - width : 0
     }
     up.indicator: Indicator {
+        pressed: root.up.pressed
         text: "+"
         x: root.mirrored ? 0 : parent.width - width
     }
@@ -96,60 +109,33 @@ SpinBox {
         top: Math.max(root.from, root.to)
     }
 
-    onValueChanged: {
-        root.value = value;
-    }
-
     component Indicator: Item {
         id: indicator
 
+        property bool pressed: false
         required property string text
 
-        height: implicitHeight
-        implicitHeight: 24
+        height: parent ? parent.height : 26
         implicitWidth: 24
 
         Rectangle {
-            id: content
-
             anchors.fill: parent
-            border.width: 0
-            color: Theme.darkGray2
-            radius: 2
+            anchors.margins: 2
+            color: indicator.pressed ? Theme.pressedWashColor : (indicatorHover.hovered ? Theme.hoverWashColor : Theme.controlFaceColor)
+            radius: 3
 
             Text {
                 anchors.fill: parent
-                color: Theme.white
-                font.pixelSize: root.font.pixelSize
-                fontSizeMode: Text.Fit
+                color: Theme.deckTextColor
+                font.bold: true
+                font.pixelSize: 12
                 horizontalAlignment: Text.AlignHCenter
                 text: indicator.text
                 verticalAlignment: Text.AlignVCenter
             }
-        }
-        InnerShadow {
-            id: bottomInnerEffect
-
-            anchors.fill: parent
-            color: "#40000000"
-            horizontalOffset: -2
-            radius: 4
-            samples: 16
-            source: content
-            spread: 0.3
-            verticalOffset: -2
-        }
-        InnerShadow {
-            id: topInnerEffect
-
-            anchors.fill: parent
-            color: "#40000000"
-            horizontalOffset: 2
-            radius: 4
-            samples: 16
-            source: bottomInnerEffect
-            spread: 0.3
-            verticalOffset: 2
+            HoverHandler {
+                id: indicatorHover
+            }
         }
     }
 }

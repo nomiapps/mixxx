@@ -184,7 +184,6 @@ Category {
                             text: modelData.name
                         }
                         Skin.FormButton {
-                            activeColor: "#999999"
                             text: "Create device"
                             visible: unknownDeviceRow.containsMouse || hovered || unknownDevicesList.currentIndex == index
 
@@ -229,8 +228,6 @@ Category {
         anchors.rightMargin: 14
 
         Skin.FormButton {
-            activeColor: "#999999"
-            backgroundColor: Theme.darkGray3
             opacity: enabled ? 1.0 : 0.5
             text: "Rescan"
 
@@ -239,8 +236,7 @@ Category {
             }
         }
         Skin.FormButton {
-            activeColor: "#999999"
-            backgroundColor: "#7D3B3B"
+            backgroundColor: Theme.warningColor
             opacity: enabled ? 1.0 : 0.5
             text: "Reset"
             visible: !!root.selectedController?.mapping?.hasSettings
@@ -258,12 +254,10 @@ Category {
 
             Layout.alignment: Qt.AlignVCenter
             Layout.rightMargin: 16
-            color: "#7D3B3B"
+            color: Theme.warningColor
             text: ""
         }
         Skin.FormButton {
-            activeColor: "#999999"
-            backgroundColor: Theme.darkGray3
             opacity: enabled ? 1.0 : 0.5
             text: "Cancel"
             // The row itself is always shown now, because Rescan is useful whether
@@ -276,8 +270,7 @@ Category {
             }
         }
         Skin.FormButton {
-            activeColor: "#999999"
-            backgroundColor: root.dirty ? Theme.blue : Theme.darkGray3
+            primary: root.dirty
             opacity: enabled ? 1.0 : 0.5
             text: "Save"
             visible: root.dirty || !!root.selectedController

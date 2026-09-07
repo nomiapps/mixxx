@@ -4,86 +4,60 @@ import QtQuick.Window 2.12
 import QtQuick.Controls 2.12
 import "Theme"
 
+// The form button of the New UI chrome: a flat 4px-radius face behind a 1px
+// hairline, the way the settings shell draws its fields and rows. Used by the
+// settings pages and the library toolbar. It used to be a stack of two inner
+// shadows, a drop shadow and a glow around a solid slab, and the slab went
+// solid cyan for the primary action; none of that exists elsewhere in the chrome.
 AbstractButton {
     id: root
 
+    readonly property bool active: root.highlight || root.checked
     property color activeColor: Theme.deckActiveColor
-    property color backgroundColor: Theme.darkGray3
+    // Face colour. Callers pass Theme.warningColor for destructive actions.
+    // The primary action is a flag, below, not a colour.
+    property color backgroundColor: Theme.controlFaceColor
     property bool highlight: false
     property color normalColor: Theme.white
     property color pressedColor: activeColor
+    // The one thing the form wants you to press, drawn the way the chrome draws
+    // the current row and a focused field: Theme.blue tint and hairline.
+    property bool primary: false
+    readonly property bool tinted: root.primary || root.active
 
-    implicitHeight: 20
+    implicitHeight: 26
     implicitWidth: 98
 
-    background: Item {
-        anchors.fill: parent
+    background: Rectangle {
+        border.color: root.tinted ? Theme.blue : Theme.panelBorderColor
+        border.width: 1
+        color: root.pressed ? Theme.pressedWashColor : (root.tinted ? Theme.selectionColor : root.backgroundColor)
+        radius: 4
 
         Rectangle {
-            id: backgroundImage
-
             anchors.fill: parent
-            color: root.backgroundColor
-            radius: 4
-            visible: false
-        }
-        InnerShadow {
-            id: bottomInnerEffect
-
-            anchors.fill: parent
-            color: "transparent"
-            horizontalOffset: -1
-            radius: 8
-            samples: 16
-            source: backgroundImage
-            spread: 0.3
-            verticalOffset: -1
-        }
-        InnerShadow {
-            id: topInnerEffect
-
-            anchors.fill: parent
-            color: "transparent"
-            horizontalOffset: 1
-            radius: 8
-            samples: 16
-            source: bottomInnerEffect
-            spread: 0.3
-            verticalOffset: 1
-        }
-        DropShadow {
-            id: dropEffect
-
-            anchors.fill: parent
-            color: "#0E0E0E"
-            horizontalOffset: 0
-            radius: 4.0
-            source: topInnerEffect
-            verticalOffset: 0
+            anchors.margins: 1
+            color: Theme.hoverWashColor
+            radius: 3
+            visible: root.hovered && !root.pressed
         }
     }
     contentItem: Item {
         anchors.fill: parent
 
-        Glow {
-            id: labelGlow
-
-            anchors.fill: parent
-            color: label.color
-            radius: 1
-            source: label
-            spread: 0.1
-        }
         Label {
             id: label
 
             anchors.fill: parent
-            color: root.normalColor
+            color: root.pressed ? root.pressedColor : (root.active ? root.activeColor : root.normalColor)
+            elide: Text.ElideRight
             font.bold: true
             font.capitalization: Font.AllUppercase
             font.family: Theme.fontFamily
             font.pixelSize: Theme.buttonFontPixelSize
             horizontalAlignment: Text.AlignHCenter
+            leftPadding: 6
+            rightPadding: 6
             text: root.text
             verticalAlignment: Text.AlignVCenter
             visible: root.text != null
@@ -107,62 +81,9 @@ AbstractButton {
         ColorOverlay {
             anchors.fill: image
             antialiasing: true
-            color: root.normalColor
+            color: label.color
             source: image
             visible: icon.source != null
         }
     }
-    states: [
-        State {
-            name: "pressed"
-            when: root.pressed
-
-            PropertyChanges {
-                backgroundImage.color: root.checked ? "#3a60be" : root.backgroundColor
-            }
-            PropertyChanges {
-                label.color: root.pressedColor
-            }
-            PropertyChanges {
-                bottomInnerEffect.color: '#353535'
-            }
-            PropertyChanges {
-                topInnerEffect.color: '#353535'
-            }
-            PropertyChanges {
-                labelGlow.visible: true
-            }
-        },
-        State {
-            name: "active"
-            when: (root.highlight || root.checked) && !root.pressed
-
-            PropertyChanges {
-                backgroundImage.color: "#2D4EA1"
-            }
-            PropertyChanges {
-                label.color: root.activeColor
-            }
-            PropertyChanges {
-                bottomInnerEffect.color: '#353535'
-            }
-            PropertyChanges {
-                topInnerEffect.color: '#353535'
-            }
-            PropertyChanges {
-                labelGlow.visible: true
-            }
-        },
-        State {
-            name: "inactive"
-            when: !root.checked && !root.highlight && !root.pressed
-
-            PropertyChanges {
-                label.color: root.normalColor
-            }
-            PropertyChanges {
-                labelGlow.visible: false
-            }
-        }
-    ]
 }

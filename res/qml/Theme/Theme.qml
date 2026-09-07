@@ -100,6 +100,16 @@ QtObject {
     // #303034 and #30343d for one concept; this names the dominant value so new
     // chrome stops adding another near-identical grey.
     property color panelBorderColor: "#303034"
+    // Interaction tints for flat chrome controls. The settings shell and the
+    // browse tree already drew the current row in blue at 16% and a hover in
+    // white at 5%, but inline; naming them keeps every control on one tint.
+    property color selectionColor: Qt.alpha(blue, 0.16)
+    property color hoverWashColor: Qt.alpha(white, 0.05)
+    property color pressedWashColor: Qt.alpha(blue, 0.28)
+    // A field you type into sits on the window ground; a control you press
+    // sits one step up on the toolbar grey.
+    property color fieldBackgroundColor: backgroundColor
+    property color controlFaceColor: darkGray2
     // Edge surface roles. Each DEFAULTS to the main-window token for the same
     // concept, so both surfaces match. This alias layer is the override point: give
     // any of these its own value (or a primitive like amber/purple) and the Edge

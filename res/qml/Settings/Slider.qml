@@ -1,4 +1,3 @@
-import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
 import QtQuick.Controls
 import "../Theme"
@@ -92,11 +91,19 @@ Item {
             width: control.availableWidth - 14
             x: control.leftPadding + 7
 
+            // Track and fill, as the chrome draws a fader bar: a dark groove with
+            // a Theme.blue line up to the handle.
             Rectangle {
-                color: "#181818"
+                color: Theme.darkGray
                 height: 4
                 radius: 2
                 width: parent.width
+            }
+            Rectangle {
+                color: Theme.blue
+                height: 4
+                radius: 2
+                width: control.visualPosition * parent.width
             }
             Repeater {
                 id: delegate
@@ -129,7 +136,7 @@ Item {
                         id: label
 
                         color: Qt.alpha(Theme.white, 0.25)
-                        font.pixelSize: 9
+                        font.pixelSize: 10
                         text: modelData ?? ""
                         visible: modelData != null
 
@@ -142,39 +149,20 @@ Item {
                 }
             }
         }
-        handle: Item {
+        // A ring, not a glowing dot: window ground inside a 2px Theme.blue
+        // hairline, tinted while held or hovered.
+        handle: Rectangle {
+            border.color: Theme.blue
+            border.width: 2
+            color: control.pressed || handleHover.hovered ? Theme.selectionColor : Theme.fieldBackgroundColor
             height: 14
+            radius: 7
             width: 14
             x: control.leftPadding + control.visualPosition * (control.availableWidth - width)
             y: -5
 
-            Rectangle {
-                id: handle
-
-                anchors.fill: parent
-                color: Theme.blue
-                radius: 7
-            }
-            InnerShadow {
-                id: handleEffect1
-
-                anchors.fill: parent
-                color: Qt.alpha(Theme.blue, 0.35)
-                horizontalOffset: 0
-                radius: 16.0
-                samples: 16
-                source: handle
-                verticalOffset: 0
-            }
-            DropShadow {
-                id: handleEffect2
-
-                anchors.fill: parent
-                color: Qt.alpha(Theme.darkGray, 0.25)
-                horizontalOffset: 0
-                radius: 12.0
-                source: handleEffect1
-                verticalOffset: 0
+            HoverHandler {
+                id: handleHover
             }
         }
 
@@ -193,41 +181,24 @@ Item {
         height: 30
         width: fontMetrics.advanceWidth + 8
 
+        // The value field, drawn as the settings shell draws its search field.
         Rectangle {
             id: backgroundInput
 
             anchors.fill: parent
             anchors.margins: 4
-            color: Theme.darkGray2
+            border.color: valueInput.activeFocus ? Theme.blue : Theme.panelBorderColor
+            border.width: 1
+            color: Theme.fieldBackgroundColor
             radius: 4
-        }
-        DropShadow {
-            id: dropSetting
-
-            anchors.fill: backgroundInput
-            color: Theme.darkGray
-            horizontalOffset: 0
-            radius: 4.0
-            source: backgroundInput
-            verticalOffset: 0
-        }
-        InnerShadow {
-            id: effect2
-
-            anchors.fill: backgroundInput
-            color: "#353535"
-            horizontalOffset: 0
-            radius: 12
-            samples: 24
-            source: dropSetting
-            spread: 0.2
-            verticalOffset: 0
         }
         Item {
             anchors.fill: parent
             anchors.margins: 4
 
             TextInput {
+                id: valueInput
+
                 anchors.left: parent.left
                 anchors.margins: 3
                 anchors.right: inputField.left

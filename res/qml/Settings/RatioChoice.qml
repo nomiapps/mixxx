@@ -1,11 +1,14 @@
 import QtQuick 2.12
 import QtQuick.Controls
-import QtQuick.Layouts
 import QtQuick.Shapes
 import Qt5Compat.GraphicalEffects
 import "../Theme"
 import ".." as Skin
 
+// A segmented choice. Drawn as the chrome draws a sunken panel with a selected
+// row: hairline track, the chosen segment in the Theme.blue tint with a blue
+// hairline. It used to be a pill with an inner-shadow glow on a solid cyan
+// segment under a drop shadow, a shape nothing else in the New UI has.
 Item {
     id: root
 
@@ -13,7 +16,7 @@ Item {
         Math.max.apply(null, options.map(option => fontMetrics.advanceWidth(option))) + root.spacing * 2;
     }
     property alias content: contentList
-    property color inactiveColor: Theme.darkGray2
+    property color inactiveColor: Theme.sunkenBackgroundColor
     property real maxWidth: 0
     property alias metric: fontMetrics
     property bool normalizedWidth: true
@@ -22,8 +25,8 @@ Item {
     property real spacing: 9
     property list<var> tooltips: []
 
-    implicitHeight: (contentList.visible ? contentList.height : contentSpin.height) + dropRatio.radius * 2
-    implicitWidth: (contentList.visible ? contentList.width : contentSpin.width) + dropRatio.radius * 2
+    implicitHeight: contentList.visible ? contentList.height : contentSpin.height
+    implicitWidth: contentList.visible ? contentList.width : contentSpin.width
 
     onTooltipsChanged: {
         popup.close();
@@ -32,99 +35,79 @@ Item {
     FontMetrics {
         id: fontMetrics
 
+        font.bold: true
         font.capitalization: Font.AllUppercase
-        font.pixelSize: 14
+        font.pixelSize: 11
     }
     Rectangle {
         id: contentList
 
         anchors.centerIn: parent
+        border.color: Theme.panelBorderColor
+        border.width: 1
         color: root.inactiveColor
-        height: 24
-        radius: height / 2
+        height: 26
+        radius: 4
         visible: root.maxWidth == 0 || root.maxWidth > root.cellSize * root.options.length
         width: {
             if (root.normalizedWidth) {
-                root.cellSize * root.options.length + root.spacing;
+                root.cellSize * root.options.length + 4;
             } else {
-                options.reduce((acc, option) => acc + fontMetrics.advanceWidth(option) + root.spacing * 2, 0) + root.spacing;
+                options.reduce((acc, option) => acc + fontMetrics.advanceWidth(option) + root.spacing * 2, 0) + 4;
             }
         }
 
-        RowLayout {
-            anchors.centerIn: parent
+        Row {
+            anchors.fill: parent
+            anchors.margins: 2
 
             Repeater {
                 model: options
 
-                Item {
+                Rectangle {
+                    id: contentOption
+
+                    readonly property bool current: root.selected == modelData
                     required property int index
                     required property var modelData
 
-                    height: contentList.height
-                    implicitWidth: root.normalizedWidth ? root.cellSize : fontMetrics.advanceWidth(modelData) + root.spacing * 2
+                    border.color: Theme.blue
+                    border.width: current ? 1 : 0
+                    color: current ? Theme.selectionColor : (optionHover.hovered ? Theme.hoverWashColor : "transparent")
+                    height: parent.height
+                    radius: 3
+                    width: root.normalizedWidth ? root.cellSize : fontMetrics.advanceWidth(modelData) + root.spacing * 2
 
-                    Rectangle {
-                        id: contentOption
-
+                    Text {
                         anchors.fill: parent
-                        color: root.selected == modelData ? Theme.blue : 'transparent'
-                        radius: height / 2
+                        color: contentOption.current ? Theme.white : Theme.deckTextColor
+                        font: fontMetrics.font
+                        horizontalAlignment: Text.AlignHCenter
+                        text: contentOption.modelData
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    HoverHandler {
+                        id: optionHover
 
-                        Text {
-                            anchors.fill: parent
-                            color: Theme.white
-                            font: fontMetrics.font
-                            horizontalAlignment: Text.AlignHCenter
-                            text: modelData
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: !!root.tooltips[index]
-
-                            onEntered: {
-                                if (!root.tooltips[index])
-                                    return;
-                                popup.tooltip = root.tooltips[index] || "";
+                        onHoveredChanged: {
+                            if (!root.tooltips[contentOption.index]) {
+                                return;
+                            }
+                            if (hovered) {
+                                popup.tooltip = root.tooltips[contentOption.index] || "";
                                 popup.x = Qt.binding(function () {
                                     return contentOption.mapToItem(root, 0, 0).x + contentOption.width / 2 - popup.width / 2;
                                 });
                                 popup.open();
-                            }
-                            onExited: {
+                            } else {
                                 popup.close();
-                            }
-                            onPressed: {
-                                root.selected = modelData;
                             }
                         }
                     }
-                    InnerShadow {
-                        id: bottomOptionInnerEffect
-
-                        anchors.fill: parent
-                        color: Qt.alpha(Theme.blue, 0.35)
-                        horizontalOffset: -1
-                        radius: 8
-                        samples: 32
-                        source: contentOption
-                        spread: 0.4
-                        verticalOffset: -1
-                        visible: root.selected == modelData
-                    }
-                    InnerShadow {
-                        id: topOptionInnerEffect
-
-                        anchors.fill: parent
-                        color: Qt.alpha(Theme.blue, 0.35)
-                        horizontalOffset: 1
-                        radius: 8
-                        samples: 32
-                        source: bottomOptionInnerEffect
-                        spread: 0.4
-                        verticalOffset: 1
-                        visible: root.selected == modelData
+                    TapHandler {
+                        onTapped: {
+                            root.selected = contentOption.modelData;
+                        }
                     }
                 }
             }
@@ -155,61 +138,27 @@ Item {
         visible: !contentList.visible
 
         background: Rectangle {
+            border.color: Theme.panelBorderColor
+            border.width: 1
             color: root.inactiveColor
+            implicitHeight: 26
             implicitWidth: contentSpin.textWidth + 2 * contentSpin.spacing + 48
-            radius: parent.height / 2
+            radius: 4
         }
-        contentItem: Item {
-            width: contentSpin.textWidth + 2 * contentSpin.spacing + 20
-
-            Rectangle {
-                id: content
-
-                anchors.fill: parent
-                color: Theme.blue
-                radius: height / 2
-
-                Text {
-                    id: textLabel
-
-                    anchors.fill: parent
-                    color: Theme.white
-                    font: contentSpin.font
-                    horizontalAlignment: Text.AlignHCenter
-                    text: contentSpin.textFromValue(contentSpin.value, contentSpin.locale) ?? ""
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-            InnerShadow {
-                id: bottomInnerEffect
-
-                anchors.fill: parent
-                color: Qt.alpha(Theme.blue, 0.35)
-                horizontalOffset: -1
-                radius: 8
-                samples: 32
-                source: content
-                spread: 0.4
-                verticalOffset: -1
-            }
-            InnerShadow {
-                id: topInnerEffect
-
-                anchors.fill: parent
-                color: Qt.alpha(Theme.blue, 0.35)
-                horizontalOffset: 1
-                radius: 8
-                samples: 32
-                source: bottomInnerEffect
-                spread: 0.4
-                verticalOffset: 1
-            }
+        contentItem: Text {
+            color: Theme.white
+            font: contentSpin.font
+            horizontalAlignment: Text.AlignHCenter
+            text: contentSpin.textFromValue(contentSpin.value, contentSpin.locale) ?? ""
+            verticalAlignment: Text.AlignVCenter
         }
         down.indicator: Indicator {
+            pressed: contentSpin.down.pressed
             text: "<"
             x: contentSpin.mirrored ? parent.width - width : 0
         }
         up.indicator: Indicator {
+            pressed: contentSpin.up.pressed
             text: ">"
             x: contentSpin.mirrored ? 0 : parent.width - width
         }
@@ -240,17 +189,6 @@ Item {
             }
         }
     }
-    DropShadow {
-        id: dropRatio
-
-        anchors.fill: root
-        anchors.margins: dropRatio.radius
-        color: "#80000000"
-        horizontalOffset: 0
-        radius: 4.0
-        source: contentList.visible ? contentList : contentSpin
-        verticalOffset: 0
-    }
     Popup {
         id: popup
 
@@ -279,8 +217,6 @@ Item {
                     anchors.top: parent.top
                     antialiasing: true
                     height: width
-                    layer.enabled: true
-                    layer.samples: 4
                     width: 20
 
                     ShapePath {
@@ -330,24 +266,34 @@ Item {
         }
     }
 
-    component Indicator: Rectangle {
+    // The stepper ends of the narrow fallback: small flat faces inside the field.
+    component Indicator: Item {
+        id: indicator
+
+        property bool pressed: false
         required property string text
 
-        border.width: 0
-        color: root.inactiveColor
-        height: implicitHeight
-        implicitHeight: 24
+        height: parent ? parent.height : 26
         implicitWidth: 24
-        radius: parent.height / 2
 
-        Text {
+        Rectangle {
             anchors.fill: parent
-            color: Theme.white
-            font.pixelSize: contentSpin.font.pixelSize
-            fontSizeMode: Text.Fit
-            horizontalAlignment: Text.AlignHCenter
-            text: parent.text
-            verticalAlignment: Text.AlignVCenter
+            anchors.margins: 2
+            color: indicator.pressed ? Theme.pressedWashColor : (indicatorHover.hovered ? Theme.hoverWashColor : Theme.controlFaceColor)
+            radius: 3
+
+            Text {
+                anchors.fill: parent
+                color: Theme.deckTextColor
+                font.bold: true
+                font.pixelSize: 12
+                horizontalAlignment: Text.AlignHCenter
+                text: indicator.text
+                verticalAlignment: Text.AlignVCenter
+            }
+            HoverHandler {
+                id: indicatorHover
+            }
         }
     }
 }

@@ -4,8 +4,8 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import QtQuick.Dialogs
 import Qt.labs.qmlmodels
-import Qt5Compat.GraphicalEffects
 
+import "." as SettingComponents
 import ".." as Skin
 import "../Theme"
 
@@ -149,99 +149,19 @@ ColumnLayout {
         DelegateChoice {
             roleValue: "number"
 
-            SpinBox {
+            SettingComponents.SpinBox {
                 id: spinBox
 
-                readonly property int decimalFactor: Math.pow(10, decimals)
-                property int decimals: modelData.precision ?? 0
                 required property var modelData
-                property real realValue: value / decimalFactor
 
-                function decimalToInt(decimal) {
-                    return decimal * decimalFactor;
-                }
-
-                editable: true
-                from: decimalToInt(modelData.min)
-                padding: 0
-                spacing: 2
-                stepSize: modelData.step * decimalFactor
-                textFromValue: function (value, locale) {
-                    return Number(value / decimalFactor).toLocaleString(locale, 'f', spinBox.decimals);
-                }
-                to: decimalToInt(modelData.max)
-                value: {
-                    return decimalToInt(modelData.currentValue);
-                }
-                valueFromText: function (text, locale) {
-                    return Math.round(Number.fromLocaleString(locale, text) * decimalFactor);
-                }
-
-                background: Item {
-                    implicitWidth: 140
-                }
-                contentItem: Item {
-                    width: spinBox.textWidth + 2 * spinBox.spacing
-
-                    Rectangle {
-                        id: content
-
-                        anchors.fill: parent
-                        color: Theme.blue
-
-                        Text {
-                            id: textLabel
-
-                            anchors.fill: parent
-                            color: Theme.white
-                            font: spinBox.font
-                            horizontalAlignment: Text.AlignHCenter
-                            text: spinBox.textFromValue(spinBox.value, spinBox.locale) ?? ""
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                    }
-                    InnerShadow {
-                        id: bottomInnerEffect
-
-                        anchors.fill: parent
-                        color: Qt.alpha(Theme.blue, 0.35)
-                        horizontalOffset: -1
-                        radius: 8
-                        samples: 32
-                        source: content
-                        spread: 0.4
-                        verticalOffset: -1
-                    }
-                    InnerShadow {
-                        id: topInnerEffect
-
-                        anchors.fill: parent
-                        color: Qt.alpha(Theme.blue, 0.35)
-                        horizontalOffset: 1
-                        radius: 8
-                        samples: 32
-                        source: bottomInnerEffect
-                        spread: 0.4
-                        verticalOffset: 1
-                    }
-                }
-                down.indicator: Indicator {
-                    text: "-"
-                    x: spinBox.mirrored ? parent.width - width : 0
-                }
-                up.indicator: Indicator {
-                    text: "+"
-                    x: spinBox.mirrored ? 0 : parent.width - width
-                }
-                validator: DoubleValidator {
-                    bottom: Math.min(spinBox.from, spinBox.to)
-                    decimals: spinBox.decimals
-                    notation: DoubleValidator.StandardNotation
-                    top: Math.max(spinBox.from, spinBox.to)
-                }
+                max: modelData.max
+                min: modelData.min
+                precision: modelData.precision ?? 0
+                realValue: modelData.currentValue
+                step: modelData.step
 
                 onValueChanged: {
-                    modelData.currentValue = Number(value / decimalFactor);
+                    modelData.currentValue = value / decimalFactor;
                 }
             }
         }
@@ -376,56 +296,4 @@ ColumnLayout {
         model: root.settings
     }
 
-    component Indicator: Item {
-        id: indicator
-
-        required property string text
-
-        height: implicitHeight
-        implicitHeight: 24
-        implicitWidth: 24
-
-        Rectangle {
-            id: content
-
-            anchors.fill: parent
-            border.width: 0
-            color: Theme.darkGray2
-            radius: 2
-
-            Text {
-                anchors.fill: parent
-                color: Theme.white
-                font.pixelSize: spinBox.font.pixelSize
-                fontSizeMode: Text.Fit
-                horizontalAlignment: Text.AlignHCenter
-                text: indicator.text
-                verticalAlignment: Text.AlignVCenter
-            }
-        }
-        InnerShadow {
-            id: bottomInnerEffect
-
-            anchors.fill: parent
-            color: "#40000000"
-            horizontalOffset: -2
-            radius: 4
-            samples: 16
-            source: content
-            spread: 0.3
-            verticalOffset: -2
-        }
-        InnerShadow {
-            id: topInnerEffect
-
-            anchors.fill: parent
-            color: "#40000000"
-            horizontalOffset: 2
-            radius: 4
-            samples: 16
-            source: bottomInnerEffect
-            spread: 0.3
-            verticalOffset: 2
-        }
-    }
 }

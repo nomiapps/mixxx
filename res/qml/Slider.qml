@@ -1,4 +1,3 @@
-import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -25,11 +24,19 @@ RowLayout {
             implicitHeight: 4
             width: control.availableWidth - 7
             height: control.availableHeight
+            // Track and fill, as the chrome draws a fader bar: a dark groove with
+            // a Theme.blue line up to the handle.
             Rectangle {
                 width: parent.width
                 height: 4
                 radius: 2
-                color: "#181818"
+                color: Theme.darkGray
+            }
+            Rectangle {
+                width: control.visualPosition * parent.width
+                height: 4
+                radius: 2
+                color: Theme.blue
             }
             Repeater {
                 id: delegate
@@ -62,41 +69,25 @@ RowLayout {
                             horizontalCenter: mark.left
                         }
                         color: Qt.alpha(Theme.white, 0.25)
-                        font.pixelSize: 9
+                        font.pixelSize: 10
                         text: modelData ?? ""
                     }
                 }
             }
         }
-        handle: Item {
+        // A ring, not a glowing dot: window ground inside a 2px Theme.blue
+        // hairline, tinted while held or hovered.
+        handle: Rectangle {
             x: control.leftPadding + control.visualPosition * (control.availableWidth - width)
             y: -5
             width: 14
             height: 14
-            Rectangle {
-                id: handle
-                anchors.fill: parent
-                radius: 7
-                color: Theme.accentColor
-            }
-            InnerShadow {
-                id: handleEffect1
-                anchors.fill: parent
-                samples: 16
-                horizontalOffset: 0
-                verticalOffset: 0
-                radius: 16.0
-                color: "#0E2A54"
-                source: handle
-            }
-            DropShadow {
-                id: handleEffect2
-                anchors.fill: parent
-                source: handleEffect1
-                horizontalOffset: 0
-                verticalOffset: 0
-                radius: 12.0
-                color: Qt.alpha(Theme.darkGray, 0.25)
+            radius: 7
+            border.width: 2
+            border.color: Theme.blue
+            color: control.pressed || handleHover.hovered ? Theme.selectionColor : Theme.fieldBackgroundColor
+            HoverHandler {
+                id: handleHover
             }
         }
     }
@@ -110,37 +101,21 @@ RowLayout {
         property string suffix: ""
         visible: suffix.length > 0
 
+        // The value field, drawn as the settings shell draws its search field.
         Rectangle {
             id: backgroundInput
             radius: 4
-            color: Theme.darkGray2
+            color: Theme.fieldBackgroundColor
+            border.width: 1
+            border.color: valueInput.activeFocus ? Theme.blue : Theme.panelBorderColor
             anchors.fill: parent
             anchors.margins: 4
-        }
-        DropShadow {
-            id: dropSetting
-            anchors.fill: parent
-            horizontalOffset: 0
-            verticalOffset: 0
-            radius: 4.0
-            color: Theme.darkGray
-            source: backgroundInput
-        }
-        InnerShadow {
-            id: effect2
-            anchors.fill: parent
-            source: dropSetting
-            spread: 0.2
-            radius: 12
-            samples: 24
-            horizontalOffset: 0
-            verticalOffset: 0
-            color: "#353535"
         }
         Item {
             anchors.fill: parent
             anchors.margins: 4
             TextInput {
+                id: valueInput
                 anchors.left: parent.left
                 anchors.right: inputField.left
                 anchors.margins: 3

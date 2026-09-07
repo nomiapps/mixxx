@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
-import Qt5Compat.GraphicalEffects
 import Mixxx 1.0 as Mixxx
 import "." as Setting
 import "../Deck" as DeckComponents
@@ -568,53 +567,10 @@ Category {
                                         max: 10
                                         min: 0
                                         precision: 0
+                                        // What the library BPM column will show at this precision.
+                                        previewText: (126.0).toFixed(bpmPrecisionInput.value)
                                         realValue: 1
 
-                                        contentItem: Item {
-                                            Rectangle {
-                                                id: content
-
-                                                anchors.fill: parent
-                                                color: Theme.blue
-
-                                                Text {
-                                                    id: textLabel
-
-                                                    anchors.fill: parent
-                                                    color: Theme.white
-                                                    font: bpmPrecisionInput.font
-                                                    horizontalAlignment: Text.AlignHCenter
-                                                    text: (126.0).toFixed(bpmPrecisionInput.value)
-                                                    verticalAlignment: Text.AlignVCenter
-                                                }
-                                            }
-                                            InnerShadow {
-                                                id: bottomInnerEffect
-
-                                                anchors.fill: parent
-                                                color: Qt.alpha(Theme.blue, 0.35)
-                                                horizontalOffset: -1
-                                                radius: 8
-                                                samples: 32
-                                                source: content
-                                                spread: 0.4
-                                                verticalOffset: -1
-                                            }
-                                            InnerShadow {
-                                                id: topInnerEffect
-
-                                                anchors.fill: parent
-                                                color: Qt.alpha(Theme.blue, 0.35)
-                                                horizontalOffset: 1
-                                                radius: 8
-                                                samples: 32
-                                                source: bottomInnerEffect
-                                                spread: 0.4
-                                                verticalOffset: 1
-                                            }
-                                        }
-
-                                        onValueChanged: themeColorTab.dirty = true
                                     }
                                 }
                                 RowLayout {
@@ -1628,9 +1584,8 @@ Category {
         height: 20
 
         SettingComponents.FormButton {
-            activeColor: "#999999"
             anchors.left: parent.left
-            backgroundColor: "#7D3B3B"
+            backgroundColor: Theme.warningColor
             opacity: enabled ? 1.0 : 0.5
             text: "Reset"
 
@@ -1657,12 +1612,10 @@ Category {
 
                 Layout.alignment: Qt.AlignVCenter
                 Layout.rightMargin: 16
-                color: "#7D3B3B"
+                color: Theme.warningColor
                 text: ""
             }
             SettingComponents.FormButton {
-                activeColor: "#999999"
-                backgroundColor: Theme.darkGray3
                 enabled: root.selectedIndex == 0 && themeColorTab.dirty || root.selectedIndex == 1 && waveformTab.dirty || root.selectedIndex == 2 && decksTab.dirty
                 opacity: enabled ? 1.0 : 0.5
                 text: "Cancel"
@@ -1682,8 +1635,7 @@ Category {
                 }
             }
             SettingComponents.FormButton {
-                activeColor: "#999999"
-                backgroundColor: root.hasChanges ? Theme.blue : Theme.darkGray3
+                primary: root.hasChanges
                 enabled: root.selectedIndex == 0 && themeColorTab.dirty || root.selectedIndex == 1 && waveformTab.dirty || root.selectedIndex == 2 && decksTab.dirty
                 opacity: enabled ? 1.0 : 0.5
                 text: "Save"
