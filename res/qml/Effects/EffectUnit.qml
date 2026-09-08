@@ -11,7 +11,15 @@ Item {
     readonly property Mixxx.EffectUnitProxy unit: Mixxx.EffectsManager.getEffectUnit(unitNumber)
     required property int unitNumber
 
-    implicitHeight: effectContainer.height
+    // Tall enough for BOTH sides. The unit used to be as tall as its effect
+    // slots alone, and the controls frame beside them is anchored top to
+    // bottom, so its column of buttons and knobs was given whatever was left --
+    // about 50 px for 71 px of content. The dry/wet and super knobs were cut
+    // off along the bottom edge, hard against the row below.
+    //
+    // The frame keeps a 5 px margin top and bottom, and its column another 5,
+    // so the unit needs the column's own height plus 20.
+    implicitHeight: Math.max(effectContainer.height, unitControls.implicitHeight + 20)
 
     Item {
         id: effectContainer
@@ -68,6 +76,8 @@ Item {
         width: 150
 
         Column {
+            id: unitControls
+
             anchors.fill: parent
             anchors.margins: 5
             spacing: 5
