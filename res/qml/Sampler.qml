@@ -211,9 +211,18 @@ Rectangle {
             bar.color: Theme.bpmSliderBarColor
             bar.start: 0.5
             bg: Theme.imgBpmSliderBackground
+            // "rate" counts up towards SLOWER whenever the rate direction is
+            // inverted, which is the default: a vertical speed fader then reads
+            // like a turntable pitch fader, with + at the bottom. This one is
+            // horizontal, where that same mapping drags faster to the left and
+            // reads backwards, so flip the range to keep faster on the right.
+            // Following rate_dir rather than hardcoding the flip keeps the
+            // fader agreeing with the decks when the preference is turned off.
+            from: rateDirControl.value < 0 ? 1 : 0
             group: root.group
             key: "rate"
             orientation: Qt.Horizontal
+            to: rateDirControl.value < 0 ? 0 : 1
             visible: root.showRateControl
         }
         GridLayout {
@@ -273,6 +282,12 @@ Rectangle {
 
         group: root.group
         key: "visual_bpm"
+    }
+    Mixxx.ControlProxy {
+        id: rateDirControl
+
+        group: root.group
+        key: "rate_dir"
     }
     Mixxx.ControlProxy {
         id: playControl
