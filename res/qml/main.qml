@@ -223,7 +223,14 @@ ApplicationWindow {
             width: parent.width
 
             RowLayout {
+                // The row used to fill the bar edge to edge, so the first
+                // button sat against the window frame and the settings gear
+                // against the other side, with the buttons touching each other
+                // in between.
                 anchors.fill: parent
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                spacing: 4
 
                 Skin.Button {
                     id: show4DecksButton

@@ -218,6 +218,9 @@ Rectangle {
             }
             Skin.OrientationToggleButton {
                 Layout.fillWidth: true
+                // Three seats and a marker need more room than a word does, so
+                // it takes a wider share of the row than the buttons beside it.
+                Layout.preferredWidth: 76
                 color: Theme.crossfaderOrientationColor
                 group: root.group
                 key: "orientation"
@@ -293,7 +296,12 @@ Rectangle {
             // the strip. A fixed narrow width across the travel axis sizes it to
             // the space instead, and the cap scales itself down to match.
             Skin.ControlFader {
+                // Clear of the pads above and the strip edge below: with the
+                // slot inset removed the artwork runs the fader's full length,
+                // so the gap has to come from the layout.
+                Layout.bottomMargin: 4
                 Layout.fillHeight: true
+                Layout.topMargin: 4
                 // A preferred width is only a preference: a RowLayout squeezes it
                 // when the rest of the strip wants more room, and these strips are
                 // narrow. Squeezed to a couple of pixels the slot artwork had
