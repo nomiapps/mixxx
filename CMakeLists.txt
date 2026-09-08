@@ -4441,6 +4441,18 @@ else()
         COMPONENT applocal
       )
 
+      # The QtQuick.Effects plugin links against this. Without it the plugin is
+      # found but cannot load, and any QML that reaches QtQuick.Effects fails with
+      # "Cannot load library ... The specified module could not be found." The app
+      # asks for the Basic style and imports no effects itself, but the Windows
+      # style Menu does, so anything that loads under the platform default hits it.
+      install(
+        FILES
+          "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}$<$<CONFIG:Debug>:/debug>/bin/Qt6QuickEffects$<$<CONFIG:Debug>:d>${CMAKE_SHARED_LIBRARY_SUFFIX}"
+        DESTINATION "${MIXXX_INSTALL_DATADIR}"
+        COMPONENT applocal
+      )
+
       # install qml6-module-qtqml-workerscript
       install(
         DIRECTORY
@@ -4453,6 +4465,14 @@ else()
         DIRECTORY
           "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}$<$<CONFIG:Debug>:/debug>/Qt6/qml/QtCore"
         DESTINATION "${MIXXX_INSTALL_DATADIR}/Qt6/qml"
+        COMPONENT applocal
+      )
+
+      # install qml6-module-qtquick-effects
+      install(
+        DIRECTORY
+          "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}$<$<CONFIG:Debug>:/debug>/Qt6/qml/QtQuick/Effects"
+        DESTINATION "${MIXXX_INSTALL_DATADIR}/Qt6/qml/QtQuick"
         COMPONENT applocal
       )
 
