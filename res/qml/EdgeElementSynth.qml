@@ -107,7 +107,12 @@ Item {
     Row {
         id: controls
 
-        readonly property real knobSize: Math.min(height * 0.72, (root.width - spacing * 16) / 17)
+        // 17 controls, of which the two oscillator buttons are wider: their
+        // label carries a waveform name ("1 SINE", "2 SQR"), which does not fit
+        // in a square the size of a knob and was being clipped. Counting them
+        // as 1.8 slots each keeps the row exactly as wide as it was.
+        readonly property real knobSize: Math.min(height * 0.72, (root.width - spacing * 16) / 18.6)
+        readonly property real waveWidth: knobSize * 1.8
 
         anchors.left: parent.left
         anchors.right: parent.right
@@ -129,7 +134,7 @@ Item {
             height: controls.knobSize
             highlight: true
             text: "1 " + root.waveNames[Math.max(0, Math.min(3, Math.round(osc1Wave.value)))]
-            width: controls.knobSize
+            width: controls.waveWidth
 
             onClicked: osc1Wave.value = (Math.round(osc1Wave.value) + 1) % 4
         }
@@ -138,7 +143,7 @@ Item {
             height: controls.knobSize
             highlight: true
             text: "2 " + root.waveNames[Math.max(0, Math.min(3, Math.round(osc2Wave.value)))]
-            width: controls.knobSize
+            width: controls.waveWidth
 
             onClicked: osc2Wave.value = (Math.round(osc2Wave.value) + 1) % 4
         }

@@ -168,7 +168,12 @@ Rectangle {
             width: 4
         }
     }
-    RowLayout {
+    // The button row spans the whole strip and the fader sits below it, beside
+    // the pads. It used to be the other way round -- one tall column of buttons
+    // and pads with a full-height fader alongside -- which left the fader as
+    // tall as the strip while Sync, Loop, the crossfader slider and Eject were
+    // squeezed into the width the fader did not take.
+    ColumnLayout {
         id: expandedControls
 
         anchors.bottom: parent.bottom
@@ -179,129 +184,135 @@ Rectangle {
         spacing: 3
         visible: !root.minimized
 
-        ColumnLayout {
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 2
+
+            Skin.ControlButton {
+                Layout.fillWidth: true
+                group: root.group
+                key: "sync_enabled"
+                text: "Sync"
+                toggleable: true
+            }
+            Skin.ControlButton {
+                Layout.fillWidth: true
+                group: root.group
+                key: "keylock"
+                text: "Key"
+                toggleable: true
+            }
+            Skin.ControlButton {
+                Layout.fillWidth: true
+                group: root.group
+                key: "repeat"
+                text: "Loop"
+                toggleable: true
+            }
+            Skin.ControlButton {
+                Layout.fillWidth: true
+                group: root.group
+                key: "pfl"
+                text: "PFL"
+                toggleable: true
+            }
+            Skin.OrientationToggleButton {
+                Layout.fillWidth: true
+                color: Theme.crossfaderOrientationColor
+                group: root.group
+                key: "orientation"
+            }
+            Skin.ControlButton {
+                Layout.fillWidth: true
+                group: root.group
+                key: "eject"
+                text: "Eject"
+            }
+        }
+        RowLayout {
             Layout.fillHeight: true
             Layout.fillWidth: true
             spacing: 3
 
-            RowLayout {
+            ColumnLayout {
+                Layout.fillHeight: true
                 Layout.fillWidth: true
-                spacing: 2
+                spacing: 3
 
-                Skin.ControlButton {
+                GridLayout {
                     Layout.fillWidth: true
-                    group: root.group
-                    key: "sync_enabled"
-                    text: "Sync"
-                    toggleable: true
-                }
-                Skin.ControlButton {
-                    Layout.fillWidth: true
-                    group: root.group
-                    key: "keylock"
-                    text: "Key"
-                    toggleable: true
-                }
-                Skin.ControlButton {
-                    Layout.fillWidth: true
-                    group: root.group
-                    key: "repeat"
-                    text: "Loop"
-                    toggleable: true
-                }
-                Skin.ControlButton {
-                    Layout.fillWidth: true
-                    group: root.group
-                    key: "pfl"
-                    text: "PFL"
-                    toggleable: true
-                }
-                Skin.OrientationToggleButton {
-                    Layout.fillWidth: true
-                    color: Theme.crossfaderOrientationColor
-                    group: root.group
-                    key: "orientation"
-                }
-                Skin.ControlButton {
-                    Layout.fillWidth: true
-                    group: root.group
-                    key: "eject"
-                    text: "Eject"
-                }
-            }
-            GridLayout {
-                Layout.fillWidth: true
-                columnSpacing: 2
-                columns: 4
-                rowSpacing: 2
-                visible: root.showHotcues && root.hotcueCount > 0
+                    columnSpacing: 2
+                    columns: 4
+                    rowSpacing: 2
+                    visible: root.showHotcues && root.hotcueCount > 0
 
-                Repeater {
-                    model: Math.min(8, Math.max(0, root.hotcueCount))
+                    Repeater {
+                        model: Math.min(8, Math.max(0, root.hotcueCount))
 
-                    Skin.HotcueButton {
-                        required property int index
+                        Skin.HotcueButton {
+                            required property int index
 
-                        Layout.fillWidth: true
-                        group: root.group
-                        hotcueNumber: index + 1
-                        implicitHeight: 22
+                            Layout.fillWidth: true
+                            group: root.group
+                            hotcueNumber: index + 1
+                            implicitHeight: 22
+                        }
+                    }
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+                    visible: root.showFxAssignments && root.fxUnitCount > 0
+
+                    Repeater {
+                        model: Math.max(0, root.fxUnitCount)
+
+                        Skin.ControlButton {
+                            id: fxButton
+
+                            required property int index
+
+                            Layout.fillWidth: true
+                            activeColor: Theme.effectUnitColor
+                            group: "[EffectRack1_EffectUnit" + (index + 1) + "]"
+                            implicitHeight: 22
+                            key: "group_" + root.group + "_enable"
+                            text: "FX" + (index + 1)
+                            toggleable: true
+
+                            onHighlightChanged: root.fxAssignmentChanged(index + 1, highlight)
+                        }
                     }
                 }
             }
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 2
-                visible: root.showFxAssignments && root.fxUnitCount > 0
-
-                Repeater {
-                    model: Math.max(0, root.fxUnitCount)
-
-                    Skin.ControlButton {
-                        id: fxButton
-
-                        required property int index
-
-                        Layout.fillWidth: true
-                        activeColor: Theme.effectUnitColor
-                        group: "[EffectRack1_EffectUnit" + (index + 1) + "]"
-                        implicitHeight: 22
-                        key: "group_" + root.group + "_enable"
-                        text: "FX" + (index + 1)
-                        toggleable: true
-
-                        onHighlightChanged: root.fxAssignmentChanged(index + 1, highlight)
-                    }
-                }
+            // The speed fader runs vertically, like the deck's, so it reads as a
+            // turntable pitch fader: with the default rate direction inverted, up
+            // is slower and + sits at the bottom. Laid out horizontally it also
+            // took its implicit size from the slot artwork, which is a tall
+            // vertical image, so it reported a large implicit height and swallowed
+            // the strip. A fixed narrow width across the travel axis sizes it to
+            // the space instead, and the cap scales itself down to match.
+            Skin.ControlFader {
+                Layout.fillHeight: true
+                // A preferred width is only a preference: a RowLayout squeezes it
+                // when the rest of the strip wants more room, and these strips are
+                // narrow. Squeezed to a couple of pixels the slot artwork had
+                // nowhere to draw, so the fader showed as a bare line with a cap
+                // on it. A minimum keeps the groove.
+                Layout.minimumWidth: 22
+                Layout.preferredWidth: 22
+                bar.color: Theme.bpmSliderBarColor
+                // Skin.Fader insets its slot by 10 px a side, which is meant for
+                // a wide mixer fader; on a 22 px one it left 2 px of groove and
+                // the artwork read as a bare line. The deck tempo slider, which
+                // this is the sampler equivalent of, sets the same inset to zero.
+                bar.margin: 0
+                bar.start: 0.5
+                bg: Theme.imgBpmSliderBackground
+                group: root.group
+                key: "rate"
+                visible: root.showRateControl
             }
-        }
-        // The speed fader runs vertically, like the deck's, so it reads as a
-        // turntable pitch fader: with the default rate direction inverted, up
-        // is slower and + sits at the bottom. Laid out horizontally it also
-        // took its implicit size from the slot artwork, which is a tall
-        // vertical image, so it reported a large implicit height and swallowed
-        // the strip. A fixed narrow width across the travel axis sizes it to
-        // the space instead, and the cap scales itself down to match.
-        Skin.ControlFader {
-            Layout.fillHeight: true
-            // A preferred width is only a preference: a RowLayout squeezes it
-            // when the rest of the strip wants more room, and these strips are
-            // narrow. Squeezed to a couple of pixels the slot artwork had
-            // nowhere to draw, so the fader showed as a bare line with a cap
-            // on it. A minimum keeps the groove.
-            Layout.minimumWidth: 22
-            Layout.preferredWidth: 22
-            bar.color: Theme.bpmSliderBarColor
-            // Skin.Fader insets its slot by 10 px a side, which is meant for
-            // a wide mixer fader; on a 22 px one it left 2 px of groove and
-            // the artwork read as a bare line. The deck tempo slider, which
-            // this is the sampler equivalent of, sets the same inset to zero.
-            bar.margin: 0
-            bar.start: 0.5
-            bg: Theme.imgBpmSliderBackground
-            group: root.group
-            key: "rate"
-            visible: root.showRateControl
         }
     }
     Mixxx.ControlProxy {
