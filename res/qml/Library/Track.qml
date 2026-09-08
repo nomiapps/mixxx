@@ -31,6 +31,23 @@ Item {
         return tableView && tableView.model ? tableView.model.getTrack(row) : null;
     }
 
+    // Instantiator does not promise that its objects arrive in model order, and
+    // Menu.insertItem() clamps an index that is past the end -- so inserting at
+    // the index the Instantiator reports can leave the items permanently
+    // shuffled. The deck menu came out 1, 4, 2, 3 that way. Place each item
+    // after the ones that sort before it, which also keeps instantiated items
+    // above any static entries below them.
+    function insertMenuItemInOrder(menu, item) {
+        let pos = 0;
+        while (pos < menu.count) {
+            const at = menu.itemAt(pos);
+            if (at === null || at.menuIndex === undefined || at.menuIndex >= item.menuIndex)
+                break;
+            pos++;
+        }
+        menu.insertItem(pos, item);
+    }
+
     component LibraryMenuItem: MenuItem {
         id: libraryMenuItem
 
@@ -114,12 +131,16 @@ Item {
                     model: 4
 
                     delegate: LibraryMenuItem {
-                        text: qsTr("Deck %1").arg(modelData + 1)
+                        required property int index
 
-                        onTriggered: Mixxx.PlayerManager.getPlayer(`[Channel${modelData + 1}]`).loadTrack(root.rowTrack())
+                        readonly property int menuIndex: index
+
+                        text: qsTr("Deck %1").arg(index + 1)
+
+                        onTriggered: Mixxx.PlayerManager.getPlayer(`[Channel${index + 1}]`).loadTrack(root.rowTrack())
                     }
 
-                    onObjectAdded: (index, object) => loadToDeckMenu.insertItem(index, object)
+                    onObjectAdded: (index, object) => root.insertMenuItemInOrder(loadToDeckMenu, object)
                     onObjectRemoved: (index, object) => loadToDeckMenu.removeItem(object)
                 }
             }
@@ -172,7 +193,10 @@ Item {
                 model: addToCrateMenu.crates
 
                 delegate: LibraryMenuItem {
+                    required property int index
                     required property var modelData
+
+                    readonly property int menuIndex: index
 
                     enabled: !modelData.locked
                     text: modelData.name
@@ -180,7 +204,7 @@ Item {
                     onTriggered: library.addTrackToCrate(root.rowTrack(), modelData.id)
                 }
 
-                onObjectAdded: (index, object) => addToCrateMenu.insertItem(index, object)
+                onObjectAdded: (index, object) => root.insertMenuItemInOrder(addToCrateMenu, object)
                 onObjectRemoved: (index, object) => addToCrateMenu.removeItem(object)
             }
             LibraryMenuSeparator {

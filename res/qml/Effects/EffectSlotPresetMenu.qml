@@ -46,13 +46,33 @@ Menu {
         textColor: root.textColor
     }
 
+    // Instantiator does not promise that its objects arrive in model order, and
+    // Menu.insertItem() clamps an index that is past the end -- so inserting at
+    // the index the Instantiator reports can leave the items permanently
+    // shuffled. The deck menu came out 1, 4, 2, 3 that way. Place each item
+    // after the ones that sort before it, which also keeps instantiated items
+    // above any static entries below them.
+    function insertMenuItemInOrder(menu, item) {
+        let pos = 0;
+        while (pos < menu.count) {
+            const at = menu.itemAt(pos);
+            if (at === null || at.menuIndex === undefined || at.menuIndex >= item.menuIndex)
+                break;
+            pos++;
+        }
+        menu.insertItem(pos, item);
+    }
+
     Instantiator {
         model: root.slot.parametersModel
 
         delegate: EffectPresetMenuItem {
+            required property int index
             required property bool loaded
             required property string name
             required property string parameterId
+
+            readonly property int menuIndex: index
 
             checkable: true
             checked: loaded
@@ -69,7 +89,7 @@ Menu {
             onTriggered: root.slot.setParameterVisible(parameterId, !loaded)
         }
 
-        onObjectAdded: (index, object) => root.insertItem(index, object)
+        onObjectAdded: (index, object) => root.insertMenuItemInOrder(root, object)
         onObjectRemoved: (index, object) => root.removeItem(object)
     }
     EffectPresetMenuSeparator {

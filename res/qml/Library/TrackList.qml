@@ -32,6 +32,23 @@ Rectangle {
     // bypass this deliberately -- they return 0 earlier in columnWidthProvider.
     readonly property int minimumColumnWidth: 40
 
+    // Instantiator does not promise that its objects arrive in model order, and
+    // Menu.insertItem() clamps an index that is past the end -- so inserting at
+    // the index the Instantiator reports can leave the items permanently
+    // shuffled. The deck menu came out 1, 4, 2, 3 that way. Place each item
+    // after the ones that sort before it, which also keeps instantiated items
+    // above any static entries below them.
+    function insertMenuItemInOrder(menu, item) {
+        let pos = 0;
+        while (pos < menu.count) {
+            const at = menu.itemAt(pos);
+            if (at === null || at.menuIndex === undefined || at.menuIndex >= item.menuIndex)
+                break;
+            pos++;
+        }
+        menu.insertItem(pos, item);
+    }
+
     component ColumnMenuItem: MenuItem {
         id: menuItem
 
@@ -558,7 +575,10 @@ Rectangle {
                 model: columnsMenu.columnSnapshot
 
                 delegate: ColumnMenuItem {
+                    required property int index
                     required property var modelData
+
+                    readonly property int menuIndex: index
 
                     checkable: true
                     checked: modelData.visible
@@ -568,7 +588,7 @@ Rectangle {
                     onTriggered: root.setColumnVisible(modelData.index, checked)
                 }
 
-                onObjectAdded: (index, object) => columnsMenu.insertItem(index, object)
+                onObjectAdded: (index, object) => root.insertMenuItemInOrder(columnsMenu, object)
                 onObjectRemoved: (index, object) => columnsMenu.removeItem(object)
             }
         }
