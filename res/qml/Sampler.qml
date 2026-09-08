@@ -292,6 +292,11 @@ Rectangle {
             Layout.minimumWidth: 22
             Layout.preferredWidth: 22
             bar.color: Theme.bpmSliderBarColor
+            // Skin.Fader insets its slot by 10 px a side, which is meant for
+            // a wide mixer fader; on a 22 px one it left 2 px of groove and
+            // the artwork read as a bare line. The deck tempo slider, which
+            // this is the sampler equivalent of, sets the same inset to zero.
+            bar.margin: 0
             bar.start: 0.5
             bg: Theme.imgBpmSliderBackground
             group: root.group

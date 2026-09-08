@@ -927,7 +927,9 @@ ApplicationWindow {
 
                     anchors {
                         bottom: parent.bottom
-                        top: micAux.bottom
+                        // The last row above it, so a new row does not end up
+                        // underneath the library.
+                        top: synth.bottom
                     }
                 }
             }
