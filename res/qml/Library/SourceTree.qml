@@ -6,6 +6,11 @@ import "../Theme"
 Mixxx.LibrarySourceTree {
     id: root
 
+    // Relayed from a row's context menu up to Library.qml, which owns the
+    // search box. The row delegate is built here, so this is the one place
+    // that can see both.
+    signal keySearchRequested(string keyText, bool compatible)
+
     defaultColumns: [
         Mixxx.TrackListColumn {
             layoutId: "cover"
@@ -217,6 +222,7 @@ Mixxx.LibrarySourceTree {
                     tableView.selectionModel.selectRow(row);
                 }
             }
+            onKeySearchRequested: (keyText, compatible) => root.keySearchRequested(keyText, compatible)
         }
         Text {
             id: value

@@ -18,6 +18,20 @@ import "Theme"
 Item {
     id: root
 
+    // Parsed form of activeQuery: {text, compatible} for "key:X" / "~key:X",
+    // null for anything else (or nothing).
+    readonly property var activeFilter: {
+        const m = root.activeQuery.trim().match(/^(~?)key:(\S+)$/i);
+        return m ? ({
+                "text": m[2].toLowerCase(),
+                "compatible": m[1] === "~"
+            }) : null;
+    }
+
+    // The library's current search text. When it is a key search this marks
+    // the wedge it targets, and a second click on that wedge clears it. The
+    // library owns the text; this is a read-only mirror.
+    property string activeQuery: ""
     // Set once the deck list is clicked, after which the highlight stays where
     // it was put instead of following the next track load.
     property bool aimedByUser: false
@@ -27,6 +41,9 @@ Item {
     // polling them: a binding that walks Repeater.itemAt() only re-runs by
     // luck, whereas reassigning the whole array re-runs every reader.
     property var deckKeys: new Array(root.numDecks).fill(0)
+    // Wedge index under the pointer (same indexing as the wedge Repeater:
+    // 0-11 major, 12-23 minor), -1 for none.
+    property int hoveredIndex: -1
 
     // Camelot number -> [major, minor] as ChromaticKey values (keys.proto),
     // index 0 unused because Camelot numbers start at 1. This mirrors
@@ -55,6 +72,11 @@ Item {
     // than one disc.
     readonly property real wedgeGap: 1.6
     readonly property real wedgeSweep: 30
+
+    // A wedge was clicked: `code` is its Camelot code, `compatible` says the
+    // click was on the aimed deck's own wedge, which asks for everything that
+    // mixes with it rather than the one key.
+    signal keyClicked(string code, bool compatible)
 
     // Centre of a wedge in the degrees Shapes wants: 0 at three o'clock,
     // growing clockwise, which puts Camelot 1 at the top.
@@ -111,6 +133,19 @@ Item {
     function isMajor(key) {
         return key >= 1 && key <= 12;
     }
+    // Every spelling of a key the library might be filtering on: the wheel's
+    // own Camelot code, the app's current notation (what the track context
+    // menu sends), plus Open Key and traditional so a typed search matches too.
+    function keyMatchesFilter(key) {
+        if (!root.activeFilter)
+            return false;
+
+        const openKey = 2;
+        const lancelot = 3;
+        const traditional = 4;
+        const spellings = [openKey, lancelot, traditional, keyNotationControl.value].map(n => Mixxx.KeyUtils.keyToString(key, n).toLowerCase());
+        return spellings.indexOf(root.activeFilter.text) !== -1;
+    }
     function numberOf(key) {
         if (key <= 0)
             return 0;
@@ -132,6 +167,26 @@ Item {
             root.autoAim();
         else if (key <= 0 && root.selectedDeck === index + 1)
             root.selectedDeck = 0;
+    }
+    // Inverse of the wedge geometry: which wedge index (Repeater order) sits
+    // under a point of the wheel item, or -1 for the hub, the gaps between
+    // rings and anything outside. Done as one polar lookup on a single
+    // MouseArea, because 24 rectangular MouseAreas over 24 arcs would each
+    // claim a whole quadrant.
+    function wedgeAt(x, y) {
+        const dx = x - root.radius;
+        const dy = y - root.radius;
+        const r = Math.hypot(dx, dy) / root.radius;
+        let major;
+        if (r >= root.rMajorInner && r <= root.rMajorOuter)
+            major = true;
+        else if (r >= root.rMinorInner && r <= root.rMinorOuter)
+            major = false;
+        else
+            return -1;
+        const degrees = Math.atan2(dy, dx) * 180 / Math.PI;
+        const number = root.wrap(Math.round((degrees + 90) / root.wedgeSweep) + 1);
+        return (major ? 0 : 12) + number - 1;
     }
     // Hue ring: one twelfth of the spectrum per spoke, so adjacent (mixable)
     // wedges are adjacent colours and the tritone sits opposite. Major reads
@@ -193,6 +248,28 @@ Item {
         height: root.radius * 2
         width: root.radius * 2
 
+        // Sits under the wedges, which take no mouse input themselves, so
+        // every press on a wedge falls through to here. The hub's own
+        // MouseAreas are above it and wedgeAt() returns -1 inside the hub
+        // anyway, so the deck list keeps its clicks.
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: root.hoveredIndex >= 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+            hoverEnabled: true
+
+            onClicked: mouse => {
+                const index = root.wedgeAt(mouse.x, mouse.y);
+                if (index < 0)
+                    return;
+
+                const number = index % 12 + 1;
+                const major = index < 12;
+                const key = root.keysOf[number][major ? 0 : 1];
+                root.keyClicked(number + (major ? "B" : "A"), root.selectedKey > 0 && key === root.selectedKey);
+            }
+            onExited: root.hoveredIndex = -1
+            onPositionChanged: mouse => root.hoveredIndex = root.wedgeAt(mouse.x, mouse.y)
+        }
         // One delegate per key: its wedge and its label. ShapePath is not an
         // Item, so it cannot be a Repeater delegate on its own -- each wedge
         // gets its own Shape instead.
@@ -205,6 +282,8 @@ Item {
                 readonly property color base: root.wedgeColor(wedge.number, wedge.major)
                 readonly property int compatibility: root.compatibility(wedge.number, wedge.major)
                 readonly property int deckCount: root.deckCountOn(wedge.key)
+                readonly property bool filtering: root.keyMatchesFilter(wedge.key)
+                readonly property bool hovered: root.hoveredIndex === wedge.index
                 required property int index
                 readonly property real inner: root.radius * (wedge.major ? root.rMajorInner : root.rMinorInner)
                 readonly property bool isSelected: root.selectedKey > 0 && wedge.key === root.selectedKey
@@ -225,17 +304,26 @@ Item {
 
                     ShapePath {
                         fillColor: {
+                            let color;
                             switch (root.selectedNumber <= 0 ? 2 : wedge.compatibility) {
                             case 2:
-                                return wedge.base;
+                                color = wedge.base;
+                                break;
                             case 1:
-                                return Qt.darker(wedge.base, 1.6);
+                                color = Qt.darker(wedge.base, 1.6);
+                                break;
                             default:
-                                return Qt.alpha(Qt.darker(wedge.base, 2.8), 0.5);
+                                color = Qt.alpha(Qt.darker(wedge.base, 2.8), 0.5);
                             }
+                            // Hover lifts even a dimmed wedge, since a key
+                            // that does not mix is still one you can look up.
+                            return wedge.hovered ? Qt.lighter(color, 1.2) : color;
                         }
-                        strokeColor: wedge.isSelected ? Theme.pureWhite : (wedge.deckCount > 0 ? Theme.offWhite : "transparent")
-                        strokeWidth: wedge.isSelected ? 2.5 : (wedge.deckCount > 0 ? 1.5 : 0)
+                        // Outline precedence: the wedge the library is filtered
+                        // on (blue, the chrome's selection colour), then the
+                        // aimed deck's wedge, then any wedge a deck is on.
+                        strokeColor: wedge.filtering ? Theme.blue : (wedge.isSelected ? Theme.pureWhite : (wedge.deckCount > 0 ? Theme.offWhite : "transparent"))
+                        strokeWidth: wedge.filtering || wedge.isSelected ? 2.5 : (wedge.deckCount > 0 ? 1.5 : 0)
 
                         PathAngleArc {
                             centerX: root.radius
@@ -451,6 +539,20 @@ Item {
                         }
                     }
                 }
+            }
+            // Says what a click does, and what the library is currently
+            // filtered on when that came from here or the track menu.
+            Text {
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: parent.height * 0.13
+                anchors.horizontalCenter: parent.horizontalCenter
+                color: root.activeFilter ? Theme.lightGray3 : Theme.midGray3
+                elide: Text.ElideRight
+                font.family: Theme.fontFamily
+                font.pixelSize: Math.max(8, root.radius * 0.036)
+                horizontalAlignment: Text.AlignHCenter
+                text: root.activeFilter ? qsTr("library: %1").arg(root.activeQuery.trim()) : qsTr("click a key to filter the library")
+                width: parent.width * 0.7
             }
         }
     }

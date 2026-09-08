@@ -9,7 +9,14 @@ Item {
     required property var capabilities
     property alias drag: dragHandler
     readonly property var library: Mixxx.Library
+    // The row's key as text, in the app's notation, read when the context
+    // menu opens -- see contextMenu.onAboutToShow for why not earlier.
+    property string menuKeyText: ""
     property alias tap: tapHandler
+
+    // Asks the library to filter on this row's key, or on every key that
+    // mixes with it. Relayed by SourceTree.qml up to Library.qml.
+    signal keySearchRequested(string keyText, bool compatible)
 
     function hasCapabilities(caps) {
         return (root.capabilities & caps) == caps;
@@ -114,6 +121,15 @@ Item {
         id: contextMenu
 
         title: qsTr("File")
+
+        // The key entries name the key, which means hydrating the track (see
+        // rowTrack). Doing that in a binding would hydrate every row as it is
+        // laid out -- the freeze rowTrack() exists to avoid -- so it happens
+        // once here, when the menu is actually opening.
+        onAboutToShow: {
+            const track = root.rowTrack();
+            root.menuKeyText = track ? track.keyText : "";
+        }
 
         LibraryMenu {
             enabled: {
@@ -248,6 +264,22 @@ Item {
                 enabled: false // TODO implement
                 text: qsTr("Reanalyze (variable BPM)")
             }
+        }
+        LibraryMenuSeparator {
+        }
+        // Same searches the Camelot wheel runs on a click; disabled, with the
+        // generic wording, when the row has no key to search on.
+        LibraryMenuItem {
+            enabled: root.menuKeyText.length > 0
+            text: root.menuKeyText.length > 0 ? qsTr("Find tracks in %1").arg(root.menuKeyText) : qsTr("Find tracks in this key")
+
+            onTriggered: root.keySearchRequested(root.menuKeyText, false)
+        }
+        LibraryMenuItem {
+            enabled: root.menuKeyText.length > 0
+            text: root.menuKeyText.length > 0 ? qsTr("Find keys compatible with %1").arg(root.menuKeyText) : qsTr("Find compatible keys")
+
+            onTriggered: root.keySearchRequested(root.menuKeyText, true)
         }
     }
 }

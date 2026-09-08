@@ -945,7 +945,16 @@ ApplicationWindow {
     Skin.KeywheelPopup {
         id: keywheelPopup
 
+        librarySearchText: library.item ? library.item.searchText : ""
         numDecks: root.show4decks ? root.numDecks : 2
+
+        // Nothing to filter while the library is unloaded (the window too
+        // short to show it); the click is then simply ignored.
+        onKeySearchRequested: (code, compatible) => {
+            if (library.item) {
+                library.item.searchKey(code, compatible);
+            }
+        }
     }
     Skin.Settings {
         id: settingsPopup

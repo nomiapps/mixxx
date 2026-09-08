@@ -14,6 +14,9 @@ Item {
     id: root
 
     property var sidebar: librarySources.sidebar()
+    // What the search box holds, for anything outside that reflects it -- the
+    // Camelot wheel marks the key it is filtered on.
+    readonly property alias searchText: searchField.text
 
     // A smart crate is a saved query that acts as its own SCOPE, independent of the
     // search box. It used to be applied BY writing into the search field, which meant
@@ -35,6 +38,22 @@ Item {
         root.applySearch();
         searchField.forceActiveFocus(Qt.ShortcutFocusReason);
         searchField.selectAll();
+    }
+    // Filter on a key: "key:X" for that key, "~key:X" for everything Mixxx counts as
+    // compatible with it (KeyFilterNode with fuzzy set -- KeyUtils::getCompatibleKeys).
+    // Asking for the filter that is already in the box clears it, so the wheel and the
+    // track menu toggle rather than pile up. Applied at once, not through the typing
+    // debounce, and without taking focus: the request came from a popup or a menu, and
+    // moving focus to the box would make Escape clear the search instead of closing
+    // the popup.
+    function searchKey(keyText, compatible) {
+        const query = (compatible ? "~key:" : "key:") + keyText.trim();
+        searchDebounce.stop();
+        // Same rule as typing: a key search is over the whole library, so any crate
+        // scope is dropped rather than searched inside.
+        root.smartCrateQuery = "";
+        searchField.text = searchField.text.trim() === query ? "" : query;
+        root.applySearch();
     }
     // Empties the box and shows the full library at once, without the typing debounce,
     // and leaves the cursor in the box since clearing is usually the start of a new search.
@@ -114,6 +133,8 @@ Item {
 
     LibraryComponent.SourceTree {
         id: librarySources
+
+        onKeySearchRequested: (keyText, compatible) => root.searchKey(keyText, compatible)
     }
     TextField {
         id: searchField

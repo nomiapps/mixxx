@@ -16,7 +16,15 @@ Popup {
     // The wheel is square. The box is that square plus the padding, and taller
     // by the header strip and the gap under it.
     readonly property real chromeHeight: 28 + 8
+    // Mirror of the library search box, bound by main.qml, so the wheel can
+    // mark the key the library is filtered on.
+    property string librarySearchText: ""
     required property int numDecks
+
+    // Forwarded from the wheel: a wedge was clicked, and the caller should
+    // filter the library on that key (or, with `compatible`, on everything
+    // that mixes with it).
+    signal keySearchRequested(string code, bool compatible)
 
     // The popup had no way out but the menu item that opened it, so say so:
     // Escape, a click outside, or the button in the corner.
@@ -88,7 +96,10 @@ Popup {
         Skin.Keywheel {
             Layout.fillHeight: true
             Layout.fillWidth: true
+            activeQuery: root.librarySearchText
             numDecks: root.numDecks
+
+            onKeyClicked: (code, compatible) => root.keySearchRequested(code, compatible)
         }
     }
 }
