@@ -1,6 +1,10 @@
 #include "qml/qmlwaveformoverview.h"
 
+// QmlLibraryProxy::get() returns a Library*, and emitting its signal needs the
+// complete type, not the forward declaration the proxy header carries.
+#include "library/library.h"
 #include "moc_qmlwaveformoverview.cpp"
+#include "qmllibraryproxy.h"
 #include "qmlplayerproxy.h"
 #include "qmltrackproxy.h"
 #include "track/track.h"
@@ -42,6 +46,18 @@ void QmlWaveformOverview::setTrack(QmlTrackProxy* pTrack) {
                 &Track::waveformSummaryUpdated,
                 this,
                 &QmlWaveformOverview::slotWaveformUpdated);
+
+        // Ask for the summary when the track has never been analysed. paint()
+        // draws nothing without one and nothing else was requesting it, so an
+        // unanalysed track showed an empty overview and went on showing it.
+        // The waveform display beside it asks for its own data exactly this
+        // way, which is why that one filled in and only the overview stayed
+        // blank. The analyser reports progress through waveformSummaryUpdated,
+        // connected just above, so the overview draws as it is generated.
+        const TrackPointer pTrackInternal = pTrack->internal();
+        if (!pTrackInternal->getWaveformSummary() && pTrackInternal->getId().isValid()) {
+            emit QmlLibraryProxy::get() -> analyzeTracks({pTrackInternal->getId()});
+        }
     }
     slotWaveformUpdated();
 }
