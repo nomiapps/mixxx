@@ -135,12 +135,18 @@ Item {
     }
 
     Instantiator {
-        model: numDecksControl.value
+        model: {
+            const groups = [];
+            for (let i = 0; i < numDecksControl.value; ++i) {
+                groups.push("[Channel" + (i + 1) + "]");
+            }
+            return groups;
+        }
 
         delegate: LibraryComponent.ControlLoadSelectedTrackHandler {
-            required property int index
+            required property string modelData
 
-            group: "[Channel" + (index + 1) + "]"
+            group: modelData
             enabled: root.focusWidget == Skin.FocusedWidgetControl.WidgetKind.LibraryView
             onLoadTrackRequested: (play) => {
                 root.loadSelectedTrack(this.group, play);
@@ -156,12 +162,18 @@ Item {
     }
 
     Instantiator {
-        model: numPreviewDecksControl.value
+        model: {
+            const groups = [];
+            for (let i = 0; i < numPreviewDecksControl.value; ++i) {
+                groups.push("[PreviewDeck" + (i + 1) + "]");
+            }
+            return groups;
+        }
 
         delegate: LibraryComponent.ControlLoadSelectedTrackHandler {
-            required property int index
+            required property string modelData
 
-            group: "[PreviewDeck" + (index + 1) + "]"
+            group: modelData
             enabled: root.focusWidget == Skin.FocusedWidgetControl.WidgetKind.LibraryView
             onLoadTrackRequested: (play) => {
                 root.loadSelectedTrack(this.group, play);
@@ -177,12 +189,25 @@ Item {
     }
 
     Instantiator {
-        model: numSamplersControl.value
+        // Model the groups themselves rather than a count. Raising the count
+        // rebuilds the set -- main.qml raises num_samplers from the configured
+        // value to 16 on init -- and Instantiator sets index to -1 on the
+        // delegates it tears down, which re-evaluated a group binding built
+        // from index to "[Sampler0]" and sent both control proxies looking for
+        // a channel that does not exist. A group string survives the teardown
+        // it is destroyed by.
+        model: {
+            const groups = [];
+            for (let i = 0; i < numSamplersControl.value; ++i) {
+                groups.push("[Sampler" + (i + 1) + "]");
+            }
+            return groups;
+        }
 
         delegate: LibraryComponent.ControlLoadSelectedTrackHandler {
-            required property int index
+            required property string modelData
 
-            group: "[Sampler" + (index + 1) + "]"
+            group: modelData
             enabled: root.focusWidget == Skin.FocusedWidgetControl.WidgetKind.LibraryView
             onLoadTrackRequested: (play) => {
                 root.loadSelectedTrack(this.group, play);
