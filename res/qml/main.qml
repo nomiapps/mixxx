@@ -111,7 +111,18 @@ ApplicationWindow {
     Loader {
         id: nativeApplicationMenuLoader
 
-        active: Qt.platform.os === "osx" || (Mixxx.Application.supportsGlobalMenuBar && root.visibility !== Window.FullScreen)
+        // Three cases, not two. macOS puts the menu in the system bar, so it
+        // always loads. A Linux desktop with a global menu bar does the same,
+        // except in fullscreen where there is no bar to put it in. Everywhere
+        // else -- Windows, and Linux without the AppMenu registrar -- the menu
+        // belongs IN the window.
+        //
+        // That third case went missing when this became conditional upstream
+        // (b8d97012bc): supportsGlobalMenuBar only ever returns true for a
+        // Linux DBus AppMenu registrar, so on Windows the loader never ran,
+        // `menuBar` stayed null, and the application menu did not exist at
+        // all. Alt had nothing to open and no mnemonic had a target.
+        active: Qt.platform.os === "osx" || root.visibility !== Window.FullScreen
 
         sourceComponent: Skin.MainMenuBar {
             actions: applicationMenuActions
