@@ -9,10 +9,14 @@ Item {
 
     required property ApplicationWindow applicationWindow
     readonly property bool fullScreen: applicationWindow.visibility === Window.FullScreen
+    // Bound by main.qml, which owns the popup, so the View menu can tick
+    // "Show Keywheel" while the wheel is up.
+    property bool keywheelOpened: false
     property int pendingDeck: 1
 
     signal showDeveloperToolsRequested
     signal showEdgeSurfaceRequested
+    signal showKeywheelRequested
 
     function loadTrackToDeck(deck) {
         pendingDeck = deck;
@@ -38,7 +42,7 @@ Item {
         aboutDialog.open();
     }
     function showKeywheel() {
-        keywheelDialog.open();
+        root.showKeywheelRequested();
     }
 
     FileDialog {
@@ -59,22 +63,6 @@ Item {
     }
     AboutDialog {
         id: aboutDialog
-    }
-    Dialog {
-        id: keywheelDialog
-
-        height: Math.min(620, root.applicationWindow.height - 80)
-        modal: false
-        standardButtons: Dialog.Close
-        title: qsTr("Keywheel")
-        width: height
-        x: Math.round((root.applicationWindow.width - width) / 2)
-        y: Math.round((root.applicationWindow.height - height) / 2)
-
-        contentItem: Image {
-            fillMode: Image.PreserveAspectFit
-            source: "../images/keywheel/keywheel.svg"
-        }
     }
     Mixxx.ControlProxy {
         id: deck1PlayControl

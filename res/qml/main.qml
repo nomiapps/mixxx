@@ -132,11 +132,21 @@ ApplicationWindow {
         id: applicationMenuCommands
 
         applicationWindow: root
+        keywheelOpened: keywheelPopup.opened
 
         onShowDeveloperToolsRequested: {
             devToolsWindow.show();
             devToolsWindow.raise();
             devToolsWindow.requestActivate();
+        }
+        // F12 toggles: the wheel is a thing you glance at between mixes, so
+        // the key that puts it up should be the key that takes it away.
+        onShowKeywheelRequested: {
+            if (keywheelPopup.opened) {
+                keywheelPopup.close();
+            } else {
+                keywheelPopup.open();
+            }
         }
     }
     Skin.ApplicationMenuActions {
@@ -898,6 +908,11 @@ ApplicationWindow {
                 }
             }
         }
+    }
+    Skin.KeywheelPopup {
+        id: keywheelPopup
+
+        numDecks: root.show4decks ? root.numDecks : 2
     }
     Skin.Settings {
         id: settingsPopup

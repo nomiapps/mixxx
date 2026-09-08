@@ -208,6 +208,8 @@ Item {
     Action {
         id: viewShowKeywheelAction
 
+        checkable: true
+        checked: root.commands.keywheelOpened
         shortcut: root.configuredMenuShortcut("ViewMenu_ShowKeywheel", "F12", root.shortcutRevision)
         text: qsTranslate("WMainMenuBar", "Show Keywheel")
 
