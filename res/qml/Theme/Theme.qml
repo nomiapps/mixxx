@@ -2,25 +2,48 @@ pragma Singleton
 import QtQuick 2.12
 
 QtObject {
+    // The palette a track's own colours are drawn from, so eight pads read as
+    // one family in the theme's register rather than as eight arbitrary
+    // primaries. Anchored on the theme's own colours, with a violet and a
+    // magenta added to cover the hues it has no token for.
+    readonly property var trackColorPalette: [red, yellow, green, blue, accentColor, "#a45cff", "#ff49c3"]
+
     // A colour that arrived with a track -- a hotcue's, or the track's own --
     // rendered so it belongs in this interface.
     //
-    // Those colours come from whatever palette they were saved with, so they
-    // are often fully saturated primaries. Against chrome this muted they
-    // glare, and eight of them in a pad grid look like a different program.
-    // Keep the hue, which is the part that identifies the cue, and bring
-    // saturation and brightness into the band the theme's own colours occupy.
-    // Greys are left alone: they have no hue to preserve.
+    // Those colours are saved from whatever palette made them, so they are
+    // usually fully saturated primaries; some are dark enough to disappear
+    // against this chrome. Rather than nudge each one, snap it to the nearest
+    // hue in the palette above. What identifies a cue is which colour it is,
+    // not its exact value, and every deck then agrees on what "the blue one"
+    // looks like. Colours with no usable hue -- greys, near-black, white --
+    // become the theme's white, which at least stays visible.
     function fromTrack(colorOrString) {
-        // Callers hand this a "#rrggbb" string built from a control value, and
-        // a JS argument is not coerced the way a color-typed property is: the
-        // hsv fields would all be undefined and every cue would come out black.
-        // Qt.lighter with a factor of 1 returns the same colour, as a colour.
+        // A JS argument is not coerced the way a colour-typed property is:
+        // taken as a string every hsv field is undefined and every cue comes
+        // out black. Qt.lighter with a factor of 1 returns the same colour, as
+        // a colour.
         const c = Qt.lighter(colorOrString, 1.0);
-        if (c.hsvSaturation <= 0.02)
-            return c;
+        if (c.hsvSaturation <= 0.15 || c.hsvValue <= 0.08)
+            return Qt.lighter(white, 1.0);
 
-        return Qt.hsva(c.hsvHue, Math.min(c.hsvSaturation, 0.85), Math.min(Math.max(c.hsvValue, 0.72), 0.94), c.a);
+        let best = null;
+        let bestDistance = 2;
+        for (const entry of trackColorPalette) {
+            const candidate = Qt.lighter(entry, 1.0);
+            if (candidate.hsvSaturation <= 0.15)
+                continue;
+
+            // Hue is a circle: 0.98 and 0.02 are neighbours, not opposites.
+            let distance = Math.abs(candidate.hsvHue - c.hsvHue);
+            if (distance > 0.5)
+                distance = 1 - distance;
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = candidate;
+            }
+        }
+        return Qt.hsva(best.hsvHue, best.hsvSaturation, best.hsvValue, c.a);
     }
 
     property color accentColor: "#3a60be"
