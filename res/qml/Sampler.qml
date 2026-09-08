@@ -9,7 +9,11 @@ import "Theme"
 Rectangle {
     id: root
 
-    property var currentTrack: deckPlayer.currentTrack
+    // The row only builds a strip once its player exists, but [App],num_samplers
+    // notifies before PlayerManager has finished adding them, so a strip can be
+    // created a moment early. Tolerate the gap instead of throwing on every
+    // evaluation until the player lands.
+    property var currentTrack: root.deckPlayer?.currentTrack ?? null
     property var deckPlayer: Mixxx.PlayerManager.getPlayer(group)
     property int fxUnitCount: 4
     required property string group
