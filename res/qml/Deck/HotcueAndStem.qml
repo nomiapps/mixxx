@@ -414,6 +414,11 @@ Item {
     // Each tab carries a word as well as a glyph. The glyph-only tabs left the
     // hotcue one unidentifiable next to the stem one ("the button above stems"),
     // so the label is the primary cue and the glyph is the accent.
+    //
+    // The column collapses to 0 px when the track has no stems, but a zero-width
+    // button still paints its centred content, so the glyphs and words used to
+    // bleed over the pad panel's edge as dim overlays with no button behind
+    // them. Clip while the width animates and hide once it has collapsed.
     ColumnLayout {
         id: tabs
 
@@ -421,7 +426,9 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: 0
         anchors.top: parent.top
+        clip: true
         spacing: 6
+        visible: width > 0
         width: stemCountControl.value > 0 ? 48 : 0
 
         Behavior on width {
