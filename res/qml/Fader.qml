@@ -8,6 +8,13 @@ EdgeControls.Fader {
     id: root
 
     property real backgroundMargin: bar.margin
+    // Width of the slot artwork across the travel axis. Defaults to the whole
+    // fader minus the margin, which is what anchors.fill gave before, so every
+    // existing fader is unchanged. It exists for call sites that draw their own
+    // groove: the slot SVG is stretched to whatever it is given, and a wide
+    // stretched slot behind a narrow drawn one reads as two grooves. Those set
+    // this to the width the art should actually occupy.
+    property real backgroundWidth: Math.max(0, width - 2 * backgroundMargin)
     property alias bg: backgroundImage.source
     property alias fg: handleImage.source
     property alias handleImage: handleImage
@@ -56,8 +63,9 @@ EdgeControls.Fader {
     background: RasterImage {
         id: backgroundImage
 
-        anchors.fill: parent
-        anchors.margins: root.backgroundMargin
+        anchors.centerIn: parent
+        height: Math.max(0, root.height - 2 * root.backgroundMargin)
+        width: root.backgroundWidth
     }
     handle: Item {
         id: handleItem

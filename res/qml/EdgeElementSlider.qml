@@ -17,7 +17,14 @@ Item {
     // main: ControlSlider became ControlFader, and the bar settings are a
     // grouped BarSettings object (bar.start / bar.color) instead of barStart / barColor.
     Skin.ControlFader {
+        id: fader
+
         anchors.fill: parent
+        // This component draws its own groove below (the shadow slot), so the
+        // stretched slot artwork is narrowed to sit inside it rather than
+        // spanning the whole element and reading as a second, wider groove.
+        // Horizontal sliders keep the full-width default.
+        backgroundWidth: root.horizontal ? Math.max(0, fader.width - 2 * fader.backgroundMargin) : Math.min(24, Math.max(0, fader.width - 8))
         bar.color: root.style === "tempo" ? Theme.bpmSliderBarColor : (root.style === "crossfader" ? Theme.crossfaderBarColor : Theme.volumeSliderBarColor)
         bar.start: root.style === "volume" ? 0 : 0.5
         bg: root.style === "tempo" ? Theme.imgBpmSliderBackground : (root.style === "crossfader" ? Theme.imgCrossfaderBackground : Theme.imgVolumeSliderBackground)
