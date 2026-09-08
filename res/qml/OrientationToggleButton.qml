@@ -43,6 +43,14 @@ Item {
         from: 0
         live: false
         orientation: Qt.Horizontal
+        // handle and background are list aliases, so what this control declares
+        // below is ADDED to what Skin.Fader already put there rather than
+        // replacing it. Left on, the inherited cap draws here too: the 52 px
+        // slider artwork in a fader about 20 px wide, overflowing both edges
+        // and clipped to a grey block that buries the seats, with its drop
+        // shadow offset downwards on top of that.
+        showDefaultHandle: false
+        showHandleShadow: false
         snapMode: EdgeControls.Slider.SnapOnRelease
         stepSize: 1
         to: 2
