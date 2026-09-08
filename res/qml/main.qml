@@ -19,6 +19,7 @@ ApplicationWindow {
     readonly property int numSamplers: 16
     readonly property int waveformOverviewTypeRgb: 2
     readonly property bool show4decks: show4DecksButton.checked && show4DecksButton.visible
+    property alias showAux: showAuxButton.checked
     property alias showEffects: showEffectsButton.checked
     property alias showSamplers: showSamplersButton.checked
 
@@ -825,6 +826,22 @@ ApplicationWindow {
                         fadeTarget: effects
                     }
                 }
+                Skin.MicAuxRow {
+                    id: micAux
+
+                    clip: true
+                    height: visible ? implicitHeight : 0
+                    visible: root.showAux && !root.maximizeLibrary
+                    width: parent.width
+
+                    anchors {
+                        top: effects.bottom
+                    }
+
+                    Skin.FadeBehavior on visible {
+                        fadeTarget: micAux
+                    }
+                }
                 Loader {
                     id: library
 
@@ -865,7 +882,7 @@ ApplicationWindow {
 
                     anchors {
                         bottom: parent.bottom
-                        top: effects.bottom
+                        top: micAux.bottom
                     }
                 }
             }
