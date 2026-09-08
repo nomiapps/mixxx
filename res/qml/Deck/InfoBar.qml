@@ -11,7 +11,7 @@ import "../Theme"
 Rectangle {
     id: root
 
-    property list<string> availableData: ["none", "title", "year", "time", "duration", "artist", "rating"]
+    property list<string> availableData: ["none", "title", "year", "time", "key", "duration", "artist", "rating"]
     readonly property var currentTrack: deckPlayer?.currentTrack
     property var deckPlayer: Mixxx.PlayerManager.getPlayer(group)
     property bool editMode: false
@@ -19,6 +19,15 @@ Rectangle {
     property color lineColor: Theme.deckLineColor
     property bool minimized: false
     required property int rightColumnWidth
+    // Every cell after the first is this wide, in both rows, so the separators
+    // sit at the same x in each and the bar reads as columns rather than two
+    // unrelated strips. The time cell used to size itself instead, which is
+    // what pulled the rows out of line.
+    readonly property int columnWidth: Math.max(rightColumnWidth, timeColumnWidth)
+    // The time is the only cell whose content dictates a width: it is the
+    // longest string in the bar and must not elide. The time delegate reports
+    // what it needs here and every column follows it.
+    property int timeColumnWidth: 136
 
     border.color: "#30343d"
     border.width: 1
@@ -104,8 +113,13 @@ Rectangle {
             roleValue: "year"
 
             Cell {
-                item.text: root.currentTrack?.year
-                visible: root.width > 500 && root.currentTrack?.year
+                // A track with no year keeps its column and shows nothing.
+                // Dropping the cell instead moved every separator after it, so
+                // the two rows only lined up on tracks that happened to have a
+                // year. Visibility decides the layout; emptiness is the text's
+                // business.
+                item.text: root.currentTrack?.year ?? ""
+                visible: root.width > 500
             }
         }
         DelegateChoice {
@@ -118,8 +132,18 @@ Rectangle {
 
                 Layout.fillHeight: true
                 Layout.minimumWidth: 96
-                Layout.preferredWidth: Math.max(136, timeLabel.implicitWidth + 16)
-                visible: root.deckPlayer?.isLoaded
+                Layout.preferredWidth: root.columnWidth
+                // Paired with the rating below it. Separators only draw on a
+                // loaded deck, so the rows never show a mismatch while empty.
+                visible: root.width > 400 && !!root.deckPlayer?.isLoaded
+
+                // Tell the bar how wide the time needs to be; every column then
+                // takes at least that, so the two rows line up.
+                Binding {
+                    property: "timeColumnWidth"
+                    target: root
+                    value: Math.max(136, timeLabel.implicitWidth + 16)
+                }
 
                 TrackTime {
                     id: timeLabel
@@ -162,6 +186,46 @@ Rectangle {
             }
         }
         DelegateChoice {
+            // An empty column. "none" was already offered in edit mode but had
+            // no delegate, so picking it dropped the cell entirely and shifted
+            // everything after it; it also gives a row with fewer fields than
+            // the other a spacer, so the two stay in step.
+            roleValue: "none"
+
+            Cell {
+                item.text: ""
+            }
+        }
+        DelegateChoice {
+            roleValue: "key"
+
+            Cell {
+                // Read from the deck's control rather than the track's stored
+                // text, so it follows a live key change and re-prints itself
+                // when the notation setting changes instead of on next load.
+                item.text: {
+                    if (!root.deckPlayer?.isLoaded || keyControl.value <= 0) {
+                        return "";
+                    }
+                    return Mixxx.KeyUtils.keyToString(keyControl.value, keyNotationControl.value);
+                }
+                visible: root.deckPlayer?.isLoaded
+
+                Mixxx.ControlProxy {
+                    id: keyControl
+
+                    group: root.group
+                    key: "key"
+                }
+                Mixxx.ControlProxy {
+                    id: keyNotationControl
+
+                    group: "[Library]"
+                    key: "key_notation"
+                }
+            }
+        }
+        DelegateChoice {
             roleValue: "duration"
 
             Cell {
@@ -174,7 +238,9 @@ Rectangle {
                     }
                     return Mixxx.DurationFormatter.format(seconds, TrackTime.Mode.TraditionalCoarse);
                 }
-                visible: root.deckPlayer?.isLoaded
+                // Same threshold as the year above it: paired columns come and
+                // go together, or the rows stop lining up as the deck narrows.
+                visible: root.width > 500
 
                 Mixxx.ControlProxy {
                     id: durationSeconds
@@ -196,7 +262,7 @@ Rectangle {
 
                 Layout.fillHeight: true
                 Layout.fillWidth: index == 0
-                Layout.preferredWidth: index == 0 ? 0 : rightColumnWidth
+                Layout.preferredWidth: index == 0 ? 0 : root.columnWidth
                 visible: root.width > 400
 
                 Mixxx.ControlProxy {
@@ -319,6 +385,12 @@ Rectangle {
         ListElement {
             type: "title"
         }
+        // Spacer above the key, so both rows have four columns and their
+        // separators fall on the same lines. Year still sits above duration
+        // and the time above the rating, as before.
+        ListElement {
+            type: "none"
+        }
         ListElement {
             type: "year"
         }
@@ -331,6 +403,9 @@ Rectangle {
 
         ListElement {
             type: "artist"
+        }
+        ListElement {
+            type: "key"
         }
         ListElement {
             type: "duration"
@@ -349,7 +424,7 @@ Rectangle {
 
             Layout.fillHeight: true
             Layout.fillWidth: index == 0
-            Layout.preferredWidth: index == 0 ? 0 : rightColumnWidth
+            Layout.preferredWidth: index == 0 ? 0 : root.columnWidth
             currentIndex: root.availableData.indexOf(type)
             model: root.availableData
 
@@ -413,7 +488,7 @@ Rectangle {
         Layout.fillHeight: true
         Layout.fillWidth: index == 0
         Layout.leftMargin: index == 0 ? 12 : 0
-        Layout.preferredWidth: index == 0 ? 0 : rightColumnWidth
+        Layout.preferredWidth: index == 0 ? 0 : root.columnWidth
 
         Skin.EmbeddedText {
             id: data
