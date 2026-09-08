@@ -36,6 +36,7 @@ class QmlLibraryTrackListColumn : public QObject {
         Key = ColumnCache::COLUMN_LIBRARYTABLE_KEY,
         FileType = ColumnCache::COLUMN_LIBRARYTABLE_FILETYPE,
         Bitrate = ColumnCache::COLUMN_LIBRARYTABLE_BITRATE,
+        Duration = ColumnCache::COLUMN_LIBRARYTABLE_DURATION,
     };
     Q_ENUM(SQLColumns)
     enum class Role {

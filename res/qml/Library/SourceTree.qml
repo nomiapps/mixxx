@@ -131,6 +131,17 @@ Mixxx.LibrarySourceTree {
             }
         },
         Mixxx.TrackListColumn {
+            // The model already formats this as m:ss and right-aligns it, the
+            // same as the legacy table; it was simply never offered here.
+            layoutId: "duration"
+            columnIdx: Mixxx.TrackListColumn.SQLColumns.Duration
+            label: qsTr("Length")
+            preferredWidth: 70
+
+            delegate: DefaultDelegate {
+            }
+        },
+        Mixxx.TrackListColumn {
             layoutId: "bpm"
             columnIdx: Mixxx.TrackListColumn.SQLColumns.Bpm
             label: qsTr("Bpm")
