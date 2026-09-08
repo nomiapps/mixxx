@@ -858,7 +858,7 @@ Category {
                             rowSpacing: 15
 
                             RowLayout {
-                                Layout.preferredWidth: searchPane.width * 0.5
+                                Layout.preferredWidth: (searchPane.width - searchPane.columnSpacing) / 2
 
                                 Mixxx.SettingParameter {
                                     Layout.fillWidth: true
@@ -887,7 +887,7 @@ Category {
                                 }
                             }
                             RowLayout {
-                                Layout.preferredWidth: searchPane.width * 0.5
+                                Layout.preferredWidth: (searchPane.width - searchPane.columnSpacing) / 2
 
                                 Mixxx.SettingParameter {
                                     Layout.fillWidth: true
@@ -916,7 +916,7 @@ Category {
                                 }
                             }
                             RowLayout {
-                                Layout.preferredWidth: searchPane.width * 0.5
+                                Layout.preferredWidth: (searchPane.width - searchPane.columnSpacing) / 2
 
                                 Mixxx.SettingParameter {
                                     Layout.fillWidth: true
@@ -935,7 +935,8 @@ Category {
                                 SettingComponents.Slider {
                                     id: searchAsYouTypeTimeoutInput
 
-                                    Layout.preferredWidth: 400
+                                    Layout.fillWidth: true
+                                    Layout.maximumWidth: 400
                                     decimals: 1
                                     markers: [0.1, 0.5, 1, 5, 10]
                                     max: 10
@@ -947,7 +948,7 @@ Category {
                                 }
                             }
                             RowLayout {
-                                Layout.preferredWidth: searchPane.width * 0.5
+                                Layout.preferredWidth: (searchPane.width - searchPane.columnSpacing) / 2
 
                                 Mixxx.SettingParameter {
                                     Layout.fillWidth: true
@@ -966,7 +967,8 @@ Category {
                                 SettingComponents.Slider {
                                     id: pitchSliderFuzzBPMInput
 
-                                    Layout.preferredWidth: 400
+                                    Layout.fillWidth: true
+                                    Layout.maximumWidth: 400
                                     markers: [0, 25, 50, 75, 100]
                                     max: 100
                                     min: 0
