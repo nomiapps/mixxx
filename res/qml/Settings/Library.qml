@@ -226,8 +226,7 @@ Category {
             }
             Mixxx.SettingGroup {
                 Layout.bottomMargin: 6
-                anchors.left: parent.left
-                anchors.right: parent.right
+                Layout.fillWidth: true
                 implicitHeight: sources.implicitHeight
                 label: qsTr("Sources")
 
@@ -518,8 +517,6 @@ Category {
                     ColumnLayout {
                         Rectangle {
                             Layout.preferredWidth: root.width * (sources.columns == 2 ? 0.35 : 1)
-                            anchors.left: parent.left
-                            anchors.right: parent.right
                             color: Theme.darkGray2
                             implicitHeight: integrationPane.implicitHeight + 20
 
@@ -577,9 +574,8 @@ Category {
             }
             Mixxx.SettingGroup {
                 Layout.bottomMargin: 6
+                Layout.fillWidth: true
                 Layout.topMargin: 40
-                anchors.left: parent.left
-                anchors.right: parent.right
                 implicitHeight: metadataColumn.height
                 label: qsTr("Metadata")
 
@@ -711,9 +707,8 @@ Category {
             }
             Mixxx.SettingGroup {
                 Layout.bottomMargin: 6
+                Layout.fillWidth: true
                 Layout.topMargin: 40
-                anchors.left: parent.left
-                anchors.right: parent.right
                 implicitHeight: historyColumn.height
                 label: qsTr("History")
 
@@ -822,9 +817,8 @@ Category {
             }
             Mixxx.SettingGroup {
                 Layout.bottomMargin: 6
+                Layout.fillWidth: true
                 Layout.topMargin: 40
-                anchors.left: parent.left
-                anchors.right: parent.right
                 implicitHeight: searchColumn.height
                 label: qsTr("Search")
 
