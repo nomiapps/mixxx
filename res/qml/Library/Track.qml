@@ -15,6 +15,22 @@ Item {
         return (root.capabilities & caps) == caps;
     }
 
+    // The Track for this row, fetched when the user acts on it.
+    //
+    // The row delegate used to carry the model's Track role, and every menu
+    // item here read it as `track`. Fetching that role hydrates the track --
+    // a database read plus opening the audio file to parse its tags -- and
+    // TableView fetched it for every cell it laid out, which froze the UI for
+    // seconds on a resize. The delegate stopped requesting it, so `track` is
+    // null and every one of these menu items silently did nothing: Load to
+    // Deck, Add to Crate and Analyze.
+    //
+    // Ask for it here instead. One hydration when a menu item is triggered,
+    // none during layout.
+    function rowTrack() {
+        return tableView && tableView.model ? tableView.model.getTrack(row) : null;
+    }
+
     component LibraryMenuItem: MenuItem {
         id: libraryMenuItem
 
@@ -100,7 +116,7 @@ Item {
                     delegate: LibraryMenuItem {
                         text: qsTr("Deck %1").arg(modelData + 1)
 
-                        onTriggered: Mixxx.PlayerManager.getPlayer(`[Channel${modelData + 1}]`).loadTrack(track)
+                        onTriggered: Mixxx.PlayerManager.getPlayer(`[Channel${modelData + 1}]`).loadTrack(root.rowTrack())
                     }
 
                     onObjectAdded: (index, object) => loadToDeckMenu.insertItem(index, object)
@@ -161,7 +177,7 @@ Item {
                     enabled: !modelData.locked
                     text: modelData.name
 
-                    onTriggered: library.addTrackToCrate(track, modelData.id)
+                    onTriggered: library.addTrackToCrate(root.rowTrack(), modelData.id)
                 }
 
                 onObjectAdded: (index, object) => addToCrateMenu.insertItem(index, object)
@@ -186,7 +202,7 @@ Item {
                 text: qsTr("Analyze")
 
                 onTriggered: {
-                    library.analyze(track);
+                    library.analyze(root.rowTrack());
                 }
             }
             LibraryMenuItem {
