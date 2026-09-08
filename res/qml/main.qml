@@ -22,6 +22,7 @@ ApplicationWindow {
     property alias showAux: showAuxButton.checked
     property alias showEffects: showEffectsButton.checked
     property alias showSamplers: showSamplersButton.checked
+    property alias showSynth: showSynthButton.checked
 
     color: Theme.backgroundColor
     height: 1008
@@ -274,6 +275,13 @@ ApplicationWindow {
                     activeColor: Theme.white
                     checkable: true
                     text: "Sampler"
+                }
+                Skin.Button {
+                    id: showSynthButton
+
+                    activeColor: Theme.white
+                    checkable: true
+                    text: "Synth"
                 }
                 Item {
                     Layout.fillWidth: true
@@ -861,6 +869,22 @@ ApplicationWindow {
 
                     Skin.FadeBehavior on visible {
                         fadeTarget: micAux
+                    }
+                }
+                Skin.SynthRow {
+                    id: synth
+
+                    clip: true
+                    height: visible ? implicitHeight : 0
+                    visible: root.showSynth && !root.maximizeLibrary
+                    width: parent.width
+
+                    anchors {
+                        top: micAux.bottom
+                    }
+
+                    Skin.FadeBehavior on visible {
+                        fadeTarget: synth
                     }
                 }
                 Loader {
