@@ -284,6 +284,12 @@ Rectangle {
         // the space instead, and the cap scales itself down to match.
         Skin.ControlFader {
             Layout.fillHeight: true
+            // A preferred width is only a preference: a RowLayout squeezes it
+            // when the rest of the strip wants more room, and these strips are
+            // narrow. Squeezed to a couple of pixels the slot artwork had
+            // nowhere to draw, so the fader showed as a bare line with a cap
+            // on it. A minimum keeps the groove.
+            Layout.minimumWidth: 22
             Layout.preferredWidth: 22
             bar.color: Theme.bpmSliderBarColor
             bar.start: 0.5
