@@ -192,7 +192,12 @@ Item {
         Item {
             id: crossfader
 
-            height: 52
+            // Two decks: a title and the crossfader. Four: a 2x2 grid of deck
+            // buttons at each end as well, plus the A and B labels over them.
+            // At 52 px those grids were 40 px tall in 44 px of usable height,
+            // so they came up under the labels and the title sat on top of
+            // them. Give the extra row somewhere to live.
+            height: root.show4decks ? 76 : 52
             width: root.implicitWidth
 
             Rectangle {
@@ -225,6 +230,8 @@ Item {
                 anchors.margins: 4
 
                 Text {
+                    id: panelTitle
+
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
                     color: Theme.lightGray3
@@ -237,7 +244,8 @@ Item {
                 }
                 Text {
                     anchors.left: parent.left
-                    anchors.top: parent.top
+                    anchors.top: panelTitle.bottom
+                    anchors.topMargin: 2
                     color: Theme.blue
                     font.bold: true
                     font.pixelSize: 9
@@ -248,7 +256,8 @@ Item {
                 }
                 Text {
                     anchors.right: parent.right
-                    anchors.top: parent.top
+                    anchors.top: panelTitle.bottom
+                    anchors.topMargin: 2
                     color: Theme.yellow
                     font.bold: true
                     font.pixelSize: 9
@@ -320,8 +329,11 @@ Item {
                         leftMargin: 4
                         right: rightDeckAssignment.left
                         rightMargin: 4
-                        top: parent.top
+                        // Beside the deck grids when they exist, so it sits on
+                        // their centre line rather than above them.
+                        top: root.show4decks ? undefined : parent.top
                         topMargin: 11
+                        verticalCenter: root.show4decks ? leftDeckAssignment.verticalCenter : undefined
                     }
                     handleImage {
                         height: 31
