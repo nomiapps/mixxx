@@ -14,6 +14,26 @@ EdgeControls.Fader {
     property bool showDefaultHandle: true
     property bool showHandleShadow: true
 
+    // How much to shrink the cap so it fits the fader across the travel axis.
+    // The artwork is a fixed size -- 52x15 for slider_handle.svg, 15x52 for the
+    // crossfader -- and the cap used to be drawn at exactly that size whatever
+    // the fader measured, so a 24 px stem fader carried a 52 px cap, wider than
+    // the control it belongs to. Only MixerColumn and Deck/HotcueAndStem worked
+    // around it by hand; everywhere else was oversized.
+    //
+    // Never scales UP: the artwork's own size stays the maximum, so faders that
+    // already had room look exactly as before. A call site that wants a smaller
+    // cap still sets handleImage.width, and that simply becomes the size this
+    // scales from, so the two existing overrides keep working unchanged.
+    readonly property real capScale: {
+        const natural = root.vertical ? handleImage.paintedWidth : handleImage.paintedHeight;
+        const available = root.vertical ? root.width : root.height;
+        if (natural <= 0 || available <= 0) {
+            return 1;
+        }
+        return Math.min(1, available / natural);
+    }
+
     bar.enabled: true
     bar.margin: 10
     // Size comes from a hidden probe at the source's NATURAL size, not from the
@@ -42,9 +62,9 @@ EdgeControls.Fader {
     handle: Item {
         id: handleItem
 
-        height: handleImage.paintedHeight
+        height: handleImage.paintedHeight * root.capScale
         visible: root.showDefaultHandle
-        width: handleImage.paintedWidth
+        width: handleImage.paintedWidth * root.capScale
         x: root.horizontal ? (root.visualPosition * (root.width - width)) : ((root.width - width) / 2)
         y: root.vertical ? (root.visualPosition * (root.height - height)) : ((root.height - height) / 2)
 
@@ -57,8 +77,12 @@ EdgeControls.Fader {
             visible: !root.showHandleShadow
         }
         DropShadow {
+            // Padding and offset shrink with the cap, otherwise a 5 px shadow on a
+            // cap scaled down to 7 px reads as a smudge around it.
+            readonly property real spread: 5 * root.capScale
+
             color: "#80000000"
-            height: parent.height + 5
+            height: parent.height + spread
             radius: 5
             // Shadow the DPR-rasterised copy, not handleImage: that one is the
             // natural-size probe the handle takes its dimensions from, and as a
@@ -66,9 +90,9 @@ EdgeControls.Fader {
             // handleSharp is hidden whenever this shadow is shown, so it serves
             // as the source without drawing twice.
             source: handleSharp
-            verticalOffset: 5
+            verticalOffset: spread
             visible: root.showHandleShadow
-            width: parent.width + 5
+            width: parent.width + spread
         }
     }
 
