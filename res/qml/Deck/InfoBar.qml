@@ -24,10 +24,24 @@ Rectangle {
     // unrelated strips. The time cell used to size itself instead, which is
     // what pulled the rows out of line.
     readonly property int columnWidth: Math.max(rightColumnWidth, timeColumnWidth)
+    // The two columns between the title and the time only ever hold a key, a
+    // year or a duration -- a handful of characters. At the time column's
+    // width they took a third of the bar for it, so they are fixed narrow and
+    // the title keeps the rest.
+    readonly property int narrowColumnWidth: 72
     // The time is the only cell whose content dictates a width: it is the
     // longest string in the bar and must not elide. The time delegate reports
     // what it needs here and every column follows it.
     property int timeColumnWidth: 136
+
+    // Column widths by index, shared by both rows and edit mode so the
+    // separators keep lining up: the first fills, the last follows the time,
+    // the ones between are narrow. Both rows have the same number of columns.
+    function widthForColumn(index) {
+        if (index === 0)
+            return 0;
+        return index === topRowModel.count - 1 ? root.columnWidth : root.narrowColumnWidth;
+    }
 
     border.color: "#30343d"
     border.width: 1
@@ -96,10 +110,84 @@ Rectangle {
             roleValue: "title"
 
             Cell {
+                id: titleCell
+
+                // A title wider than its cell scrolls instead of eliding. The
+                // stock label still draws the unloaded state and any title
+                // that fits; the marquee only takes over when there is
+                // something to show that the label would cut off.
+                readonly property bool overflowing: !root.editMode && !!root.deckPlayer?.isLoaded && scrollText.implicitWidth > scroller.width + 1
+                readonly property string titleText: root.deckPlayer?.isLoaded ? (root.currentTrack?.title ?? "") : "No track loaded"
+
                 item.font.bold: false
                 item.font.weight: root.deckPlayer?.isLoaded ? Font.DemiBold : Font.Thin
-                item.text: root.deckPlayer?.isLoaded ? root.currentTrack?.title : "No track loaded"
-                item.visible: true
+                item.text: titleCell.titleText
+                item.visible: !titleCell.overflowing
+
+                onOverflowingChanged: strip.x = 0
+                // The loop restarts from the front whenever the title changes,
+                // so a new track is readable before it starts to move.
+                onTitleTextChanged: {
+                    strip.x = 0;
+                    if (scrollAnimation.running)
+                        scrollAnimation.restart();
+                }
+
+                Item {
+                    id: scroller
+
+                    anchors.fill: parent
+                    anchors.rightMargin: 6
+                    clip: true
+                    visible: titleCell.overflowing
+
+                    // Two copies one gap apart make the loop seamless: when the
+                    // first has scrolled out, the second sits exactly where the
+                    // first began, and the strip snaps back unnoticed.
+                    Row {
+                        id: strip
+
+                        readonly property int gap: 48
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: gap
+
+                        Skin.EmbeddedText {
+                            id: scrollText
+
+                            color: Theme.white
+                            elide: Text.ElideNone
+                            font: titleCell.item.font
+                            text: titleCell.titleText
+                        }
+                        Skin.EmbeddedText {
+                            color: Theme.white
+                            elide: Text.ElideNone
+                            font: titleCell.item.font
+                            text: titleCell.titleText
+                        }
+                    }
+                    SequentialAnimation {
+                        id: scrollAnimation
+
+                        // Pixels per second; slow enough to read as it goes by.
+                        readonly property real speed: 40
+
+                        loops: Animation.Infinite
+                        running: titleCell.overflowing
+
+                        PauseAnimation {
+                            duration: 2500
+                        }
+                        NumberAnimation {
+                            duration: (scrollText.width + strip.gap) / scrollAnimation.speed * 1000
+                            from: 0
+                            property: "x"
+                            target: strip
+                            to: -(scrollText.width + strip.gap)
+                        }
+                    }
+                }
             }
         }
         DelegateChoice {
@@ -132,7 +220,7 @@ Rectangle {
 
                 Layout.fillHeight: true
                 Layout.minimumWidth: 96
-                Layout.preferredWidth: root.columnWidth
+                Layout.preferredWidth: root.widthForColumn(timeCell.index)
                 // Paired with the rating below it. Separators only draw on a
                 // loaded deck, so the rows never show a mismatch while empty.
                 visible: root.width > 400 && !!root.deckPlayer?.isLoaded
@@ -262,7 +350,7 @@ Rectangle {
 
                 Layout.fillHeight: true
                 Layout.fillWidth: index == 0
-                Layout.preferredWidth: index == 0 ? 0 : root.columnWidth
+                Layout.preferredWidth: root.widthForColumn(index)
                 visible: root.width > 400
 
                 Mixxx.ControlProxy {
@@ -424,7 +512,7 @@ Rectangle {
 
             Layout.fillHeight: true
             Layout.fillWidth: index == 0
-            Layout.preferredWidth: index == 0 ? 0 : root.columnWidth
+            Layout.preferredWidth: root.widthForColumn(index)
             currentIndex: root.availableData.indexOf(type)
             model: root.availableData
 
@@ -488,7 +576,7 @@ Rectangle {
         Layout.fillHeight: true
         Layout.fillWidth: index == 0
         Layout.leftMargin: index == 0 ? 12 : 0
-        Layout.preferredWidth: index == 0 ? 0 : root.columnWidth
+        Layout.preferredWidth: root.widthForColumn(index)
 
         Skin.EmbeddedText {
             id: data
