@@ -1,8 +1,11 @@
+import ".." as Skin
 import Mixxx 1.0 as Mixxx
 import QtQuick
-import QtQuick.Controls
 
-ComboBox {
+// The effect chooser was the last dropdown still wearing Qt Quick's default
+// chrome, so it sat in the effects rack looking like a control borrowed from
+// another program. Skin.ComboBox is the dropdown every other one here uses.
+Skin.ComboBox {
     id: root
 
     required property Mixxx.EffectSlotProxy slot
