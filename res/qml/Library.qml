@@ -77,8 +77,16 @@ Item {
         // A track edited into or out of the query belongs in or out of the crate at
         // once. Debounced because analysis emits this per track and re-running the
         // query on every one would thrash the model during a scan.
+        //
+        // Only while a crate scope is active. Without one the re-query changes
+        // nothing (the model already refreshes changed rows in place), but it
+        // is a full model reset, and the track table rebuilding after it froze
+        // the whole UI for ~1.6 s twice per track load: once for the play
+        // counter, once when the analysis wrote the BPM and key.
         function onLibraryTracksChanged() {
-            refreshDebounce.restart();
+            if (root.smartCrateQuery.length > 0) {
+                refreshDebounce.restart();
+            }
         }
 
         target: Mixxx.Library
