@@ -14,7 +14,7 @@ Skin.ControlProxyButtonBehavior {
             return root.fallbackColor;
 
         const rgb = (Math.round(value) >>> 0) & 0xFFFFFF;
-        return "#" + rgb.toString(16).padStart(6, "0");
+        return Theme.fromTrack("#" + rgb.toString(16).padStart(6, "0"));
     }
     readonly property bool isSet: statusProxy.value > 0
 

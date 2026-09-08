@@ -2,6 +2,27 @@ pragma Singleton
 import QtQuick 2.12
 
 QtObject {
+    // A colour that arrived with a track -- a hotcue's, or the track's own --
+    // rendered so it belongs in this interface.
+    //
+    // Those colours come from whatever palette they were saved with, so they
+    // are often fully saturated primaries. Against chrome this muted they
+    // glare, and eight of them in a pad grid look like a different program.
+    // Keep the hue, which is the part that identifies the cue, and bring
+    // saturation and brightness into the band the theme's own colours occupy.
+    // Greys are left alone: they have no hue to preserve.
+    function fromTrack(colorOrString) {
+        // Callers hand this a "#rrggbb" string built from a control value, and
+        // a JS argument is not coerced the way a color-typed property is: the
+        // hsv fields would all be undefined and every cue would come out black.
+        // Qt.lighter with a factor of 1 returns the same colour, as a colour.
+        const c = Qt.lighter(colorOrString, 1.0);
+        if (c.hsvSaturation <= 0.02)
+            return c;
+
+        return Qt.hsva(c.hsvHue, Math.min(c.hsvSaturation, 0.85), Math.min(Math.max(c.hsvValue, 0.72), 0.94), c.a);
+    }
+
     property color accentColor: "#3a60be"
     property color backgroundColor: "#1e1e20"
     property color blue: "#01dcfc"
