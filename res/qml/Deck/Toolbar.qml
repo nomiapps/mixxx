@@ -8,6 +8,11 @@ Item {
     id: root
 
     property color buttonColor: trackLoadedControl.value > 0 ? Theme.buttonActiveColor : Theme.buttonDisableColor
+    // The beatgrid can only be moved when there is a grid to move and it is
+    // not locked. Locking a beatgrid is how you protect a grid you have
+    // already got right, so the button greys out rather than silently
+    // refusing: BpmControl drops the request without a word.
+    readonly property bool canAdjustBeatgrid: trackLoadedControl.value > 0 && bpmLockControl.value === 0
     required property string group
 
     Mixxx.ControlProxy {
@@ -15,6 +20,18 @@ Item {
 
         group: root.group
         key: "track_loaded"
+    }
+    Mixxx.ControlProxy {
+        id: bpmLockControl
+
+        group: root.group
+        key: "bpmlock"
+    }
+    Mixxx.ControlProxy {
+        id: beatsTranslateMatchControl
+
+        group: root.group
+        key: "beats_translate_match_alignment"
     }
     Rectangle {
         anchors.fill: parent
@@ -81,14 +98,24 @@ Item {
             }
         }
     }
-    Skin.Button {
+    // Moves the beatgrid so the nearest beat lands on the play position, which
+    // is how you fix a grid whose beats are right but whose downbeat is off.
+    // Right-click aligns it to the other deck instead. Same two actions, on the
+    // same two buttons, as the legacy skins' beatgrid button.
+    //
+    // Upstream draws this button but never wired it to anything: it had no
+    // click handler at all, so it looked live and did nothing.
+    Skin.ControlButton {
         id: beatgridButton
 
         anchors.right: ejectButton.left
         anchors.rightMargin: 4
         anchors.verticalCenter: parent.verticalCenter
+        enabled: root.canAdjustBeatgrid
+        group: root.group
         implicitHeight: 22
-        normalColor: trackLoadedControl.value > 0 ? Theme.lightGray2 : Theme.buttonDisableColor
+        key: "beats_translate_curpos"
+        normalColor: root.canAdjustBeatgrid ? Theme.lightGray2 : Theme.buttonDisableColor
         text: "Beatgrid"
         visible: root.width > 165
 
@@ -97,6 +124,18 @@ Item {
             border.width: 1
             color: beatgridButton.pressed ? "#252b36" : "#17181b"
             radius: 4
+        }
+
+        // AbstractButton only takes the left button, so this does not fight the
+        // primary action.
+        TapHandler {
+            acceptedButtons: Qt.RightButton
+            enabled: root.canAdjustBeatgrid
+
+            onTapped: {
+                beatsTranslateMatchControl.value = 1;
+                beatsTranslateMatchControl.value = 0;
+            }
         }
     }
     Skin.ControlButton {
