@@ -21,6 +21,13 @@ Rectangle {
 
     readonly property string layoutSettingName: "qml_header_state_v1"
 
+    // One call for the table, not one per cell. Every cell used to invoke
+    // model.getCapabilities() itself, which is a JS-to-C++ hop per cell for a
+    // value that is the same for all of them. (Measured as within noise on its
+    // own -- the cell Loader below is where the time actually went -- but a
+    // per-cell call for a per-model value is worth not making.)
+    readonly property var modelCapabilities: root.model ? root.model.getCapabilities() : Mixxx.LibraryTrackListModel.Capability.None
+
     // Floor for a user-dragged column width. Hidden and auto-hidden columns
     // bypass this deliberately -- they return 0 earlier in columnWidthProvider.
     readonly property int minimumColumnWidth: 40
@@ -693,7 +700,7 @@ Rectangle {
             Loader {
                 id: loader
 
-                property var capabilities: root.model ? root.model.getCapabilities() : Mixxx.LibraryTrackListModel.Capability.None
+                property var capabilities: root.modelCapabilities
                 property url cover_art: item.cover_art
                 property color decoration: item.decoration
                 property var display: item.display
@@ -716,6 +723,16 @@ Rectangle {
                 property var track: null
 
                 anchors.fill: parent
+                // Build the cell off the critical path. Every cell instantiates its
+                // column's delegate component through this Loader, and a resize
+                // reveals a screenful of new rows at once, so synchronously they all
+                // had to be built before the frame could go out -- the whole cost of
+                // a maximize once the table stopped hydrating tracks. Asynchronous,
+                // they stream in over the next frames instead. Measured on the real
+                // app as GUI-thread freeze across a maximize: 1194 ms -> 51 ms.
+                // Screenshotted 120 ms after a maximize: rows are fully drawn, so
+                // the streaming is not visible.
+                asynchronous: true
                 focus: true
                 sourceComponent: delegate
 
