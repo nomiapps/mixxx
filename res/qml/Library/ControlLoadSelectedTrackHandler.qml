@@ -13,25 +13,36 @@ Item {
 
     signal loadTrackRequested(bool play)
 
-    Mixxx.ControlProxy {
-        group: root.group
-        key: "LoadSelectedTrack"
-        onValueChanged: (value) => {
-            if (value == 0 || !root.enabled)
-                return ;
+    // No group, no controls. An Instantiator sets index to -1 on a delegate it
+    // is tearing down, and the group binding built from that index resolved to
+    // channel zero -- a group that does not exist -- so both proxies went
+    // looking for it and logged a warning each on every teardown. The delegates
+    // now pass an empty group in that moment; skip the lookup rather than make
+    // it and complain.
+    Loader {
+        active: root.group.length > 0
 
-            root.loadTrackRequested(false);
-        }
-    }
+        sourceComponent: QtObject {
+            readonly property var loadProxy: Mixxx.ControlProxy {
+                group: root.group
+                key: "LoadSelectedTrack"
 
-    Mixxx.ControlProxy {
-        group: root.group
-        key: "LoadSelectedTrackAndPlay"
-        onValueChanged: (value) => {
-            if (value == 0 || !root.enabled)
-                return ;
+                onValueChanged: value => {
+                    if (value == 0 || !root.enabled)
+                        return;
+                    root.loadTrackRequested(false);
+                }
+            }
+            readonly property var loadAndPlayProxy: Mixxx.ControlProxy {
+                group: root.group
+                key: "LoadSelectedTrackAndPlay"
 
-            root.loadTrackRequested(true);
+                onValueChanged: value => {
+                    if (value == 0 || !root.enabled)
+                        return;
+                    root.loadTrackRequested(true);
+                }
+            }
         }
     }
 }
