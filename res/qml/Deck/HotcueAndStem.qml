@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import ".." as Skin
 import Mixxx 1.0 as Mixxx
 import QtQuick 2.12
@@ -124,17 +126,19 @@ Item {
                     model: 8
 
                     Item {
+                        id: hotcueCell
+
                         required property int index
 
-                        Layout.column: index % 4
+                        Layout.column: hotcueCell.index % 4
                         Layout.fillHeight: true
                         Layout.fillWidth: true
-                        Layout.row: parseInt(index / 4)
+                        Layout.row: parseInt(hotcueCell.index / 4)
 
                         Skin.Hotcue {
                             id: hotcue
 
-                            readonly property var label: isSet ? root.currentTrack.hotcuesModel.get(index).label : null
+                            readonly property var label: isSet ? root.currentTrack.hotcuesModel.get(hotcueCell.index).label : null
 
                             activate: activator.pressedButtons == Qt.LeftButton
                             clear: activator.pressedButtons == Qt.RightButton
@@ -143,7 +147,7 @@ Item {
                             //         popup.close();
                             // }
                             group: root.group
-                            hotcueNumber: index + 1
+                            hotcueNumber: hotcueCell.index + 1
                         }
                         Rectangle {
                             id: backgroundImage
@@ -188,7 +192,7 @@ Item {
                                 color: hotcue.isSet ? Theme.white : Theme.lightGray3
                                 font.pixelSize: 13
                                 font.weight: Font.Bold
-                                text: `${index + 1}`
+                                text: `${hotcueCell.index + 1}`
                             }
                             Label {
                                 Layout.alignment: Qt.AlignHCenter
@@ -317,9 +321,9 @@ Item {
                             font.family: Theme.fontFamily
                             font.pixelSize: Theme.buttonFontPixelSize
                             height: Math.min(parent.width, parent.height) / 3
-                            showIndicator: false
                             model: Mixxx.EffectsManager.quickChainPresetModel
                             popupWidth: 100
+                            showIndicator: false
                             spacing: 2
                             textRole: "display"
                             width: parent.width * 0.60
@@ -407,6 +411,9 @@ Item {
             }
         }
     }
+    // Each tab carries a word as well as a glyph. The glyph-only tabs left the
+    // hotcue one unidentifiable next to the stem one ("the button above stems"),
+    // so the label is the primary cue and the glyph is the accent.
     ColumnLayout {
         id: tabs
 
@@ -415,7 +422,7 @@ Item {
         anchors.rightMargin: 0
         anchors.top: parent.top
         spacing: 6
-        width: stemCountControl.value > 0 ? 38 : 0
+        width: stemCountControl.value > 0 ? 48 : 0
 
         Behavior on width {
             NumberAnimation {
@@ -427,11 +434,13 @@ Item {
         Skin.Button {
             id: hotcueTabButton
 
+            Layout.fillHeight: true
             Layout.fillWidth: true
             Layout.margins: 0
             activeColor: Theme.deckActiveColor
             checked: true
-            implicitHeight: 30
+            normalColor: Theme.lightGray3
+            text: "Cues"
 
             background: Rectangle {
                 border.color: hotcueTabButton.checked ? Theme.accentColor : "#343740"
@@ -439,41 +448,48 @@ Item {
                 color: hotcueTabButton.checked ? "#203b78" : (hotcueTabButton.pressed ? "#252b36" : "#17181b")
                 radius: 4
             }
-            contentItem: Shape {
-                // Qt 6.6+ resolution-independent antialiasing; the older
-                // geometry renderer stair-steps curves on some displays.
-                preferredRendererType: Shape.CurveRenderer
-                anchors.fill: parent
-                antialiasing: true
+            glyph: Item {
+                implicitHeight: 20
+                implicitWidth: 20
 
-                ShapePath {
-                    fillColor: hotcueTabButton.checked ? Theme.white : Theme.lightGray3
-                    startX: 10
-                    startY: 4
+                // A cue flag: the same Y as before, drawn in the glyph slot.
+                Shape {
+                    anchors.fill: parent
+                    antialiasing: true
+                    // Qt 6.6+ resolution-independent antialiasing; the older
+                    // geometry renderer stair-steps curves on some displays.
+                    preferredRendererType: Shape.CurveRenderer
 
-                    PathLine {
-                        x: 26
-                        y: 4
-                    }
-                    PathLine {
-                        x: 19.5
-                        y: 10
-                    }
-                    PathLine {
-                        x: 19.5
-                        y: 24
-                    }
-                    PathLine {
-                        x: 16.5
-                        y: 24
-                    }
-                    PathLine {
-                        x: 16.5
-                        y: 10
-                    }
-                    PathLine {
-                        x: 10
-                        y: 4
+                    ShapePath {
+                        fillColor: hotcueTabButton.faceColor
+                        startX: 3
+                        startY: 3
+                        strokeColor: "transparent"
+
+                        PathLine {
+                            x: 17
+                            y: 3
+                        }
+                        PathLine {
+                            x: 11.5
+                            y: 8.5
+                        }
+                        PathLine {
+                            x: 11.5
+                            y: 17
+                        }
+                        PathLine {
+                            x: 8.5
+                            y: 17
+                        }
+                        PathLine {
+                            x: 8.5
+                            y: 8.5
+                        }
+                        PathLine {
+                            x: 3
+                            y: 3
+                        }
                     }
                 }
             }
@@ -486,10 +502,12 @@ Item {
         Skin.Button {
             id: stemTabButton
 
+            Layout.fillHeight: true
             Layout.fillWidth: true
             Layout.margins: 0
             activeColor: Theme.deckActiveColor
-            implicitHeight: 30
+            normalColor: Theme.lightGray3
+            text: "Stems"
 
             background: Rectangle {
                 border.color: stemTabButton.checked ? Theme.accentColor : "#343740"
@@ -497,96 +515,26 @@ Item {
                 color: stemTabButton.checked ? "#203b78" : (stemTabButton.pressed ? "#252b36" : "#17181b")
                 radius: 4
             }
-            contentItem: Item {
-                Rectangle {
-                    color: stemTabButton.checked ? Theme.white : Theme.lightGray3
-                    height: 1
+            glyph: Item {
+                implicitHeight: 20
+                implicitWidth: 20
 
-                    anchors {
-                        left: parent.left
-                        leftMargin: 5
-                        right: parent.right
-                        rightMargin: 5
-                        top: parent.top
-                        topMargin: 6
-                    }
-                }
-                Rectangle {
-                    color: stemTabButton.checked ? Theme.white : Theme.lightGray3
-                    height: 1
+                // Four stacked lanes, one per stem, like the split waveform.
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 2
 
-                    anchors {
-                        left: parent.left
-                        leftMargin: 5
-                        right: parent.right
-                        rightMargin: 14
-                        top: parent.top
-                        topMargin: 12
-                    }
-                }
-                Rectangle {
-                    color: stemTabButton.checked ? Theme.white : Theme.lightGray3
-                    height: 1
+                    Repeater {
+                        model: 4
 
-                    anchors {
-                        bottom: parent.bottom
-                        bottomMargin: 12
-                        left: parent.left
-                        leftMargin: 5
-                        right: parent.right
-                        rightMargin: 22
-                    }
-                }
-                Rectangle {
-                    color: stemTabButton.checked ? Theme.white : Theme.lightGray3
-                    height: 1
+                        Rectangle {
+                            required property int index
 
-                    anchors {
-                        bottom: parent.bottom
-                        bottomMargin: 13
-                        left: parent.left
-                        leftMargin: 22
-                        right: parent.right
-                        rightMargin: 5
-                    }
-                }
-                Rectangle {
-                    color: stemTabButton.checked ? Theme.white : Theme.lightGray3
-                    height: 1
-
-                    anchors {
-                        bottom: parent.bottom
-                        bottomMargin: 6
-                        left: parent.left
-                        leftMargin: 5
-                        right: parent.right
-                        rightMargin: 26
-                    }
-                }
-                Rectangle {
-                    color: stemTabButton.checked ? Theme.white : Theme.lightGray3
-                    height: 1
-
-                    anchors {
-                        bottom: parent.bottom
-                        bottomMargin: 6
-                        left: parent.left
-                        leftMargin: 14
-                        right: parent.right
-                        rightMargin: 15
-                    }
-                }
-                Rectangle {
-                    color: stemTabButton.checked ? Theme.white : Theme.lightGray3
-                    height: 1
-
-                    anchors {
-                        bottom: parent.bottom
-                        bottomMargin: 6
-                        left: parent.left
-                        leftMargin: 26
-                        right: parent.right
-                        rightMargin: 5
+                            color: stemTabButton.faceColor
+                            height: 2
+                            radius: 1
+                            width: [16, 12, 16, 10][index]
+                        }
                     }
                 }
             }

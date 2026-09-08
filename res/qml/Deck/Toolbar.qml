@@ -9,10 +9,11 @@ Item {
 
     property color buttonColor: trackLoadedControl.value > 0 ? Theme.buttonActiveColor : Theme.buttonDisableColor
     // The beatgrid can only be moved when there is a grid to move and it is
-    // not locked. Locking a beatgrid is how you protect a grid you have
-    // already got right, so the button greys out rather than silently
-    // refusing: BpmControl drops the request without a word.
-    readonly property bool canAdjustBeatgrid: trackLoadedControl.value > 0 && bpmLockControl.value === 0
+    // not locked. An unanalysed track has no grid at all (file_bpm reads 0),
+    // and locking a beatgrid is how you protect a grid you have already got
+    // right. In both cases BpmControl drops the request without a word, so
+    // the button greys out rather than silently refusing.
+    readonly property bool canAdjustBeatgrid: trackLoadedControl.value > 0 && fileBpmControl.value > 0 && bpmLockControl.value === 0
     required property string group
 
     Mixxx.ControlProxy {
@@ -20,6 +21,12 @@ Item {
 
         group: root.group
         key: "track_loaded"
+    }
+    Mixxx.ControlProxy {
+        id: fileBpmControl
+
+        group: root.group
+        key: "file_bpm"
     }
     Mixxx.ControlProxy {
         id: bpmLockControl
