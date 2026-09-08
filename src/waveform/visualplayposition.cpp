@@ -129,7 +129,7 @@ double VisualPlayPosition::determinePlayPosInLoopBoundries(
                 //    (not scratching left of an activated loop)
                 // 4. LoopIn is not being held down
                 interpolatedPlayPos = data.m_loopEndPos -
-                        std::remainder(
+                        std::fmod(
                                 data.m_loopStartPos - interpolatedPlayPos,
                                 loopSize);
             }
@@ -144,7 +144,7 @@ double VisualPlayPosition::determinePlayPosInLoopBoundries(
                 //    (not scratching right of an activated loop)
                 // 4. LoopOut is not being held down
                 interpolatedPlayPos = data.m_loopStartPos +
-                        std::remainder(
+                        std::fmod(
                                 interpolatedPlayPos - data.m_loopEndPos,
                                 loopSize);
             }
