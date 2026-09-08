@@ -6,6 +6,7 @@ import QtQuick
 import QtQml.Models
 import QtQuick.Layouts
 import QtQuick.Controls 2.15
+import QtQuick.Controls.impl
 import QtQuick.Shapes
 import Qt5Compat.GraphicalEffects
 import "../Theme"
@@ -158,7 +159,7 @@ Rectangle {
 
                                     model: !!icon ? 1 : 0
 
-                                    Item {
+                                    IconImage {
                                         // Trailing icon: parked at the right edge of the
                                         // column so every label starts at the same x and the
                                         // tree reads as a list. Leading icons pushed each
@@ -169,47 +170,35 @@ Rectangle {
                                         anchors.verticalCenter: parent.verticalCenter
                                         height: 16
                                         width: 16
+                                        // SVGs rasterise at sourceSize, so render at 2x and
+                                        // scale down -- at 1x these were soft on a scaled
+                                        // display.
+                                        sourceSize.height: 32
+                                        sourceSize.width: 32
+                                        smooth: true
+                                        // These ship as Mixxx 2.x art, orange gradient and all
+                                        // (#ff6600 over #de5800) -- the one colour this chrome
+                                        // never uses. IconImage recolours the SVG AS IT
+                                        // RASTERISES, so the icon takes the row's own label
+                                        // colour and lights up with its name.
+                                        //
+                                        // It is deliberately not ColorOverlay: that is a
+                                        // ShaderEffect, and this one has to be right rather than
+                                        // plausible -- a shader draws nothing under
+                                        // QT_QPA_PLATFORM=offscreen, so no headless check can
+                                        // tell you whether it worked.
+                                        color: current ? Theme.white : (openParent ? Theme.midGray : Theme.deckTextColor)
                                         // Chrome treatment: secondary elements sit back at
                                         // ~0.7 and come forward when active, as in the deck
                                         // and mixer restyle.
                                         opacity: current ? 1 : (rowMouseArea.containsMouse ? 0.9 : 0.55)
+                                        // The model supplies LibraryFeature::iconName() -- a
+                                        // bare name like "tracks", not a URL. Binding it
+                                        // straight to source resolved it against
+                                        // res/qml/Library/, so every feature icon failed with
+                                        // "Cannot open .../res/qml/Library/tracks".
+                                        source: icon ? Qt.resolvedUrl("../../images/library/ic_library_" + icon + ".svg") : ""
                                         visible: depth == 0 && icon && Mixxx.Config.libraryShowFeatureIcons
-
-                                        Image {
-                                            id: featureIcon
-
-                                            anchors.fill: parent
-                                            // SVGs rasterise at sourceSize, so render at 2x and
-                                            // scale down -- at 1x these were soft on a scaled
-                                            // display.
-                                            sourceSize.height: 32
-                                            sourceSize.width: 32
-                                            smooth: true
-                                            // The model supplies LibraryFeature::iconName() -- a
-                                            // bare name like "tracks", not a URL. Binding it
-                                            // straight to source resolved it against
-                                            // res/qml/Library/, so every feature icon failed with
-                                            // "Cannot open .../res/qml/Library/tracks".
-                                            source: icon ? Qt.resolvedUrl("../../images/library/ic_library_" + icon + ".svg") : ""
-                                        }
-                                        ColorOverlay {
-                                            // These are the stock library icons, still carrying
-                                            // Mixxx 2.x's orange gradient (#ff6600 over #de5800)
-                                            // -- the one colour the New UI chrome never uses, so
-                                            // they read as pasted in from another application.
-                                            // Tint them to the row's own label colour instead, so
-                                            // a feature and its name light up as one thing. Same
-                                            // ColorOverlay treatment the buttons use.
-                                            //
-                                            // The source Image is left visible, as in Button.qml:
-                                            // ColorOverlay does not hide its input (it has no
-                                            // hideSource of its own), and if the effect ever fails
-                                            // to draw, orange icons are a better failure than none.
-                                            anchors.fill: featureIcon
-                                            antialiasing: true
-                                            color: current ? Theme.white : (openParent ? Theme.midGray : Theme.deckTextColor)
-                                            source: featureIcon
-                                        }
                                     }
                                 }
                                 Label {
