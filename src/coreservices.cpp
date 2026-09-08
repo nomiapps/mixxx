@@ -17,7 +17,9 @@
 #include "controllers/scripting/controllerscriptenginebase.h"
 #include "database/mixxxdb.h"
 #include "effects/effectsmanager.h"
+#include "engine/channels/enginesynth.h"
 #include "engine/enginemixer.h"
+#include "engine/enginesequencer.h"
 #ifdef __RUBBERBAND__
 #include "engine/bufferscalers/rubberbandworkerpool.h"
 #endif
@@ -592,6 +594,15 @@ void CoreServices::initialize(QApplication* pApp) {
     for (int i = 0; i < kSamplerCount; ++i) {
         m_pPlayerManager->addSampler();
     }
+
+    // The step sequencer drives [Synth1] and the samplers from inside the
+    // engine callback. It wants the synth channel to exist, and has to be
+    // in place before the sound devices open and mixing starts.
+    m_pEngine->setSequencer(std::make_unique<EngineSequencer>(
+            QStringLiteral("[Sequencer1]"),
+            m_pEngine.get(),
+            qobject_cast<EngineSynth*>(
+                    m_pEngine->getChannel(PlayerManager::groupForSynth(0)))));
 
     m_pPlayerManager->addPreviewDeck();
 

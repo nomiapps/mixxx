@@ -235,6 +235,13 @@ void EngineMixer::processChannels(std::size_t bufferSize) {
     // Update internal sync lock rate.
     m_pEngineSync->onCallbackStart(m_sampleRate, bufferSize);
 
+    // The sequencer runs before any channel: what it schedules on the synth
+    // has to count in updateActiveState() below, and a sampler it starts
+    // has to seek in this buffer.
+    if (m_pSequencer) {
+        m_pSequencer->onCallbackStart(m_sampleRate, bufferSize);
+    }
+
     m_activeBusChannels[EngineChannel::LEFT].clear();
     m_activeBusChannels[EngineChannel::CENTER].clear();
     m_activeBusChannels[EngineChannel::RIGHT].clear();
@@ -881,6 +888,10 @@ void EngineMixer::addChannel(std::unique_ptr<EngineChannel> pChannel) {
     if (pBuffer != nullptr) {
         pBuffer->bindWorkers(m_pWorkerScheduler);
     }
+}
+
+void EngineMixer::setSequencer(std::unique_ptr<EngineSequencer> pSequencer) {
+    m_pSequencer = std::move(pSequencer);
 }
 
 EngineChannel* EngineMixer::getChannel(const QString& group) {

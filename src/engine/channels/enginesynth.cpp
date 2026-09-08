@@ -88,7 +88,8 @@ EngineSynth::EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManage
                   /*isPrimaryDeck*/ false),
           m_lastHeld{0, 0},
           m_voiceSequence(0),
-          m_monoBuffer(kMaxEngineFrames, 0.0f) {
+          m_monoBuffer(kMaxEngineFrames, 0.0f),
+          m_scheduledCount(0) {
     for (auto& held : m_held) {
         held.store(0, std::memory_order_relaxed);
     }
@@ -271,7 +272,9 @@ EngineChannel::ActiveState EngineSynth::updateActiveState() {
                                   m_held[1].load(std::memory_order_acquire) |
                                   m_tapped[0].load(std::memory_order_acquire) |
                                   m_tapped[1].load(std::memory_order_acquire)) != 0;
-    if (keysDown || activeVoiceCount() > 0) {
+    // Scheduled events count as activity: EngineMixer skips process() for an
+    // inactive channel, and that is where they are consumed.
+    if (keysDown || activeVoiceCount() > 0 || m_scheduledCount > 0) {
         m_active = true;
         return ActiveState::Active;
     }
@@ -365,6 +368,41 @@ void EngineSynth::releaseVoicesFor(int note) {
             voice.gate = false;
         }
     }
+}
+
+bool EngineSynth::scheduleNoteOn(std::size_t frameOffset, int note, double velocity) {
+    if (note < 0 || note >= kNotes) {
+        return false;
+    }
+    VERIFY_OR_DEBUG_ASSERT(m_scheduledCount < kMaxScheduledEvents) {
+        return false;
+    }
+    const int scaled = std::clamp(static_cast<int>(std::lround(velocity * 127.0)), 1, 127);
+    ScheduledEvent& event = m_scheduled[m_scheduledCount++];
+    event.frame = static_cast<uint32_t>(std::min<std::size_t>(frameOffset, kMaxEngineFrames - 1));
+    event.note = static_cast<uint8_t>(note);
+    event.velocity = static_cast<uint8_t>(scaled);
+    event.on = true;
+    return true;
+}
+
+bool EngineSynth::scheduleNoteOff(std::size_t frameOffset, int note) {
+    if (note < 0 || note >= kNotes) {
+        return false;
+    }
+    VERIFY_OR_DEBUG_ASSERT(m_scheduledCount < kMaxScheduledEvents) {
+        return false;
+    }
+    ScheduledEvent& event = m_scheduled[m_scheduledCount++];
+    event.frame = static_cast<uint32_t>(std::min<std::size_t>(frameOffset, kMaxEngineFrames - 1));
+    event.note = static_cast<uint8_t>(note);
+    event.velocity = 0;
+    event.on = false;
+    return true;
+}
+
+int EngineSynth::scheduledEventCount() const {
+    return m_scheduledCount;
 }
 
 void EngineSynth::applyKeyChanges() {
@@ -492,15 +530,48 @@ void EngineSynth::process(CSAMPLE* pOut, const std::size_t bufferSize) {
     readParams(&params);
     applyKeyChanges();
 
+    // Scheduled events split the buffer into segments: every sounding voice
+    // renders up to the next event, the event starts or releases its voice,
+    // and rendering continues from there. renderVoice keeps all of a voice's
+    // state in the Voice, so a segment is just a pointer and a length.
+    for (int i = 1; i < m_scheduledCount; ++i) {
+        const ScheduledEvent event = m_scheduled[i];
+        int j = i - 1;
+        while (j >= 0 && m_scheduled[j].frame > event.frame) {
+            m_scheduled[j + 1] = m_scheduled[j];
+            --j;
+        }
+        m_scheduled[j + 1] = event;
+    }
+
     CSAMPLE* pMono = m_monoBuffer.data();
     std::fill_n(pMono, frames, 0.0f);
     bool sounding = false;
-    for (Voice& voice : m_voices) {
-        if (voice.stage != Stage::Idle) {
-            renderVoice(&voice, params, pMono, frames);
+    std::size_t cursor = 0;
+    for (int e = 0; e <= m_scheduledCount; ++e) {
+        const std::size_t segmentEnd = e < m_scheduledCount
+                ? std::min<std::size_t>(m_scheduled[e].frame, frames)
+                : frames;
+        if (segmentEnd > cursor) {
+            for (Voice& voice : m_voices) {
+                if (voice.stage != Stage::Idle) {
+                    renderVoice(&voice, params, pMono + cursor, segmentEnd - cursor);
+                    sounding = true;
+                }
+            }
+            cursor = segmentEnd;
+        }
+        if (e < m_scheduledCount) {
+            const ScheduledEvent& event = m_scheduled[e];
+            if (event.on) {
+                startVoice(event.note, event.velocity / 127.0, /*gate*/ true);
+            } else {
+                releaseVoicesFor(event.note);
+            }
             sounding = true;
         }
     }
+    m_scheduledCount = 0;
 
     if (sounding) {
         const CSAMPLE gain = static_cast<CSAMPLE>(params.gain);

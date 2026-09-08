@@ -845,6 +845,15 @@ void EngineBuffer::slotControlPlayFromStart(double v)
     }
 }
 
+void EngineBuffer::playFromStartUnquantized() {
+    doSeekFractional(0., SEEK_EXACT);
+    // The play request may queue a phase seek when quantize is on ...
+    m_playButton->set(1);
+    // ... which is dropped here. Same thread, same callback: processSeek
+    // has not run yet, so there is nothing to race.
+    m_iSeekPhaseQueued = 0;
+}
+
 void EngineBuffer::slotControlJumpToStartAndStop(double v)
 {
     if (v > 0.0) {

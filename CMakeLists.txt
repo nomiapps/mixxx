@@ -1349,6 +1349,7 @@ add_library(
   src/engine/enginemixer.cpp
   src/engine/engineobject.cpp
   src/engine/enginepregain.cpp
+  src/engine/enginesequencer.cpp
   src/engine/enginesidechaincompressor.cpp
   src/engine/enginetalkoverducking.cpp
   src/engine/enginevumeter.cpp
@@ -2936,6 +2937,7 @@ if(BUILD_TESTING)
     src/test/enginefilterbiquadtest.cpp
     src/test/enginemixertest.cpp
     src/test/enginemicrophonetest.cpp
+    src/test/enginesequencertest.cpp
     src/test/enginesynthtest.cpp
     src/test/enginesynctest.cpp
     src/test/fileinfo_test.cpp

@@ -53,6 +53,21 @@ class EngineSynth : public EngineChannel {
     /// from the engine thread's point of view, so only approximate elsewhere).
     int activeVoiceCount() const;
 
+    /// Engine-thread-only note scheduling, for callers that themselves run
+    /// inside the engine callback (the step sequencer). The key controls above
+    /// are diffed once per buffer, so anything they play lands at frame 0 of
+    /// the next buffer and two events for one note in one buffer collapse.
+    /// These do not: an event is applied by the next process() call at
+    /// frameOffset frames into its buffer, between the samples on either side
+    /// of it. frameOffset past the end of the buffer lands on its last frame.
+    /// velocity is 0..1. Returns false when the queue is full and the event
+    /// was dropped.
+    static constexpr int kMaxScheduledEvents = 64;
+    bool scheduleNoteOn(std::size_t frameOffset, int note, double velocity);
+    bool scheduleNoteOff(std::size_t frameOffset, int note);
+    /// Events queued for the next process() (tests and diagnostics).
+    int scheduledEventCount() const;
+
   private slots:
     void slotNoteOn(double v);
     void slotNoteOff(double v);
@@ -105,6 +120,13 @@ class EngineSynth : public EngineChannel {
     Voice* allocateVoice();
     void renderVoice(Voice* pVoice, const Params& params, CSAMPLE* pMono, std::size_t frames);
 
+    struct ScheduledEvent {
+        uint32_t frame = 0;
+        uint8_t note = 0;
+        uint8_t velocity = 127;
+        bool on = false;
+    };
+
     std::array<std::atomic<uint64_t>, 2> m_held;
     std::array<std::atomic<uint64_t>, 2> m_tapped;
     std::array<std::atomic<uint8_t>, kNotes> m_velocity;
@@ -112,6 +134,10 @@ class EngineSynth : public EngineChannel {
     std::array<Voice, kVoices> m_voices;
     uint32_t m_voiceSequence;
     std::vector<CSAMPLE> m_monoBuffer;
+    // Engine thread only: filled between callbacks by the sequencer, drained
+    // by process(). Sorted by frame there, so callers need not order them.
+    std::array<ScheduledEvent, kMaxScheduledEvents> m_scheduled;
+    int m_scheduledCount;
 
     ControlObject* m_pNoteOn;
     ControlObject* m_pNoteOff;

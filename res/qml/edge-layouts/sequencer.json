@@ -1,0 +1,22 @@
+{
+    "name": "Sequencer",
+    "canvas": [
+        2560,
+        720
+    ],
+    "elements": [
+        {
+            "type": "sequencer",
+            "group": "[Sequencer1]",
+            "steps": 16,
+            "samplerLanes": 4,
+            "samplerCount": 8,
+            "rect": [
+                16,
+                8,
+                2528,
+                704
+            ]
+        }
+    ]
+}

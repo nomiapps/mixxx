@@ -254,6 +254,13 @@ class EngineBuffer : public EngineObject {
 
     void slipQuitAndAdopt();
 
+    /// Restart from the first frame and play, WITHOUT the quantize phase
+    /// snap that a play request queues (see slotControlPlayRequest). For
+    /// callers that are themselves the clock, such as the step sequencer:
+    /// with quantize on, a phase seek would move the start off frame 0 for
+    /// any track with a beatgrid while another deck plays. Engine thread only.
+    void playFromStartUnquantized();
+
   public slots:
     void slotControlPlayRequest(double);
     void slotControlPlayFromStart(double);

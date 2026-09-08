@@ -14,6 +14,7 @@
 #include "engine/channels/enginechannel.h"
 #include "engine/effects/groupfeaturestate.h"
 #include "engine/engineobject.h"
+#include "engine/enginesequencer.h"
 #include "preferences/usersettings.h"
 #include "recording/recordingmanager.h"
 #include "soundio/soundmanager.h"
@@ -98,6 +99,13 @@ class EngineMixer : public QObject, public AudioSource {
     // Provide access to the sync lock so enginebuffers can know what their rate controller is.
     EngineSync* getEngineSync() const{
         return m_pEngineSync.get();
+    }
+
+    /// The step sequencer, ticked at the top of every callback before any
+    /// channel is processed. Set once, before the engine starts mixing.
+    void setSequencer(std::unique_ptr<EngineSequencer> pSequencer);
+    EngineSequencer* getSequencer() const {
+        return m_pSequencer.get();
     }
 
     // These are really only exposed for tests to use.
@@ -298,6 +306,10 @@ class EngineMixer : public QObject, public AudioSource {
 
     // List of channels added to the engine. (depends on m_pEngineSync)
     QVarLengthArray<std::unique_ptr<ChannelInfo>, kPreallocatedChannels> m_channels;
+
+    // Holds raw pointers into m_channels, so it is declared after them and
+    // therefore destroyed before them.
+    std::unique_ptr<EngineSequencer> m_pSequencer;
 
     std::unique_ptr<ControlObject> m_pMainGain;
     std::unique_ptr<ControlObject> m_pBoothGain;

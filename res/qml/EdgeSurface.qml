@@ -89,6 +89,8 @@ Window {
             return "EdgeElementDivider.qml";
         case "synth":
             return "EdgeElementSynth.qml";
+        case "sequencer":
+            return "EdgeElementSequencer.qml";
         default:
             console.warn("edge-layout: unknown element type", type);
             return "";

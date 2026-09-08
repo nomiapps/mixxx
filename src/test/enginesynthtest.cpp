@@ -149,4 +149,39 @@ TEST_F(EngineSynthTest, OutputStaysBoundedWithFullPolyphonyAndResonance) {
     }
 }
 
+TEST_F(EngineSynthTest, ScheduledNoteOnStartsMidBuffer) {
+    set("attack", 0.0);
+    set("osc1_wave", 1); // triangle: not zero at phase 0
+    set("osc_mix", 0.0);
+    set("env_amount", 0.0);
+    ASSERT_TRUE(m_pSynth->scheduleNoteOn(1000, 60, 1.0));
+    EXPECT_EQ(1, m_pSynth->scheduledEventCount());
+    // A scheduled event alone keeps the channel out of Inactive.
+    EXPECT_EQ(EngineChannel::ActiveState::Active, m_pSynth->updateActiveState());
+    m_pSynth->process(m_pOutput, kBufferSize);
+    for (std::size_t i = 0; i < 1000; ++i) {
+        ASSERT_FLOAT_EQ(0.0f, m_pOutput[2 * i]) << "frame " << i;
+    }
+    bool sounded = false;
+    for (std::size_t i = 1000; i < 1003; ++i) {
+        sounded = sounded || m_pOutput[2 * i] != 0.0f;
+    }
+    EXPECT_TRUE(sounded);
+    EXPECT_EQ(0, m_pSynth->scheduledEventCount());
+    EXPECT_EQ(1, m_pSynth->activeVoiceCount());
+}
+
+TEST_F(EngineSynthTest, ScheduledOffAfterOnInSameBuffer) {
+    set("attack", 0.0);
+    set("release", 0.0);
+    ASSERT_TRUE(m_pSynth->scheduleNoteOn(100, 60, 1.0));
+    ASSERT_TRUE(m_pSynth->scheduleNoteOff(300, 60));
+    m_pSynth->updateActiveState();
+    m_pSynth->process(m_pOutput, kBufferSize);
+    // Released at frame 300 and gone within a millisecond, long before
+    // the buffer's last frame.
+    EXPECT_EQ(0, m_pSynth->activeVoiceCount());
+    EXPECT_FLOAT_EQ(0.0f, m_pOutput[2 * (kBufferSize / 2 - 1)]);
+}
+
 } // namespace
