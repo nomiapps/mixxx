@@ -108,6 +108,7 @@ Item {
             midColor: '#97632D'
         }
         Mixxx.WaveformRendererStem {
+            cached: true
             gainAll: root.splitStemTracks ? 2.0 : 1.0
             splitStemTracks: root.splitStemTracks
             stemIndex: root.stemIndex

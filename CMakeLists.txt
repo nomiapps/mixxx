@@ -1717,6 +1717,7 @@ add_library(
   src/waveform/renderers/waveformrendererpreroll.cpp
   src/waveform/renderers/waveformrendererrgb.cpp
   src/waveform/renderers/waveformfilteredcolumns.cpp
+  src/waveform/renderers/waveformstemcolumns.cpp
   src/waveform/renderers/waveformtextureimage.cpp
   src/waveform/renderers/waveformrenderersignalbase.cpp
   src/waveform/renderers/waveformrenderersimplesignal.cpp
@@ -3037,6 +3038,7 @@ if(BUILD_TESTING)
       src/test/sampleutiltest.cpp
       src/test/waveform_upgrade_test.cpp
     src/test/waveformfilteredcolumns_test.cpp
+    src/test/waveformstemcolumns_test.cpp
     src/test/waveformtextureimage_test.cpp
     )
   endif()
@@ -4153,6 +4155,7 @@ if(QML)
       mixxx-qml-lib
       PRIVATE
         src/waveform/renderers/allshader/waveformrendererstem.cpp
+        src/waveform/renderers/scenegraph/waveformrendererstemcached.cpp
         src/qml/qmlstemsmodel.cpp
     )
   endif()

@@ -528,6 +528,9 @@ class QmlWaveformRendererStem
     Q_PROPERTY(double gainAll MEMBER m_gainAll NOTIFY gainAllChanged)
     Q_PROPERTY(bool splitStemTracks MEMBER m_splitStemTracks NOTIFY splitStemTracksChanged)
     Q_PROPERTY(int stemIndex MEMBER m_stemIndex NOTIFY stemIndexChanged)
+    // Scene graph only: cache the column geometry in tiles and scroll them
+    // instead of rebuilding every frame. See WaveformRendererStemCached.
+    Q_PROPERTY(bool cached MEMBER m_cached FINAL)
     QML_NAMED_ELEMENT(WaveformRendererStem)
 
   public:
@@ -560,6 +563,7 @@ class QmlWaveformRendererStem
     double m_gainAll{1.0};
     bool m_splitStemTracks{false};
     int m_stemIndex{-1};
+    bool m_cached{false};
 
     ::WaveformRendererAbstract::PositionSource m_position{::WaveformRendererAbstract::Play};
 };

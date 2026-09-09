@@ -22,6 +22,9 @@
 #include "waveform/renderers/waveformmark.h"
 #ifdef __STEM__
 #include "waveform/renderers/allshader/waveformrendererstem.h"
+#if defined(__SCENEGRAPH__)
+#include "waveform/renderers/scenegraph/waveformrendererstemcached.h"
+#endif
 #endif
 #include "waveform/renderers/allshader/waveformrendermark.h"
 #include "waveform/renderers/allshader/waveformrendermarkrange.h"
@@ -321,6 +324,33 @@ QmlWaveformRendererFactory::Renderer QmlWaveformRendererMarkRange::create(
 QmlWaveformRendererFactory::Renderer QmlWaveformRendererStem::create(
         WaveformWidgetRenderer* waveformWidget,
         mixxx::qml::WaveformRendererSignalBaseOptions options) const {
+#ifdef __SCENEGRAPH__
+    if (m_cached) {
+        // The scrolling twin: same grid, same look, geometry built once per
+        // tile. See WaveformRendererStemCached.
+        auto pCached = std::make_unique<allshader::WaveformRendererStemCached>(
+                waveformWidget, m_position);
+
+        pCached->setAllChannelVisualGain(m_gainAll);
+        pCached->setSplitStemTracks(m_splitStemTracks);
+        pCached->setStemIndex(m_stemIndex);
+        connect(this,
+                &QmlWaveformRendererStem::gainAllChanged,
+                pCached.get(),
+                &allshader::WaveformRendererStemCached::setAllChannelVisualGain);
+        connect(this,
+                &QmlWaveformRendererStem::splitStemTracksChanged,
+                pCached.get(),
+                &allshader::WaveformRendererStemCached::setSplitStemTracks);
+        connect(this,
+                &QmlWaveformRendererStem::stemIndexChanged,
+                pCached.get(),
+                &allshader::WaveformRendererStemCached::setStemIndex);
+        return QmlWaveformRendererFactory::Renderer{
+                dynamic_cast<::WaveformRendererAbstract*>(pCached.get()),
+                std::move(pCached)};
+    }
+#endif
     auto pRenderer = std::make_unique<allshader::WaveformRendererStem>(
             waveformWidget, m_position);
 
