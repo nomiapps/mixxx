@@ -206,6 +206,10 @@ Item {
             Repeater {
                 model: root.padCount
 
+                // Lit means playing, so a lit pad stops instead of restarting:
+                // on glass a stab is not a real gesture anyway, and without this
+                // a sample -- one the sequencer fired included -- had nowhere on
+                // the surface to be stopped.
                 Skin.EdgePadButton {
                     required property int index
 
@@ -214,6 +218,7 @@ Item {
                     height: padArea.padHeight
                     padGroup: "[Sampler" + (index + 1 + root.samplerOffset) + "]"
                     padKey: "cue_gotoandplay"
+                    stopKey: "cue_gotoandstop"
                     text: "S" + (index + 1 + root.samplerOffset)
                     width: padArea.padWidth
                 }

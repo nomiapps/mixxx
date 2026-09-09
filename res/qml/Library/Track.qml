@@ -160,9 +160,33 @@ Item {
                     onObjectRemoved: (index, object) => loadToDeckMenu.removeItem(object)
                 }
             }
+            // This was a title with nothing under it: "Load to > Sampler"
+            // opened an empty sliver of a menu, so the library could not put a
+            // track in a sampler at all. Same shape as the deck menu above,
+            // except the count comes from [App],num_samplers -- main.qml raises
+            // it after the skin loads, so a constant here would be a guess.
             LibraryMenu {
+                id: loadToSamplerMenu
+
                 enabled: hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToSampler)
                 title: qsTr("Sampler")
+
+                Instantiator {
+                    model: Math.max(0, numSamplersControl.value)
+
+                    delegate: LibraryMenuItem {
+                        required property int index
+
+                        readonly property int menuIndex: index
+
+                        text: qsTr("Sampler %1").arg(index + 1)
+
+                        onTriggered: Mixxx.PlayerManager.getPlayer(`[Sampler${index + 1}]`).loadTrack(root.rowTrack())
+                    }
+
+                    onObjectAdded: (index, object) => root.insertMenuItemInOrder(loadToSamplerMenu, object)
+                    onObjectRemoved: (index, object) => loadToSamplerMenu.removeItem(object)
+                }
             }
 
             // Instantiator {
@@ -281,5 +305,11 @@ Item {
 
             onTriggered: root.keySearchRequested(root.menuKeyText, true)
         }
+    }
+    Mixxx.ControlProxy {
+        id: numSamplersControl
+
+        group: "[App]"
+        key: "num_samplers"
     }
 }

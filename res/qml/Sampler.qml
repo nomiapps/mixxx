@@ -101,18 +101,44 @@ Rectangle {
             key: "pregain"
             width: 40
         }
-        Skin.ControlButton {
+        // Play doubles as Stop: pressing a sampler that is playing sends it back
+        // to its cue instead of retriggering it. Nothing in the strip could stop
+        // a sample before -- the only stop was an undiscoverable double-tap on
+        // the strip, and a sample the sequencer fired had none at all. Holding
+        // the right button still plays from the cue (cue_default), which is the
+        // retrigger this gives up.
+        //
+        // Swapping `key` on a Skin.ControlButton looks like the small change and
+        // is a trap: the press writes 1, `play` flips, and the release then
+        // writes 0 to the OTHER control, leaving the first latched at 1. A push
+        // button that never sees another rising edge is dead. So the button
+        // holds whichever proxy it pressed and releases that one.
+        Skin.Button {
             id: playButton
+
+            property var heldControl: null
+
+            function release() {
+                if (!playButton.heldControl)
+                    return;
+                playButton.heldControl.value = 0;
+                playButton.heldControl = null;
+            }
 
             activeColor: Theme.samplerColor
             anchors.left: embedded.left
             anchors.top: embedded.top
-            group: root.group
             height: 40
             highlight: playLatchedControl.value > 0 || root.playing
-            key: "cue_gotoandplay"
-            text: "Play"
+            text: root.playing ? "Stop" : "Play"
             width: 40
+
+            onCanceled: playButton.release()
+            onPressed: {
+                playButton.heldControl = root.playing ? cueGotoAndStopControl : cueGotoAndPlayControl;
+                playButton.heldControl.value = 1;
+            }
+            onReleased: playButton.release()
 
             MouseArea {
                 acceptedButtons: Qt.RightButton
@@ -352,6 +378,20 @@ Rectangle {
 
         group: root.group
         key: "cue_default"
+    }
+    Mixxx.ControlProxy {
+        id: cueGotoAndPlayControl
+
+        group: root.group
+        key: "cue_gotoandplay"
+    }
+    // Back to the cue rather than a bare `play = 0`: it pairs with the play
+    // above, so a stopped sample is parked where the next press starts it.
+    Mixxx.ControlProxy {
+        id: cueGotoAndStopControl
+
+        group: root.group
+        key: "cue_gotoandstop"
     }
     Mixxx.ControlProxy {
         id: ejectControl
