@@ -8,10 +8,18 @@ import "../Theme"
 Category {
     id: root
 
+    // Loudest the main mix and the tone channel got during the last test, held
+    // after it ends so the reading survives being read. -1 means "not measured
+    // yet"; 0 means measured and silent, which is the interesting answer.
+    property real audioTestMainPeak: -1
     // The synth routing to put back when the test tone ends, and which output
     // is being tested ("" when nothing is sounding).
     property var audioTestSaved: null
+    // Which output the FINISHED test used, so the reading afterwards can be
+    // specific -- audioTestTarget is cleared the moment the tone stops.
+    property string audioTestLast: ""
     property string audioTestTarget: ""
+    property real audioTestTonePeak: -1
     property bool committing: false
     property bool hasChanges: router.hasChanges
 
@@ -171,6 +179,9 @@ Category {
             "mute": synthMute.value
         };
         root.audioTestTarget = target;
+        root.audioTestLast = target;
+        root.audioTestTonePeak = 0;
+        root.audioTestMainPeak = 0;
         synthMute.value = 0;
         synthVolume.value = 1;
         synthMainMix.value = target === "headphones" ? 0 : 1;
@@ -180,6 +191,25 @@ Category {
         // laptop speaker and low enough not to be shrill on monitors.
         synthNoteOn.value = 69;
         audioTestTimer.restart();
+    }
+    // What the two meters mean, once a test has finished. The ear cannot tell
+    // "no tone was made" from "a tone was made and never left the building",
+    // and that is exactly the difference between a Mixxx problem and a device
+    // or cabling one.
+    function audioTestReading() {
+        if (root.audioTestTonePeak < 0) {
+            return "Nothing sounding.";
+        }
+        if (root.audioTestTonePeak === 0) {
+            return "Nothing sounding. The tone channel never registered a level, so the tone was not generated -- this is a Mixxx problem, not a wiring one.";
+        }
+        if (root.audioTestLast === "headphones") {
+            return "Nothing sounding. The tone was generated and cued to the headphone output. If you heard nothing, the fault is that output or its device, not the mix.";
+        }
+        if (root.audioTestMainPeak === 0) {
+            return "Nothing sounding. The tone was generated but never reached the main mix -- something is muting or unrouting it before the outputs.";
+        }
+        return "Nothing sounding. The tone reached the main mix, so Mixxx made the sound and handed it over: if you heard nothing, the fault is downstream -- the device selected in the routing below, its own volume, or the cable.";
     }
     function stopAudioTest() {
         audioTestTimer.stop();
@@ -300,6 +330,37 @@ Category {
 
         group: "[Synth1]"
         key: "mute"
+    }
+    // The two places the tone can be measured, so the test can say WHERE it
+    // stopped rather than only that you did or did not hear something. The
+    // synth channel's own meter proves the tone was generated; the main mix
+    // meter proves it reached the mix. (There is no headphone meter in the
+    // engine -- EngineMixer builds one EngineVuMeter, for [Main] -- so the
+    // headphone test relies on the tone meter, and the main mix reading 0 for
+    // it is correct: main_mix is 0 during that test.)
+    Mixxx.ControlProxy {
+        id: synthVu
+
+        group: "[Synth1]"
+        key: "vu_meter"
+
+        onValueChanged: {
+            if (root.audioTestTarget !== "") {
+                root.audioTestTonePeak = Math.max(root.audioTestTonePeak, synthVu.value);
+            }
+        }
+    }
+    Mixxx.ControlProxy {
+        id: mainVu
+
+        group: "[Main]"
+        key: "vu_meter"
+
+        onValueChanged: {
+            if (root.audioTestTarget !== "") {
+                root.audioTestMainPeak = Math.max(root.audioTestMainPeak, mainVu.value);
+            }
+        }
     }
     Timer {
         id: audioTestTimer
@@ -788,6 +849,27 @@ Category {
                                 Layout.fillWidth: true
                             }
                         }
+                        // Two live levels, because "I pressed it and heard
+                        // nothing" has two very different causes and the ear
+                        // cannot tell them apart: the tone never being made, or
+                        // being made and never reaching the speaker.
+                        RowLayout {
+                            spacing: 12
+
+                            Text {
+                                color: root.audioTestTonePeak > 0 ? Theme.green : Theme.deckTextColor
+                                font.pixelSize: 14
+                                text: "Tone: " + (root.audioTestTonePeak < 0 ? "not tested" : Math.round(root.audioTestTonePeak * 100) + "%")
+                            }
+                            Text {
+                                color: root.audioTestMainPeak > 0 ? Theme.green : Theme.deckTextColor
+                                font.pixelSize: 14
+                                text: "Main mix: " + (root.audioTestMainPeak < 0 ? "not tested" : Math.round(root.audioTestMainPeak * 100) + "%")
+                            }
+                            Item {
+                                Layout.fillWidth: true
+                            }
+                        }
                         Text {
                             Layout.fillWidth: true
                             color: root.audioTestTarget === "" ? Theme.deckTextColor : Theme.blue
@@ -805,7 +887,7 @@ Category {
                                 case "headphones":
                                     return "Sounding on the headphone output only -- the tone is cued, not in the main mix, so main staying silent here is correct.";
                                 default:
-                                    return "Nothing sounding.";
+                                    return root.audioTestReading();
                                 }
                             }
                             wrapMode: Text.WordWrap
