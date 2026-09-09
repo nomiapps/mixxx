@@ -65,7 +65,11 @@ LaunchpadX.colors = {
     editHeld: [127, 127, 127],
     editPitch: [0, 127, 127],
     gateOn: [127, 52, 0],
-    gateOff: [8, 5, 2]
+    gateOff: [8, 5, 2],
+    stepBeyond: [2, 2, 3],
+    laneButton: [18, 0, 28],
+    targetOn: [127, 40, 127],
+    targetOff: [14, 3, 20]
 };
 
 // The step editor's rows, counted from the bottom. Row 7 stays the synth lane
@@ -110,6 +114,11 @@ LaunchpadX.stepPage = 0;    // 0 = steps 1..8, 1 = steps 9..16
 // gate. Tap the step without touching either and it toggles, as before.
 LaunchpadX.editStep = -1;   // 0..15 while a synth step is held
 LaunchpadX.editUsed = false; // the editor changed the step: release must not toggle it
+// Steps-mode modifiers, one at a time. A held page button, drum-lane button or
+// run button turns one row of the grid into a picker -- pattern length, that
+// lane's sampler, swing. Tapped alone, each keeps its plain meaning, acting
+// on release the way the scale button does.
+LaunchpadX.modifier = null;  // {kind: "page" | "lane" | "run", lane, used}
 // MIDI note -> how many pads are holding it, so a note that appears twice in
 // the overlapping rows releases only when the last finger lifts.
 LaunchpadX.heldNotes = {};
@@ -376,6 +385,11 @@ LaunchpadX.stepColor = function(row, col) {
     if (lane > LaunchpadX.samplerLanes) {
         return LaunchpadX.colors.laneDark;
     }
+    // Steps past the pattern length never play; showing them as ordinary
+    // empties made an 8-step pattern look identical to a 16-step one.
+    if (step >= LaunchpadX.patternLength()) {
+        return LaunchpadX.colors.stepBeyond;
+    }
     const playing = Math.floor(engine.getValue(LaunchpadX.seqGroup, "current_step"));
     const key = lane === 0
         ? LaunchpadX.synthStepKey(step, "enabled")
@@ -438,6 +452,42 @@ LaunchpadX.editColor = function(row, col) {
 };
 
 /**
+ * The pattern length in steps, as the engine will clamp it.
+ *
+ * @returns {number} 1..16
+ */
+LaunchpadX.patternLength = function() {
+    const length = Math.round(engine.getValue(LaunchpadX.seqGroup, "length"));
+    return Math.max(1, Math.min(LaunchpadX.steps, length || LaunchpadX.steps));
+};
+
+/**
+ * The colour of one pad while a modifier is held: the picker's row, or the
+ * lane view for every other row.
+ *
+ * @param {number} row 0 at the bottom
+ * @param {number} col 0 at the left
+ * @returns {Array} an [r, g, b] colour
+ */
+LaunchpadX.modifierColor = function(row, col) {
+    const m = LaunchpadX.modifier;
+    const c = LaunchpadX.colors;
+    if (m.kind === "page" && row === 7) {
+        const step = LaunchpadX.stepPage * 8 + col;
+        return step < LaunchpadX.patternLength() ? c.stepSynth : c.stepEmpty;
+    }
+    if (m.kind === "lane" && row === 7 - m.lane) {
+        const target = Math.round(engine.getValue(LaunchpadX.seqGroup, "sampler_" + m.lane + "_target"));
+        return col + 1 === target ? c.targetOn : c.targetOff;
+    }
+    if (m.kind === "run" && row === LaunchpadX.gateRow) {
+        const level = Math.round(engine.getValue(LaunchpadX.seqGroup, "swing") * 7);
+        return col <= level ? c.gateOn : c.gateOff;
+    }
+    return LaunchpadX.stepColor(row, col);
+};
+
+/**
  * Repaint the 8x8 grid for the current mode.
  */
 LaunchpadX.drawGrid = function() {
@@ -446,6 +496,8 @@ LaunchpadX.drawGrid = function() {
             const index = LaunchpadX.padIndex(row, col);
             if (LaunchpadX.editStep >= 0) {
                 LaunchpadX.light(index, LaunchpadX.editColor(row, col));
+            } else if (LaunchpadX.modifier !== null) {
+                LaunchpadX.light(index, LaunchpadX.modifierColor(row, col));
             } else if (LaunchpadX.mode === LaunchpadX.MODE_NOTES) {
                 LaunchpadX.light(index, LaunchpadX.noteColor(LaunchpadX.noteFor(row, col)));
             } else {
@@ -476,8 +528,13 @@ LaunchpadX.drawButtons = function() {
         let color;
         if (LaunchpadX.mode === LaunchpadX.MODE_NOTES) {
             color = c.sampler;
+        } else if (i === 0) {
+            color = c.modeOff;
+        } else if (i <= LaunchpadX.samplerLanes) {
+            // Beside its drum row: hold it to pick that lane's sampler.
+            color = c.laneButton;
         } else {
-            color = i === 0 ? c.modeOff : c.off;
+            color = c.off;
         }
         LaunchpadX.light(LaunchpadX.rightColumn[i], color);
     }
@@ -499,7 +556,8 @@ LaunchpadX.draw = function() {
 LaunchpadX.onStepChanged = function(value) {
     const previous = LaunchpadX.lastPlayhead;
     LaunchpadX.lastPlayhead = Math.floor(value);
-    if (LaunchpadX.mode !== LaunchpadX.MODE_STEPS || LaunchpadX.editStep >= 0) {
+    if (LaunchpadX.mode !== LaunchpadX.MODE_STEPS || LaunchpadX.editStep >= 0 ||
+            LaunchpadX.modifier !== null) {
         return;
     }
     const columns = [previous, LaunchpadX.lastPlayhead];
@@ -643,6 +701,12 @@ LaunchpadX.onStepPad = function(row, col, value, pressed) {
         LaunchpadX.onEditorPad(row, col, value, pressed);
         return;
     }
+    if (LaunchpadX.modifier !== null) {
+        if (pressed) {
+            LaunchpadX.onModifierPad(row, col);
+        }
+        return;
+    }
     if (row !== 7) {
         if (pressed) {
             LaunchpadX.toggleStep(row, col);
@@ -732,23 +796,99 @@ LaunchpadX.endEdit = function() {
 };
 
 /**
- * The right-hand column: sampler triggers, or the pattern page in steps mode.
+ * A pad pressed while a modifier is held: the picker row acts, the rest is
+ * inert so a stray finger cannot toggle a step under a held button.
+ *
+ * @param {number} row 0 at the bottom
+ * @param {number} col 0 at the left
+ */
+LaunchpadX.onModifierPad = function(row, col) {
+    const m = LaunchpadX.modifier;
+    if (m.kind === "page" && row === 7) {
+        engine.setValue(LaunchpadX.seqGroup, "length", LaunchpadX.stepPage * 8 + col + 1);
+        m.used = true;
+        LaunchpadX.drawGrid();
+    } else if (m.kind === "lane" && row === 7 - m.lane) {
+        engine.setValue(LaunchpadX.seqGroup, "sampler_" + m.lane + "_target", col + 1);
+        m.used = true;
+        for (let c = 0; c < 8; c++) {
+            LaunchpadX.light(LaunchpadX.padIndex(row, c), LaunchpadX.modifierColor(row, c));
+        }
+    } else if (m.kind === "run" && row === LaunchpadX.gateRow) {
+        engine.setValue(LaunchpadX.seqGroup, "swing", col / 7);
+        m.used = true;
+        for (let c = 0; c < 8; c++) {
+            LaunchpadX.light(LaunchpadX.padIndex(row, c), LaunchpadX.modifierColor(row, c));
+        }
+    }
+};
+
+/**
+ * Begin holding a modifier, if nothing else is in progress.
+ *
+ * @param {string} kind page, lane or run
+ * @param {number} lane the drum lane for kind "lane", else 0
+ * @returns {boolean} true when the modifier was taken up
+ */
+LaunchpadX.holdModifier = function(kind, lane) {
+    if (LaunchpadX.mode !== LaunchpadX.MODE_STEPS || LaunchpadX.editStep >= 0 ||
+            LaunchpadX.modifier !== null) {
+        return false;
+    }
+    LaunchpadX.modifier = {kind: kind, lane: lane, used: false};
+    LaunchpadX.drawGrid();
+    return true;
+};
+
+/**
+ * Let go of a modifier. Returns whether the button was only tapped, so the
+ * caller can give it its plain meaning.
+ *
+ * @param {string} kind the modifier being released
+ * @param {number} lane the drum lane for kind "lane", else 0
+ * @returns {boolean} true when the picker was not used
+ */
+LaunchpadX.releaseModifier = function(kind, lane) {
+    const m = LaunchpadX.modifier;
+    if (m === null || m.kind !== kind || m.lane !== lane) {
+        return false;
+    }
+    LaunchpadX.modifier = null;
+    LaunchpadX.drawGrid();
+    return !m.used;
+};
+
+/**
+ * The right-hand column. In notes mode a press fires a sampler. In steps mode
+ * the top button pages on release and sets the length while held; the next
+ * four sit beside the drum rows and pick that lane's sampler while held.
  *
  * @param {number} index 0 at the top
  * @param {boolean} pressed true on press
  */
 LaunchpadX.onRightColumn = function(index, pressed) {
-    if (!pressed) {
+    if (LaunchpadX.mode === LaunchpadX.MODE_NOTES) {
+        if (pressed) {
+            engine.setValue("[Sampler" + (index + 1) + "]", "cue_gotoandplay", 1);
+        }
         return;
     }
-    if (LaunchpadX.mode === LaunchpadX.MODE_STEPS) {
-        if (index === 0 && LaunchpadX.editStep < 0) {
+    if (index === 0) {
+        if (pressed) {
+            LaunchpadX.holdModifier("page", 0);
+        } else if (LaunchpadX.releaseModifier("page", 0)) {
             LaunchpadX.stepPage = LaunchpadX.stepPage === 0 ? 1 : 0;
             LaunchpadX.draw();
         }
         return;
     }
-    engine.setValue("[Sampler" + (index + 1) + "]", "cue_gotoandplay", 1);
+    if (index <= LaunchpadX.samplerLanes) {
+        if (pressed) {
+            LaunchpadX.holdModifier("lane", index);
+        } else {
+            LaunchpadX.releaseModifier("lane", index);
+        }
+    }
 };
 
 /**
@@ -804,6 +944,7 @@ LaunchpadX.setMode = function(mode) {
     LaunchpadX.allNotesOff();
     LaunchpadX.editStep = -1;
     LaunchpadX.editUsed = false;
+    LaunchpadX.modifier = null;
     LaunchpadX.mode = mode;
     LaunchpadX.draw();
 };
@@ -846,6 +987,20 @@ LaunchpadX.onCC = function(channel, control, value) {
         }
         return;
     }
+    if (control === LaunchpadX.CC_RUN) {
+        if (value > 0) {
+            LaunchpadX.holdModifier("run", 0);
+            return;
+        }
+        // Outside steps mode there was no modifier to release: plain toggle.
+        const tapped = LaunchpadX.modifier === null || LaunchpadX.releaseModifier("run", 0);
+        if (tapped) {
+            engine.setValue(LaunchpadX.seqGroup, "run",
+                engine.getValue(LaunchpadX.seqGroup, "run") > 0 ? 0 : 1);
+            LaunchpadX.drawButtons();
+        }
+        return;
+    }
     if (value === 0) {
         return;
     }
@@ -864,11 +1019,6 @@ LaunchpadX.onCC = function(channel, control, value) {
         break;
     case LaunchpadX.CC_RECORD:
         LaunchpadX.recording = !LaunchpadX.recording;
-        LaunchpadX.drawButtons();
-        break;
-    case LaunchpadX.CC_RUN:
-        engine.setValue(LaunchpadX.seqGroup, "run",
-            engine.getValue(LaunchpadX.seqGroup, "run") > 0 ? 0 : 1);
         LaunchpadX.drawButtons();
         break;
     case LaunchpadX.CC_CLEAR:
