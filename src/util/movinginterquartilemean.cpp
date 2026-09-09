@@ -12,8 +12,7 @@ double MovingInterquartileMean::insert(double value) {
     // NOTE: after benchmarking, replacing the erase+insert with a rotate+swap does
     // not result in significant enough speedup to warrant the complexity.
     if (m_list.size() == m_list.capacity()) {
-        m_list.erase(std::lower_bound(m_list.begin(), m_list.end(), m_queue.front()));
-        m_queue.pop();
+        m_list.erase(std::lower_bound(m_list.begin(), m_list.end(), m_history[m_historyIndex]));
     }
     auto insertPosition = std::lower_bound(m_list.cbegin(), m_list.cend(), value);
     m_list.insert(insertPosition, value);
@@ -22,7 +21,8 @@ double MovingInterquartileMean::insert(double value) {
     // shifted around (due to the erase and insert above). updating those
     // iterators/indices is likely more expensive than recovering them when
     // needed using the first std::lower_bound
-    m_queue.push(value);
+    m_history[m_historyIndex] = value;
+    m_historyIndex = (m_historyIndex + 1) % m_history.size();
 
     DEBUG_ASSERT(std::is_sorted(m_list.cbegin(), m_list.cend()));
 
@@ -34,9 +34,7 @@ double MovingInterquartileMean::insert(double value) {
 
 void MovingInterquartileMean::clear() {
     m_bChanged = true;
-    // std::queue has no .clear(), so creating a temporary and std::swap is the
-    // next most elegant solution
-    std::queue<double>().swap(m_queue);
+    m_historyIndex = 0;
     m_list.clear();
 }
 

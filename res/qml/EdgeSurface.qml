@@ -346,6 +346,9 @@ Window {
                 font.pixelSize: 12
                 text: "LAYOUT"
             }
+            LinkButton {
+                anchors.verticalCenter: parent.verticalCenter
+            }
             OpaqueComboBox {
                 id: layoutPicker
 

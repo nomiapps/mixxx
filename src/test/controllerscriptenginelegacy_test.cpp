@@ -134,7 +134,7 @@ class ControllerScriptEngineLegacyTest : public ControllerScriptEngineLegacy,
                 mixxx::StemChannelSelection(),
 #endif
                 false);
-        m_pEngine->process(1024);
+        m_pEngine->process(1024, std::chrono::microseconds(0));
         // Wait for THIS track, not merely for "a track": on a second load the
         // buffer still holds the previous one, so isTrackLoaded() is already true
         // and we would return before newTrackLoaded had been delivered.
@@ -145,7 +145,7 @@ class ControllerScriptEngineLegacyTest : public ControllerScriptEngineLegacy,
                 waitedMs < kLoadTimeoutMs) {
             QTest::qSleep(100);
             waitedMs += 100;
-            m_pEngine->process(1024);
+            m_pEngine->process(1024, std::chrono::microseconds(0));
         }
         ASSERT_TRUE(pBuffer->getLoadedTrack() == pTrack1)
                 << "the deck did not load " << trackLocation.toStdString()

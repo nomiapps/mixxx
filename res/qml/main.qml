@@ -287,6 +287,7 @@ ApplicationWindow {
                     checkable: true
                     text: "Sampler"
                 }
+                Skin.LinkButton {}
                 Skin.Button {
                     id: showSynthButton
 

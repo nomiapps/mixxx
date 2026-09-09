@@ -112,6 +112,18 @@ TEST_F(MovingInterquartileMeanTest, doubles9) {
     }
 }
 
+TEST_F(MovingInterquartileMeanTest, ClearAfterWrapStartsNewHistory) {
+    MovingInterquartileMean mean(3);
+    for (int i = 0; i < 20; ++i) {
+        mean.insert(i);
+    }
+    mean.clear();
+    EXPECT_EQ(mean.size(), 0);
+    EXPECT_DOUBLE_EQ(mean.insert(2.0), 2.0);
+    EXPECT_DOUBLE_EQ(mean.insert(4.0), 3.0);
+    EXPECT_DOUBLE_EQ(mean.insert(6.0), 4.0);
+    EXPECT_DOUBLE_EQ(mean.insert(8.0), 6.0);
+}
 void BM_MovingIQM_Insertion(benchmark::State& state) {
     std::mt19937 gen; // explicitly don't seed for reproducibility
     std::uniform_real_distribution<> dis(0.0, 1.0);

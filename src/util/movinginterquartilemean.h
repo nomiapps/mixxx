@@ -1,6 +1,6 @@
 #pragma once
 
-#include <queue>
+#include <algorithm>
 #include <vector>
 
 // Truncated Interquartile mean
@@ -16,7 +16,8 @@ class MovingInterquartileMean {
     MovingInterquartileMean(std::size_t listLength)
             : m_dMean(0.0),
               m_bChanged(true) {
-        m_list.reserve(listLength);
+        m_list.reserve(std::max<std::size_t>(listLength, 1));
+        m_history.resize(m_list.capacity());
     }
 
     // Inserts value to the list and returns the new truncated mean.
@@ -34,10 +35,11 @@ class MovingInterquartileMean {
     double calcMean() const;
     // The list keeps input doubles ordered by value.
     std::vector<double> m_list;
-    // The queue keeps a second copy of the list, but in insertion
-    // order. This is to track which value we need to evict in order
-    // not stay within memory constraints.
-    std::queue<double> m_queue;
+    // AI-generated explanation begins.
+    // A fixed ring avoids queue allocations in the audio callback.
+    // AI-generated explanation ends.
+    std::vector<double> m_history;
+    std::size_t m_historyIndex = 0;
     double m_dMean;
 
     // sum() checks this to know if it has to recalculate the mean.
