@@ -80,6 +80,7 @@ MixtrackPlatinumFX.PadModeControls = {
     FADERCUTS2: 0x03, // DUMMY not used by controller
     FADERCUTS3: 0x04, // DUMMY not used by controller
     AUTOLOOP3: 0x05, // DUMMY not used by controller
+    SEQUENCER: 0x06, // DUMMY: long or double press of shift+SAMPLE
 };
 
 // enables 4 bottom pads "fader cuts" for 8
@@ -932,6 +933,7 @@ MixtrackPlatinumFX.PadSection = function(deckNumber) {
     this.modes[MixtrackPlatinumFX.PadModeControls.KEYPLAY] = new MixtrackPlatinumFX.ModeKeyPlay(deckNumber, 2);
     this.modes[MixtrackPlatinumFX.PadModeControls.HOTCUE2] = new MixtrackPlatinumFX.ModeHotcue(deckNumber, 1);
     this.modes[MixtrackPlatinumFX.PadModeControls.AUTOLOOP3] = new MixtrackPlatinumFX.ModeCueLoop(deckNumber, 2);
+    this.modes[MixtrackPlatinumFX.PadModeControls.SEQUENCER] = new MixtrackPlatinumFX.ModeSequencer(deckNumber);
 
     this.modeButtonPress = function(channel, control, value) {
         // always stop the time, its either the off, which should stop it
@@ -959,6 +961,11 @@ MixtrackPlatinumFX.PadSection = function(deckNumber) {
                     return;
                 }
                 if (control===MixtrackPlatinumFX.PadModeControls.AUTOLOOP && this.longPressMode===MixtrackPlatinumFX.PadModeControls.AUTOLOOP3) {
+                    this.setMode(channel, this.longPressMode);
+                    this.longPressTimer = 0;
+                    return;
+                }
+                if (control===MixtrackPlatinumFX.PadModeControls.SAMPLE2 && this.longPressMode===MixtrackPlatinumFX.PadModeControls.SEQUENCER) {
                     this.setMode(channel, this.longPressMode);
                     this.longPressTimer = 0;
                     return;
@@ -995,7 +1002,7 @@ MixtrackPlatinumFX.PadSection = function(deckNumber) {
 
         // this stops the timeout from setting another timer!
         if (this.longPressTimer===0) {
-            if (ctrl2===MixtrackPlatinumFX.PadModeControls.SAMPLE1 || ctrl2===MixtrackPlatinumFX.PadModeControls.HOTCUE || ctrl2===MixtrackPlatinumFX.PadModeControls.FADERCUTS || ctrl2===MixtrackPlatinumFX.PadModeControls.AUTOLOOP) {
+            if (ctrl2===MixtrackPlatinumFX.PadModeControls.SAMPLE1 || ctrl2===MixtrackPlatinumFX.PadModeControls.HOTCUE || ctrl2===MixtrackPlatinumFX.PadModeControls.FADERCUTS || ctrl2===MixtrackPlatinumFX.PadModeControls.AUTOLOOP || ctrl2===MixtrackPlatinumFX.PadModeControls.SAMPLE2) {
                 if (ctrl2===MixtrackPlatinumFX.PadModeControls.AUTOLOOP) {
                     this.longPressMode=MixtrackPlatinumFX.PadModeControls.AUTOLOOP3;
                 }
@@ -1007,6 +1014,10 @@ MixtrackPlatinumFX.PadSection = function(deckNumber) {
                 }
                 if (ctrl2===MixtrackPlatinumFX.PadModeControls.FADERCUTS) {
                     this.longPressMode=MixtrackPlatinumFX.PadModeControls.FADERCUTS3;
+                }
+                if (ctrl2===MixtrackPlatinumFX.PadModeControls.SAMPLE2) {
+                    // shift+SAMPLE itself is samples 9-16; held or double pressed it is the step sequencer
+                    this.longPressMode=MixtrackPlatinumFX.PadModeControls.SEQUENCER;
                 }
                 this.longPressHeld = true;
 
@@ -1026,6 +1037,11 @@ MixtrackPlatinumFX.PadSection = function(deckNumber) {
             return; // selected mode already set, no need to change anything
         }
 
+        // A mode that lit the pads itself gets to clear them; there is no
+        // control behind a sequencer step's LED for disconnect() to reset.
+        if (this.currentMode.deactivate) {
+            this.currentMode.deactivate();
+        }
         this.currentMode.forEachComponent(function(component) {
             component.disconnect();
         });
@@ -1486,6 +1502,117 @@ MixtrackPlatinumFX.ModeSample = function(deckNumber, secondaryMode) {
     }
 };
 MixtrackPlatinumFX.ModeSample.prototype = Object.create(components.ComponentContainer.prototype);
+
+// Step sequencer: this deck's eight pads edit sampler lane <deck> of the
+// [Sequencer1] pattern (deck 1 edits lane 1, and so on). Pads toggle steps
+// 1-8, shift+pad steps 9-16 -- the shifted pads have their own LEDs, so both
+// pages stay lit. An enabled step is lit dim, the step the engine is on is
+// lit bright, everything else is the global low light. Entered by holding or
+// double-pressing shift+SAMPLE; SAMPLE or shift+SAMPLE leaves it again.
+MixtrackPlatinumFX.ModeSequencer = function(deckNumber) {
+    components.ComponentContainer.call(this);
+
+    this.name = MixtrackPlatinumFX.PadModeControls.SEQUENCER;
+    this.control = MixtrackPlatinumFX.PadModeControls.SAMPLE2;
+    this.unshiftedControl = MixtrackPlatinumFX.PadModeControls.SAMPLE1;
+    // Distinct from SAMPLE2 (1) and KEYPLAY (2), which share the SAMPLE
+    // button: setMode would otherwise take the sequencer for one of them.
+    this.secondaryMode = 3;
+    this.lightOnValue = 0x7F;
+
+    const group = "[Sequencer1]";
+    const enabledLight = 0x05;
+    const playingLight = 0x7F;
+    const mode = this;
+    const stepKey = function(step) {
+        return "sampler_" + deckNumber + "_step_" + step + "_enabled";
+    };
+    const lightPad = function(pad, page) {
+        const step = pad.steps[page];
+        const enabled = engine.getValue(group, stepKey(step)) > 0;
+        const playing = mode.playhead.step === step;
+        midi.sendShortMsg(pad.midi[0],
+            pad.midi[1] + page * pad.shiftOffset,
+            playing ? playingLight : (enabled ? enabledLight : components.Button.prototype.off));
+    };
+
+    this.pads = new components.ComponentContainer();
+    for (let i = 0; i < 8; i++) {
+        this.pads[i] = new components.Button({
+            group: group,
+            midi: [0x93 + deckNumber, 0x14 + i],
+            shiftOffset: 0x08,
+            outConnect: false,
+            outKey: null, // connect() is ours, as in SamplerButton
+            steps: [i + 1, i + 9],
+            page: 0,
+            shift: function() {
+                this.page = 1;
+            },
+            unshift: function() {
+                this.page = 0;
+            },
+            input: function(channel, control, value) {
+                if (value === 0) {
+                    return;
+                }
+                const key = stepKey(this.steps[this.page]);
+                engine.setValue(group, key, engine.getValue(group, key) > 0 ? 0 : 1);
+            },
+            connect: function() {
+                const pad = this;
+                this.connections[0] = engine.makeConnection(group, stepKey(this.steps[0]), function() {
+                    lightPad(pad, 0);
+                });
+                this.connections[1] = engine.makeConnection(group, stepKey(this.steps[1]), function() {
+                    lightPad(pad, 1);
+                });
+            },
+            trigger: function() {
+                lightPad(this, 0);
+                lightPad(this, 1);
+            },
+        });
+    }
+
+    // The running light. A Component, so setMode connects and disconnects it
+    // along with the pads. step is the 1-based step lit bright, 0 for none.
+    this.playhead = new components.Component({
+        group: group,
+        outConnect: false,
+        outKey: null,
+        step: 0,
+        shift: function() {},
+        unshift: function() {},
+        connect: function() {
+            this.connections[0] = engine.makeConnection(group, "current_step", this.output.bind(this));
+            this.connections[1] = engine.makeConnection(group, "run", this.output.bind(this));
+        },
+        output: function() {
+            const running = engine.getValue(group, "run") > 0;
+            const step = running ? Math.round(engine.getValue(group, "current_step")) + 1 : 0;
+            const previous = this.step;
+            this.step = step;
+            [previous, step].forEach(function(s) {
+                if (s >= 1 && s <= 16) {
+                    lightPad(mode.pads[(s - 1) % 8], s > 8 ? 1 : 0);
+                }
+            });
+        },
+        trigger: function() {
+            this.output();
+        },
+    });
+
+    // Called by setMode before the components are disconnected: without it
+    // the last lit pattern would stay on the pads under the next mode.
+    this.deactivate = function() {
+        for (let i = 0; i < 16; i++) {
+            midi.sendShortMsg(0x93 + deckNumber, 0x14 + i, components.Button.prototype.off);
+        }
+    };
+};
+MixtrackPlatinumFX.ModeSequencer.prototype = Object.create(components.ComponentContainer.prototype);
 
 MixtrackPlatinumFX.ModeBeatjump = function(deckNumber, secondaryMode) {
     components.ComponentContainer.call(this);
