@@ -4,7 +4,6 @@ import ".." as Skin
 import Mixxx 1.0 as Mixxx
 import QtQuick 2.12
 import QtQuick.Layouts
-import QtQuick.Shapes
 import QtQuick.Controls 2.12
 import "../Theme"
 
@@ -411,9 +410,9 @@ Item {
             }
         }
     }
-    // Each tab carries a word as well as a glyph. The glyph-only tabs left the
-    // hotcue one unidentifiable next to the stem one ("the button above stems"),
-    // so the label is the primary cue and the glyph is the accent.
+    // Each tab is a word. They started as glyph-only tabs, a Y for hotcues and
+    // a stack of lines for stems, which nobody could identify next to each
+    // other; glyph-plus-word was tried and the glyphs were still just noise.
     //
     // The column collapses to 0 px when the track has no stems, but a zero-width
     // button still paints its centred content, so the glyphs and words used to
@@ -455,51 +454,6 @@ Item {
                 color: hotcueTabButton.checked ? "#203b78" : (hotcueTabButton.pressed ? "#252b36" : "#17181b")
                 radius: 4
             }
-            glyph: Item {
-                implicitHeight: 20
-                implicitWidth: 20
-
-                // A cue flag: the same Y as before, drawn in the glyph slot.
-                Shape {
-                    anchors.fill: parent
-                    antialiasing: true
-                    // Qt 6.6+ resolution-independent antialiasing; the older
-                    // geometry renderer stair-steps curves on some displays.
-                    preferredRendererType: Shape.CurveRenderer
-
-                    ShapePath {
-                        fillColor: hotcueTabButton.faceColor
-                        startX: 3
-                        startY: 3
-                        strokeColor: "transparent"
-
-                        PathLine {
-                            x: 17
-                            y: 3
-                        }
-                        PathLine {
-                            x: 11.5
-                            y: 8.5
-                        }
-                        PathLine {
-                            x: 11.5
-                            y: 17
-                        }
-                        PathLine {
-                            x: 8.5
-                            y: 17
-                        }
-                        PathLine {
-                            x: 8.5
-                            y: 8.5
-                        }
-                        PathLine {
-                            x: 3
-                            y: 3
-                        }
-                    }
-                }
-            }
 
             onClicked: {
                 stemTabButton.checked = false;
@@ -521,29 +475,6 @@ Item {
                 border.width: 1
                 color: stemTabButton.checked ? "#203b78" : (stemTabButton.pressed ? "#252b36" : "#17181b")
                 radius: 4
-            }
-            glyph: Item {
-                implicitHeight: 20
-                implicitWidth: 20
-
-                // Four stacked lanes, one per stem, like the split waveform.
-                Column {
-                    anchors.centerIn: parent
-                    spacing: 2
-
-                    Repeater {
-                        model: 4
-
-                        Rectangle {
-                            required property int index
-
-                            color: stemTabButton.faceColor
-                            height: 2
-                            radius: 1
-                            width: [16, 12, 16, 10][index]
-                        }
-                    }
-                }
             }
 
             onClicked: {
