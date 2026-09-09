@@ -110,6 +110,130 @@ Window {
         return el.rect;
     }
 
+    // Reflow. A layout authored for the strip is a ROW of sections separated by
+    // vertical seams -- x ranges that no element's rect spans. On a screen that
+    // is not strip-shaped those sections can be stacked instead of laid end to
+    // end, which lets the whole layout scale up instead of sitting in a
+    // letterbox: on a 3:2 Surface Pro the Mixtrack layout goes from filling 44%
+    // of the screen to 63%, and vertical-waveforms from 44% to 97%.
+    //
+    // Nothing is distorted and nothing is cut. The scale stays uniform, only the
+    // arrangement changes, and cutting only at a seam means no element can
+    // straddle a row boundary. On the Edge the single row always scales largest,
+    // so the strip keeps exactly the geometry it has today.
+    readonly property var bands: computeBands()
+    readonly property real bandGutter: 12
+    // Two element rects closer than this are one section: a seam has to be a
+    // real visual gap, not the hairline between neighbours.
+    readonly property real seamGap: 8
+
+    // Which band a canvas x falls in. Bands are built from element extents, so
+    // every element's left edge lies inside one.
+    function bandAt(plan, cx) {
+        const bs = plan.bands;
+        for (let i = 0; i < bs.length; ++i) {
+            if (cx <= bs[i][1] + root.seamGap)
+                return i;
+        }
+        return bs.length - 1;
+    }
+
+    // Try every way of cutting the bands into contiguous rows and keep the one
+    // that scales largest. That is 2^(n-1) candidates and n is a handful today
+    // (7 at most); the cap is there so a future layout cannot make resizing
+    // exponential without anyone noticing.
+    function buildPlan(availW, availH) {
+        const bs = root.bands;
+        const canvasH = root.layoutDef ? root.layoutDef.canvas[1] : 720;
+        const n = Math.min(bs.length, 12);
+        const bandWidth = i => bs[i][1] - bs[i][0];
+        let best = null;
+        for (let mask = 0; mask < (1 << (n - 1)); ++mask) {
+            const rows = [];
+            let row = [0];
+            for (let i = 0; i < n - 1; ++i) {
+                if ((mask >> i) & 1) {
+                    rows.push(row);
+                    row = [];
+                }
+                row.push(i + 1);
+            }
+            rows.push(row);
+            let totalW = 0;
+            for (const r of rows) {
+                let w = root.bandGutter * (r.length - 1);
+                for (const b of r)
+                    w += bandWidth(b);
+                totalW = Math.max(totalW, w);
+            }
+            const totalH = rows.length * canvasH + root.bandGutter * (rows.length - 1);
+            const scale = Math.min(availW / totalW, availH / totalH);
+            if (!best || scale > best.scale)
+                best = {
+                    "scale": scale,
+                    "rows": rows,
+                    "totalW": totalW,
+                    "totalH": totalH
+                };
+        }
+        // Turn the winning cut into a per-band offset in canvas units: dx slides
+        // a band along its row (rows are centred against the widest one), dy
+        // drops it to its row.
+        const place = [];
+        for (let r = 0; r < best.rows.length; ++r) {
+            const rowBands = best.rows[r];
+            let w = root.bandGutter * (rowBands.length - 1);
+            for (const b of rowBands)
+                w += bandWidth(b);
+            let cursor = (best.totalW - w) / 2;
+            for (const b of rowBands) {
+                place[b] = {
+                    "dx": cursor - bs[b][0],
+                    "dy": r * (canvasH + root.bandGutter)
+                };
+                cursor += bandWidth(b) + root.bandGutter;
+            }
+        }
+        best.place = place;
+        best.bands = bs;
+        return best;
+    }
+
+    // The seams, found from every rect an element can occupy -- including its
+    // "rectIf" alternatives, so flipping a toggle cannot re-cut the layout
+    // underneath and shuffle everything sideways.
+    function computeBands() {
+        const canvasW = root.layoutDef ? root.layoutDef.canvas[0] : 2560;
+        const els = root.layoutDef ? (root.layoutDef.elements ?? []) : [];
+        const spans = [];
+        for (const el of els) {
+            const cands = [el.rect];
+            const alt = el.rectIf ?? {};
+            for (const flag in alt)
+                cands.push(alt[flag]);
+            for (const r of cands) {
+                if (r && r.length === 4)
+                    spans.push([r[0], r[0] + r[2]]);
+            }
+        }
+        if (spans.length === 0)
+            return [[0, canvasW]];
+
+        spans.sort((a, b) => a[0] - b[0]);
+        const out = [];
+        let start = spans[0][0];
+        let cursor = spans[0][1];
+        for (let i = 1; i < spans.length; ++i) {
+            if (spans[i][0] > cursor + root.seamGap) {
+                out.push([start, cursor]);
+                start = spans[i][0];
+            }
+            cursor = Math.max(cursor, spans[i][1]);
+        }
+        out.push([start, cursor]);
+        return out;
+    }
+
     // No strip attached, so derive the window from the display we are on rather
     // than from the hardware we are imitating. Everything below is in logical
     // pixels -- Screen.width already has the panel's scaling applied, so a
@@ -127,14 +251,14 @@ Window {
     function fitToScreen(s) {
         const availW = s.width * 0.9;
         const availH = s.height * 0.9;
-        const canvasW = root.layoutDef ? root.layoutDef.canvas[0] : 2560;
-        const canvasH = root.layoutDef ? root.layoutDef.canvas[1] : 720;
-        // Contain: the smaller of the two scales fits both axes at once. Solving
-        // for one axis and correcting the other overshoots into a negative width
-        // on a canvas taller than the screen; a min() cannot.
-        const scale = Math.min(availW / canvasW, (availH - header.height) / canvasH);
-        let w = Math.round(canvasW * scale);
-        let h = Math.round(canvasH * scale) + header.height;
+        // Size to the REFLOWED shape, not to the canvas. The window has to be the
+        // shape the layout will actually take on this screen, or the reflow is
+        // handed back the strip aspect it was trying to escape and picks a single
+        // row every time. buildPlan also contains the fit, so a canvas taller than
+        // the screen can no longer drive the width negative.
+        const plan = root.buildPlan(availW, availH - header.height);
+        let w = Math.round(plan.totalW * plan.scale);
+        let h = Math.round(plan.totalH * plan.scale) + header.height;
         // A screen too short to hold the header and a legible canvas drives the
         // scale to zero or below; fall back to filling what we have.
         if (w < 320 || h < 240) {
@@ -156,6 +280,12 @@ Window {
                 const def = root.resolveThemeColors(JSON.parse(xhr.responseText));
                 root.toggles = Object.assign({}, def.toggles ?? {});
                 root.layoutDef = def;
+                // Layouts do not all reflow to the same shape, so the window that
+                // fitted the last one is the wrong size for this one. Re-fit off
+                // the strip only; on the strip the window IS the panel and must
+                // not move.
+                if (!root.onStrip && root.placementReady && root.screen)
+                    root.fitToScreen(root.screen);
                 root.revealIfReady();
             } catch (e) {
                 console.warn("edge-layout: failed to parse", url, e);
@@ -373,13 +503,23 @@ Window {
     Item {
         id: canvasArea
 
-        readonly property real canvasH: root.layoutDef ? root.layoutDef.canvas[1] : 720
-        readonly property real canvasW: root.layoutDef ? root.layoutDef.canvas[0] : 2560
         readonly property real dpr: root.screen ? root.screen.devicePixelRatio : 1
-        readonly property real ui: Math.min(width / canvasW, height / canvasH)
-        readonly property real xOff: (width - canvasW * ui) / 2
-        readonly property real yOff: (height - canvasH * ui) / 2
+        readonly property var plan: root.buildPlan(Math.max(1, width), Math.max(1, height))
+        readonly property real ui: plan.scale
+        readonly property real xOff: (width - plan.totalW * ui) / 2
+        readonly property real yOff: (height - plan.totalH * ui) / 2
 
+        // Canvas coordinates to surface coordinates, through the band the point
+        // belongs to. With a single row every offset is zero and this is the plain
+        // scale-and-centre it has always been.
+        function mapX(cx) {
+            return xOff + (cx + plan.place[root.bandAt(plan, cx)].dx) * ui;
+        }
+        // y needs the element's x as well: which row it lands in is decided by
+        // which band it is in.
+        function mapY(cy, cx) {
+            return yOff + (cy + plan.place[root.bandAt(plan, cx)].dy) * ui;
+        }
         function pixelAligned(value) {
             return Math.round(value * dpr) / dpr;
         }
@@ -410,10 +550,13 @@ Window {
                 }
 
                 active: root.elementActive(modelData)
-                height: canvasArea.pixelAligned(canvasArea.yOff + (box[1] + box[3]) * canvasArea.ui) - y
-                width: canvasArea.pixelAligned(canvasArea.xOff + (box[0] + box[2]) * canvasArea.ui) - x
-                x: canvasArea.pixelAligned(canvasArea.xOff + box[0] * canvasArea.ui)
-                y: canvasArea.pixelAligned(canvasArea.yOff + box[1] * canvasArea.ui)
+                // Size from the mapped origin plus the scaled extent rather than
+                // mapping the far corner: that corner can sit on a seam, where
+                // which band it belongs to is ambiguous.
+                height: canvasArea.pixelAligned(canvasArea.mapY(box[1], box[0]) + box[3] * canvasArea.ui) - y
+                width: canvasArea.pixelAligned(canvasArea.mapX(box[0]) + box[2] * canvasArea.ui) - x
+                x: canvasArea.pixelAligned(canvasArea.mapX(box[0]))
+                y: canvasArea.pixelAligned(canvasArea.mapY(box[1], box[0]))
 
                 Component.onCompleted: elementLoader.loadElement()
                 // An element that starts switched off has no source yet; give it one the
