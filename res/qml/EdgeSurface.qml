@@ -115,29 +115,36 @@ Window {
     // pixels -- Screen.width already has the panel's scaling applied, so a
     // 2880x1920 Surface Pro at 200% reports 1440x960 and needs no DPI maths of
     // our own. Keep the layout canvas's aspect so the controls stay at their
-    // designed proportions, take 90% of the smaller constraint, and centre it.
+    // designed proportions, and centre it on that screen.
+    //
+    // Measure the SCREEN, never Screen.desktopAvailableWidth/Height: those report
+    // the whole VIRTUAL DESKTOP and read identically from every screen object, so
+    // with a second display attached this sized the window to the combined
+    // desktop. Measured on a 3-monitor setup, all three screens report
+    // desktopAvailable 5120x2880, which asked for a 4608px-wide window on a 2560px
+    // screen and left Windows to clamp it to whatever it could fit. Qt exposes no
+    // per-screen work area to QML, so the 0.9 is what keeps us clear of the taskbar.
     function fitToScreen(s) {
-        const availW = s.desktopAvailableWidth;
-        const availH = s.desktopAvailableHeight;
+        const availW = s.width * 0.9;
+        const availH = s.height * 0.9;
         const canvasW = root.layoutDef ? root.layoutDef.canvas[0] : 2560;
         const canvasH = root.layoutDef ? root.layoutDef.canvas[1] : 720;
-        const aspect = canvasW / canvasH;
-        let w = Math.round(availW * 0.9);
-        let h = Math.round(w / aspect) + header.height;
-        if (h > availH * 0.9) {
-            h = Math.round(availH * 0.9);
-            w = Math.round((h - header.height) * aspect);
-        }
-        // A canvas taller than the desktop (a portrait screen, a stacked layout)
-        // can drive the width negative; fall back to filling what we have.
+        // Contain: the smaller of the two scales fits both axes at once. Solving
+        // for one axis and correcting the other overshoots into a negative width
+        // on a canvas taller than the screen; a min() cannot.
+        const scale = Math.min(availW / canvasW, (availH - header.height) / canvasH);
+        let w = Math.round(canvasW * scale);
+        let h = Math.round(canvasH * scale) + header.height;
+        // A screen too short to hold the header and a legible canvas drives the
+        // scale to zero or below; fall back to filling what we have.
         if (w < 320 || h < 240) {
-            w = Math.min(Math.round(availW * 0.9), availW);
-            h = Math.min(Math.round(availH * 0.9), availH);
+            w = Math.round(availW);
+            h = Math.round(availH);
         }
         root.width = w;
         root.height = h;
-        root.x = s.virtualX + Math.round((availW - w) / 2);
-        root.y = s.virtualY + Math.round((availH - h) / 2);
+        root.x = s.virtualX + Math.round((s.width - w) / 2);
+        root.y = s.virtualY + Math.round((s.height - h) / 2);
     }
     function loadLayout(url) {
         const xhr = new XMLHttpRequest();
