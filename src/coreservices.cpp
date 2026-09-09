@@ -20,6 +20,7 @@
 #include "engine/channels/enginesynth.h"
 #include "engine/enginemixer.h"
 #include "engine/enginesequencer.h"
+#include "engine/sequencerpatternbank.h"
 #ifdef __RUBBERBAND__
 #include "engine/bufferscalers/rubberbandworkerpool.h"
 #endif
@@ -603,6 +604,8 @@ void CoreServices::initialize(QApplication* pApp) {
             m_pEngine.get(),
             qobject_cast<EngineSynth*>(
                     m_pEngine->getChannel(PlayerManager::groupForSynth(0)))));
+    m_pSequencerPatterns = std::make_unique<SequencerPatternBank>(
+            QStringLiteral("[Sequencer1]"), pConfig);
 
     m_pPlayerManager->addPreviewDeck();
 
@@ -945,6 +948,10 @@ void CoreServices::finalize() {
 
     qDebug() << t.elapsed(false).debugMillisWithUnit() << "saving configuration";
     m_pSettingsManager->save();
+
+    // The pattern bank's controls belong to the sequencer group the engine
+    // owns; drop it while both the engine and the config are still here.
+    m_pSequencerPatterns.reset();
 
     // SoundManager depend on Engine and Config
     qDebug() << t.elapsed(false).debugMillisWithUnit() << "deleting SoundManager";

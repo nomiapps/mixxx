@@ -13,6 +13,8 @@ import "Theme"
 //   samplerLanes  drum lanes (default 4)
 //   samplerCount  how many samplers a lane header cycles through (default 8)
 // Every cell is a control, so a controller mapping can edit the same pattern.
+// The pattern strip drives the SequencerPatternBank controls (pattern,
+// pattern_save, pattern_N_filled) in the same group.
 Item {
     id: root
 
@@ -53,6 +55,12 @@ Item {
 
         group: "[InternalClock]"
         key: "bpm"
+    }
+    Mixxx.ControlProxy {
+        id: patternControl
+
+        group: root.groupResolved
+        key: "pattern"
     }
     Mixxx.ControlProxy {
         id: selectedNote
@@ -147,6 +155,45 @@ Item {
             color: Theme.deckTextColor
             font.pixelSize: 14
             text: clockBpm.value.toFixed(1) + " BPM"
+        }
+        // Pattern slots: the current one lit, filled ones on the lighter
+        // face, empty ones on the darker. Selecting a filled slot loads it;
+        // SAVE snapshots the live pattern into the current slot.
+        Repeater {
+            model: 8
+
+            Skin.Button {
+                id: slotButton
+
+                required property int index
+
+                activeColor: Theme.amber
+                anchors.verticalCenter: parent.verticalCenter
+                fontPixelSize: 12
+                height: transport.buttonHeight
+                highlight: Math.round(patternControl.value) === index + 1
+                normalColor: filledControl.value > 0 ? Theme.darkGray2 : Theme.darkGray4
+                text: index + 1
+                width: transport.buttonHeight
+
+                onClicked: patternControl.value = index + 1
+
+                Mixxx.ControlProxy {
+                    id: filledControl
+
+                    group: root.groupResolved
+                    key: "pattern_" + (slotButton.index + 1) + "_filled"
+                }
+            }
+        }
+        Skin.EdgePadButton {
+            activeColor: Theme.amber
+            anchors.verticalCenter: parent.verticalCenter
+            height: transport.buttonHeight
+            padGroup: root.groupResolved
+            padKey: "pattern_save"
+            text: "SAVE"
+            width: transport.buttonHeight * 2
         }
     }
     Item {

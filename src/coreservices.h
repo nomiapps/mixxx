@@ -10,6 +10,7 @@ class CmdlineArgs;
 class KeyboardEventFilter;
 class EffectsManager;
 class EngineMixer;
+class SequencerPatternBank;
 class SoundManager;
 class PlayerManager;
 class RecordingManager;
@@ -123,6 +124,10 @@ class CoreServices : public QObject {
     std::shared_ptr<mixxx::ControlIndicatorTimer> m_pControlIndicatorTimer;
     std::shared_ptr<EffectsManager> m_pEffectsManager;
     std::shared_ptr<EngineMixer> m_pEngine;
+    // The sequencer's pattern slots. Main-thread object over the sequencer's
+    // controls; torn down in finalize() before the engine so its persisted
+    // control is written while the config is still live.
+    std::unique_ptr<SequencerPatternBank> m_pSequencerPatterns;
     std::shared_ptr<SoundManager> m_pSoundManager;
     std::shared_ptr<PlayerManager> m_pPlayerManager;
     std::shared_ptr<RecordingManager> m_pRecordingManager;
