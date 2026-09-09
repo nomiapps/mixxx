@@ -80,6 +80,9 @@ Category {
         themeColorTab.dirty = false;
     }
     function loadWaveform() {
+        // Waveform tab
+        highDetailInput.selected = (Mixxx.Config.waveformOptions & Mixxx.WaveformDisplay.HighDetail) ? "on" : "off";
+        waveformTab.dirty = false;
     }
     function resetDeck() {
     }
@@ -147,6 +150,12 @@ Category {
         loadInterface();
     }
     function saveWaveform() {
+        // waveform_options is a bit set shared with the legacy preferences dialog.
+        // Only the high detail bit is ours to write: the other one, split stereo,
+        // is ignored by the filtered renderer the QML decks draw with, so it stays
+        // exactly as we found it rather than being silently cleared here.
+        const options = Mixxx.Config.waveformOptions;
+        Mixxx.Config.waveformOptions = highDetailInput.selected === "on" ? options | Mixxx.WaveformDisplay.HighDetail : options & ~Mixxx.WaveformDisplay.HighDetail;
         loadWaveform();
     }
 
@@ -898,6 +907,57 @@ Category {
 
             onActivated: {
                 root.selectedIndex = 1;
+            }
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.topMargin: 20
+                spacing: 0
+
+                GridLayout {
+                    id: waveformPane
+
+                    Layout.fillWidth: true
+                    columnSpacing: 20
+                    columns: 2
+                    rowSpacing: 15
+
+                    RowLayout {
+                        Layout.leftMargin: 14
+                        // Half the tab, not half this pane: the pane sizes itself from
+                        // its rows, so a row measured against the pane is a loop, and
+                        // Qt Quick Layouts aborts the rearrange after two passes.
+                        Layout.preferredWidth: (waveformTab.width - 56) * 0.5
+                        Layout.rightMargin: 14
+
+                        Mixxx.SettingParameter {
+                            Layout.fillWidth: true
+                            label: "High detail waveform"
+
+                            Text {
+                                anchors.fill: parent
+                                color: Theme.white
+                                font.pixelSize: 14
+                                font.weight: Font.Medium
+                                horizontalAlignment: Text.AlignLeft
+                                text: parent.label
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                        }
+                        RatioChoice {
+                            id: highDetailInput
+
+                            options: ["on", "off"]
+                            tooltips: ["Draws every pixel from the sample under it, in a shader", "Draws the waveform from cached tiles, which scroll"]
+
+                            onSelectedChanged: waveformTab.dirty = true
+                        }
+                    }
+                }
+                Item {
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                }
             }
         }
         Mixxx.SettingGroup {
