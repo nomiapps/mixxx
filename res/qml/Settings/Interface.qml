@@ -504,6 +504,7 @@ Category {
 
                                             anchors.fill: parent
                                             color: Theme.white
+                                            elide: Text.ElideRight
                                             font.pixelSize: 14
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignLeft
@@ -535,6 +536,7 @@ Category {
 
                                             anchors.fill: parent
                                             color: Theme.white
+                                            elide: Text.ElideRight
                                             font.pixelSize: 14
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignLeft
@@ -566,6 +568,7 @@ Category {
 
                                             anchors.fill: parent
                                             color: Theme.white
+                                            elide: Text.ElideRight
                                             font.pixelSize: 14
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignLeft
@@ -598,6 +601,7 @@ Category {
                                         Text {
                                             anchors.fill: parent
                                             color: Theme.white
+                                            elide: Text.ElideRight
                                             font.pixelSize: 14
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignLeft
@@ -687,6 +691,7 @@ Category {
                                         Text {
                                             anchors.fill: parent
                                             color: Theme.white
+                                            elide: Text.ElideRight
                                             font.pixelSize: 14
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignLeft
@@ -721,6 +726,7 @@ Category {
 
                                                 anchors.fill: parent
                                                 color: Theme.white
+                                                elide: Text.ElideRight
                                                 font.pixelSize: 14
                                                 font.weight: Font.Medium
                                                 horizontalAlignment: Text.AlignHCenter
@@ -755,6 +761,7 @@ Category {
 
                                             anchors.fill: parent
                                             color: Theme.white
+                                            elide: Text.ElideRight
                                             font.pixelSize: 14
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignLeft
@@ -802,6 +809,7 @@ Category {
 
                                                 anchors.fill: parent
                                                 color: Theme.white
+                                                elide: Text.ElideRight
                                                 font.pixelSize: 14
                                                 font.weight: Font.Medium
                                                 horizontalAlignment: Text.AlignHCenter
@@ -833,6 +841,7 @@ Category {
                                         Text {
                                             anchors.fill: parent
                                             color: Theme.white
+                                            elide: Text.ElideRight
                                             font.pixelSize: 14
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignLeft
@@ -867,6 +876,7 @@ Category {
 
                                                 anchors.fill: parent
                                                 color: Theme.white
+                                                elide: Text.ElideRight
                                                 font.pixelSize: 14
                                                 font.weight: Font.Medium
                                                 horizontalAlignment: Text.AlignHCenter
@@ -937,6 +947,7 @@ Category {
                             Text {
                                 anchors.fill: parent
                                 color: Theme.white
+                                elide: Text.ElideRight
                                 font.pixelSize: 14
                                 font.weight: Font.Medium
                                 horizontalAlignment: Text.AlignLeft
@@ -981,17 +992,20 @@ Category {
                 GridLayout {
                     id: deckPane
 
+                    // Same loop waveformPane above had: without a width from the
+                    // ColumnLayout, the pane sizes itself from its rows while the
+                    // rows size themselves from the pane, and Qt Quick Layouts
+                    // gives up after two passes. anchors cannot be used on a
+                    // layout's child, which is why they are commented out rather
+                    // than deleted; Layout.fillWidth is the equivalent here.
+                    Layout.fillWidth: true
                     columnSpacing: 20
                     columns: 2
-                    // anchors.fill: parent
-                    // anchors.bottomMargin: 10
-                    // anchors.leftMargin: 3
-                    // anchors.rightMargin: 3
                     rowSpacing: 15
 
                     RowLayout {
                         Layout.leftMargin: 14
-                        Layout.preferredWidth: (deckPane.width - 56) * 0.5
+                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
                         Layout.rightMargin: 14
 
                         Mixxx.SettingParameter {
@@ -1001,6 +1015,7 @@ Category {
                             Text {
                                 anchors.fill: parent
                                 color: Theme.white
+                                elide: Text.ElideRight
                                 font.pixelSize: 14
                                 font.weight: Font.Medium
                                 horizontalAlignment: Text.AlignLeft
@@ -1018,7 +1033,7 @@ Category {
                         }
                     }
                     RowLayout {
-                        Layout.preferredWidth: (deckPane.width - 56) * 0.5
+                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
                         Layout.rightMargin: 14
 
                         Mixxx.SettingParameter {
@@ -1028,6 +1043,7 @@ Category {
                             Text {
                                 anchors.fill: parent
                                 color: Theme.white
+                                elide: Text.ElideRight
                                 font.pixelSize: 14
                                 font.weight: Font.Medium
                                 horizontalAlignment: Text.AlignLeft
@@ -1038,7 +1054,7 @@ Category {
                         Skin.ComboBox {
                             id: timeMode
 
-                            Layout.preferredWidth: (deckPane.width - 56) * 0.2
+                            Layout.preferredWidth: (decksTab.width - 56) * 0.2
                             model: [DeckComponents.TrackTime.Mode.Traditional, DeckComponents.TrackTime.Mode.TraditionalCoarse, DeckComponents.TrackTime.Mode.Seconds, DeckComponents.TrackTime.Mode.SecondsLong, DeckComponents.TrackTime.Mode.KiloSeconds, DeckComponents.TrackTime.Mode.HectoSeconds,]
 
                             contentItem: Content {
@@ -1077,7 +1093,7 @@ Category {
                     }
                     RowLayout {
                         Layout.leftMargin: 14
-                        Layout.preferredWidth: (deckPane.width - 56) * 0.5
+                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
                         Layout.rightMargin: 14
 
                         Mixxx.SettingParameter {
@@ -1087,6 +1103,7 @@ Category {
                             Text {
                                 anchors.fill: parent
                                 color: Theme.white
+                                elide: Text.ElideRight
                                 font.pixelSize: 14
                                 font.weight: Font.Medium
                                 horizontalAlignment: Text.AlignLeft
@@ -1106,7 +1123,7 @@ Category {
                     }
                     RowLayout {
                         Layout.leftMargin: 14
-                        Layout.preferredWidth: (deckPane.width - 56) * 0.5
+                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
                         Layout.rightMargin: 14
 
                         Mixxx.SettingParameter {
@@ -1116,6 +1133,7 @@ Category {
                             Text {
                                 anchors.fill: parent
                                 color: Theme.white
+                                elide: Text.ElideRight
                                 font.pixelSize: 14
                                 font.weight: Font.Medium
                                 horizontalAlignment: Text.AlignLeft
@@ -1134,7 +1152,7 @@ Category {
                         }
                     }
                     RowLayout {
-                        Layout.preferredWidth: (deckPane.width - 56) * 0.5
+                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
                         Layout.rightMargin: 14
 
                         Mixxx.SettingParameter {
@@ -1144,6 +1162,7 @@ Category {
                             Text {
                                 anchors.fill: parent
                                 color: Theme.white
+                                elide: Text.ElideRight
                                 font.pixelSize: 14
                                 font.weight: Font.Medium
                                 horizontalAlignment: Text.AlignLeft
@@ -1154,7 +1173,7 @@ Category {
                         RatioChoice {
                             id: trackTimeDisplayInput
 
-                            maxWidth: deckPane.width * 0.28
+                            maxWidth: decksTab.width * 0.28
                             options: ["elapsed", "remaining", "both"]
                             normalizedWidth: false
 
@@ -1163,7 +1182,7 @@ Category {
                     }
                     RowLayout {
                         Layout.leftMargin: 14
-                        Layout.preferredWidth: (deckPane.width - 56) * 0.5
+                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
                         Layout.rightMargin: 14
 
                         Mixxx.SettingParameter {
@@ -1173,6 +1192,7 @@ Category {
                             Text {
                                 anchors.fill: parent
                                 color: Theme.white
+                                elide: Text.ElideRight
                                 font.pixelSize: 14
                                 font.weight: Font.Medium
                                 horizontalAlignment: Text.AlignLeft
@@ -1189,7 +1209,7 @@ Category {
                         }
                     }
                     RowLayout {
-                        Layout.preferredWidth: (deckPane.width - 56) * 0.5
+                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
                         Layout.rightMargin: 14
 
                         Mixxx.SettingParameter {
@@ -1199,6 +1219,7 @@ Category {
                             Text {
                                 anchors.fill: parent
                                 color: Theme.white
+                                elide: Text.ElideRight
                                 font.pixelSize: 14
                                 font.weight: Font.Medium
                                 horizontalAlignment: Text.AlignLeft
@@ -1216,7 +1237,7 @@ Category {
                     }
                     RowLayout {
                         Layout.leftMargin: 14
-                        Layout.preferredWidth: (deckPane.width - 56) * 0.5
+                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
                         Layout.rightMargin: 14
 
                         Mixxx.SettingParameter {
@@ -1226,6 +1247,7 @@ Category {
                             Text {
                                 anchors.fill: parent
                                 color: Theme.white
+                                elide: Text.ElideRight
                                 font.pixelSize: 14
                                 font.weight: Font.Medium
                                 horizontalAlignment: Text.AlignLeft
@@ -1235,7 +1257,7 @@ Category {
                         }
                         RatioChoice {
                             id: loadingTrackWhenPlayingInput
-                            maxWidth: deckPane.width * 0.28
+                            maxWidth: decksTab.width * 0.28
 
                             options: ["reject", "allow", "when stopped",]
                             normalizedWidth: false
@@ -1306,6 +1328,7 @@ Category {
                                         Text {
                                             anchors.fill: parent
                                             color: Theme.white
+                                            elide: Text.ElideRight
                                             font.pixelSize: 14
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignLeft
@@ -1331,6 +1354,7 @@ Category {
                                         Text {
                                             anchors.fill: parent
                                             color: Theme.white
+                                            elide: Text.ElideRight
                                             font.pixelSize: 14
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignLeft
@@ -1358,6 +1382,7 @@ Category {
                                         Text {
                                             anchors.fill: parent
                                             color: Theme.white
+                                            elide: Text.ElideRight
                                             font.pixelSize: 14
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignLeft
@@ -1368,7 +1393,7 @@ Category {
                                     RatioChoice {
                                         id: syncModeInput
 
-                                        maxWidth: deckPane.width * 0.38
+                                        maxWidth: decksTab.width * 0.38
                                         options: ["follow soft leader", "use steady"]
                                         normalizedWidth: false
 
@@ -1419,6 +1444,7 @@ Category {
                                         Text {
                                             anchors.fill: parent
                                             color: Theme.white
+                                            elide: Text.ElideRight
                                             font.pixelSize: 14
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignLeft
@@ -1429,7 +1455,7 @@ Category {
                                     RatioChoice {
                                         id: keylockModeInput
 
-                                        maxWidth: deckPane.width * 0.34
+                                        maxWidth: decksTab.width * 0.34
                                         options: ["original key", "current key"]
                                         normalizedWidth: false
 
@@ -1446,6 +1472,7 @@ Category {
                                         Text {
                                             anchors.fill: parent
                                             color: Theme.white
+                                            elide: Text.ElideRight
                                             font.pixelSize: 14
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignLeft
@@ -1456,7 +1483,7 @@ Category {
                                     RatioChoice {
                                         id: keyunlockModeInput
 
-                                        maxWidth: deckPane.width * 0.3
+                                        maxWidth: decksTab.width * 0.3
                                         options: ["reset key", "keep key"]
 
                                         onSelectedChanged: decksTab.dirty = true
@@ -1496,7 +1523,7 @@ Category {
                                         // 1A..12B, traditional is Am / F#m / Bb.
                                         readonly property var values: [2, 3, 4, 5, 6]
 
-                                        maxWidth: deckPane.width * 0.34
+                                        maxWidth: decksTab.width * 0.34
                                         normalizedWidth: false
                                         options: ["open key", "lancelot", "traditional", "open key + trad", "lancelot + trad"]
                                         tooltips: ["1d..12d major, 1m..12m minor", "1B..12B major, 1A..12A minor (Camelot)", "C, Am, F#m, Bb", "Open Key with the traditional name after it", "Lancelot with the traditional name after it"]
@@ -1514,6 +1541,7 @@ Category {
                                         Text {
                                             anchors.fill: parent
                                             color: Theme.white
+                                            elide: Text.ElideRight
                                             font.pixelSize: 14
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignLeft
@@ -1651,6 +1679,7 @@ Category {
                                         Text {
                                             anchors.fill: parent
                                             color: Theme.white
+                                            elide: Text.ElideRight
                                             font.pixelSize: 14
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignLeft

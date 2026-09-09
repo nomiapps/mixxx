@@ -546,6 +546,7 @@ Category {
                                             Text {
                                                 anchors.fill: parent
                                                 color: Theme.white
+                                                elide: Text.ElideRight
                                                 font.pixelSize: 14
                                                 font.weight: Font.Medium
                                                 horizontalAlignment: Text.AlignLeft
@@ -624,6 +625,7 @@ Category {
                                     Text {
                                         anchors.fill: parent
                                         color: Theme.white
+                                        elide: Text.ElideRight
                                         font.pixelSize: 14
                                         font.weight: Font.Medium
                                         horizontalAlignment: Text.AlignLeft
@@ -653,6 +655,7 @@ Category {
                                     Text {
                                         anchors.fill: parent
                                         color: Theme.white
+                                        elide: Text.ElideRight
                                         font.pixelSize: 14
                                         font.weight: Font.Medium
                                         horizontalAlignment: Text.AlignLeft
@@ -682,6 +685,7 @@ Category {
                                     Text {
                                         anchors.fill: parent
                                         color: Theme.white
+                                        elide: Text.ElideRight
                                         font.pixelSize: 14
                                         font.weight: Font.Medium
                                         horizontalAlignment: Text.AlignLeft
@@ -757,6 +761,7 @@ Category {
                                     Text {
                                         anchors.fill: parent
                                         color: Theme.white
+                                        elide: Text.ElideRight
                                         font.pixelSize: 14
                                         font.weight: Font.Medium
                                         horizontalAlignment: Text.AlignLeft
@@ -789,6 +794,7 @@ Category {
                                     Text {
                                         anchors.fill: parent
                                         color: Theme.white
+                                        elide: Text.ElideRight
                                         font.pixelSize: 14
                                         font.weight: Font.Medium
                                         horizontalAlignment: Text.AlignLeft
@@ -867,6 +873,7 @@ Category {
                                     Text {
                                         anchors.fill: parent
                                         color: Theme.white
+                                        elide: Text.ElideRight
                                         font.pixelSize: 14
                                         font.weight: Font.Medium
                                         horizontalAlignment: Text.AlignLeft
@@ -896,6 +903,7 @@ Category {
                                     Text {
                                         anchors.fill: parent
                                         color: Theme.white
+                                        elide: Text.ElideRight
                                         font.pixelSize: 14
                                         font.weight: Font.Medium
                                         horizontalAlignment: Text.AlignLeft
@@ -925,6 +933,7 @@ Category {
                                     Text {
                                         anchors.fill: parent
                                         color: Theme.white
+                                        elide: Text.ElideRight
                                         font.pixelSize: 14
                                         font.weight: Font.Medium
                                         horizontalAlignment: Text.AlignLeft
@@ -957,6 +966,7 @@ Category {
                                     Text {
                                         anchors.fill: parent
                                         color: Theme.white
+                                        elide: Text.ElideRight
                                         font.pixelSize: 14
                                         font.weight: Font.Medium
                                         horizontalAlignment: Text.AlignLeft
