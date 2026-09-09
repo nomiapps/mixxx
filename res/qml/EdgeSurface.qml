@@ -1,3 +1,4 @@
+import Mixxx 1.0 as Mixxx
 import QtQuick 2.12
 import QtQuick.Window 2.12
 import "Theme"
@@ -237,7 +238,7 @@ Window {
     minimumHeight: root.onStrip ? 0 : 240
     minimumWidth: root.onStrip ? 0 : 320
     opacity: 0
-    title: "Mixxx - Edge Surface"
+    title: "Mixxx - Edge Surface · build " + Mixxx.Application.buildTag
     width: 2560
 
     Component.onCompleted: {

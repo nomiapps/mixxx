@@ -9,6 +9,7 @@
 #include "preferences/configobject.h"
 #include "util/cmdlineargs.h"
 #include "util/experiment.h"
+#include "util/gitinfostore.h"
 #include "util/menubarhelper.h"
 #include "util/versionstore.h"
 
@@ -92,6 +93,29 @@ QString QmlApplicationProxy::applicationName() const {
 
 QString QmlApplicationProxy::version() const {
     return VersionStore::version();
+}
+
+QString QmlApplicationProxy::gitVersion() const {
+    return VersionStore::gitVersion();
+}
+
+// The identity of the running binary, short enough for a window title:
+// "2.7-alpha-512-ge5a00d59e8-modified" becomes "e5a00d59e8-modified".
+//
+// The describe string already carries CMake's own "-modified" suffix for a
+// dirty tree, so the dirty flag is only used to add one when it is missing --
+// appending unconditionally produced "e5a00d59e8-modified-modified".
+QString QmlApplicationProxy::buildTag() const {
+    const QString describe = GitInfoStore::describe();
+    const int suffix = describe.lastIndexOf(QLatin1String("-g"));
+    QString tag = suffix >= 0 ? describe.mid(suffix + 2) : describe;
+    if (tag.isEmpty()) {
+        tag = QStringLiteral("unknown");
+    }
+    if (GitInfoStore::dirty() && !tag.endsWith(QLatin1String("-modified"))) {
+        tag += QStringLiteral("-modified");
+    }
+    return tag;
 }
 
 QString QmlApplicationProxy::platform() const {

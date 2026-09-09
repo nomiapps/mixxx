@@ -29,6 +29,10 @@ ApplicationWindow {
     menuBar: nativeApplicationMenuLoader.item
     minimumHeight: 300
     minimumWidth: 680
+    // Name the build in the title bar. The rig runs a compiled binary that
+    // falls behind the trunk between rebuilds, so "which build is this?" is a
+    // real question during testing -- and every screenshot answers it now.
+    title: qsTr("%1 %2 · build %3").arg(Mixxx.Application.applicationName).arg(Mixxx.Application.version).arg(Mixxx.Application.buildTag)
     visible: true
     visibility: Mixxx.Config.configStartInFullscreenKey ? Window.FullScreen : Window.Windowed
     width: 1792

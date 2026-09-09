@@ -26,6 +26,8 @@ class QmlApplicationProxy : public QObject {
     Q_PROPERTY(QUrl settingsDirectoryUrl READ settingsDirectoryUrl CONSTANT)
     Q_PROPERTY(QString applicationName READ applicationName CONSTANT)
     Q_PROPERTY(QString version READ version CONSTANT)
+    Q_PROPERTY(QString gitVersion READ gitVersion CONSTANT)
+    Q_PROPERTY(QString buildTag READ buildTag CONSTANT)
     Q_PROPERTY(QString platform READ platform CONSTANT)
     Q_PROPERTY(bool vinylControlAvailable READ vinylControlAvailable CONSTANT)
     Q_PROPERTY(bool liveBroadcastingAvailable READ liveBroadcastingAvailable CONSTANT)
@@ -50,6 +52,8 @@ class QmlApplicationProxy : public QObject {
     QUrl settingsDirectoryUrl() const;
     QString applicationName() const;
     QString version() const;
+    QString gitVersion() const;
+    QString buildTag() const;
     QString platform() const;
     bool vinylControlAvailable() const;
     bool liveBroadcastingAvailable() const;
