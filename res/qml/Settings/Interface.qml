@@ -217,191 +217,47 @@ Category {
                 root.selectedIndex = 0;
             }
 
-            ColumnLayout {
-                anchors.fill: parent
+            ScrollView {
+                // Anchor to the TAB, not to buttonActions: that lives on the
+                // Category root, so from inside a tab it is an uncle, not a
+                // sibling, and Qt refuses the anchor outright -- leaving the
+                // ScrollView with no height and letting it grow to its content,
+                // which is why wrapping the tabs appeared to do nothing at all.
+                // Reading its height for the margin is fine; only anchoring is
+                // restricted to a parent or sibling.
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: buttonActions.height + 18
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
                 anchors.topMargin: 20
+                // ScrollView does not clip by default, so without this the
+                // content draws straight past the viewport instead of being
+                // scrolled inside it -- which is exactly what wrapping the tab
+                // in a ScrollView appeared not to fix.
+                clip: true
                 spacing: 0
 
-                RowLayout {
-                    id: theme
+                ColumnLayout {
+                    spacing: 0
+                    width: root.width - 10
 
-                    Layout.leftMargin: 14
-                    Layout.rightMargin: 14
-                    spacing: 20
+                    RowLayout {
+                        id: theme
 
-                    ColumnLayout {
-                        Layout.alignment: Qt.AlignTop
-                        Layout.fillWidth: true
-                        spacing: 15
+                        Layout.leftMargin: 14
+                        Layout.rightMargin: 14
+                        spacing: 20
 
-                        RowLayout {
-                            Mixxx.SettingParameter {
-                                Layout.fillWidth: true
-                                label: "Skin"
-
-                                Text {
-                                    color: Theme.white
-                                    font.pixelSize: 14
-                                    text: parent.label
-                                }
-                            }
-                            Skin.ComboBox {
-                                id: skinInput
-
-                                model: ["Unnamed"]
-
-                                onCurrentIndexChanged: themeColorTab.dirty = true
-                            }
-                        }
-                        RowLayout {
-                            Mixxx.SettingParameter {
-                                Layout.fillWidth: true
-                                label: "Color"
-
-                                Text {
-                                    color: Theme.white
-                                    font.pixelSize: 14
-                                    text: parent.label
-                                }
-                            }
-                            Skin.ComboBox {
-                                id: colorInput
-
-                                model: ["Dark", "Light"]
-
-                                onCurrentIndexChanged: themeColorTab.dirty = true
-                            }
-                        }
-                        RowLayout {
-                            Mixxx.SettingParameter {
-                                Layout.fillWidth: true
-                                label: "Layout"
-
-                                Text {
-                                    color: Theme.white
-                                    font.pixelSize: 14
-                                    text: parent.label
-                                }
-                            }
-                            Skin.ComboBox {
-                                id: layoutInput
-
-                                model: ["Performance", "Broadcast"]
-
-                                onCurrentIndexChanged: themeColorTab.dirty = true
-                            }
-                        }
-                        RowLayout {
-                            Mixxx.SettingParameter {
-                                Layout.fillWidth: true
-                                label: "Tool tips"
-
-                                Text {
-                                    color: Theme.white
-                                    font.pixelSize: 14
-                                    text: parent.label
-                                }
-                            }
-                            RatioChoice {
-                                id: tooltipsInput
-
-                                options: ["off", "library", "all"]
-
-                                onSelectedChanged: themeColorTab.dirty = true
-                            }
-                        }
-                        RowLayout {
-                            Mixxx.SettingParameter {
-                                Layout.fillWidth: true
-                                label: "Browse tree icons"
-
-                                Text {
-                                    color: Theme.white
-                                    font.pixelSize: 14
-                                    text: parent.label
-                                }
-                            }
-                            RatioChoice {
-                                id: browseIconsInput
-
-                                readonly property bool enabled: selected == "on"
-
-                                options: ["on", "off"]
-
-                                onSelectedChanged: themeColorTab.dirty = true
-                            }
-                        }
-                        RowLayout {
-                            Mixxx.SettingParameter {
-                                Layout.fillWidth: true
-                                label: "Stem lane labels"
-
-                                Text {
-                                    color: Theme.white
-                                    font.pixelSize: 14
-                                    text: parent.label
-                                }
-                            }
-                            RatioChoice {
-                                id: stemLabelsInput
-
-                                // Index maps to [Waveform]/StemLabels: 0 off, 1 main,
-                                // 2 Edge, 3 both. Order matters -- do not reorder.
-                                options: ["off", "main", "edge", "both"]
-
-                                onSelectedChanged: themeColorTab.dirty = true
-                            }
-                        }
-                        RowLayout {
-                            Mixxx.SettingParameter {
-                                Layout.fillWidth: true
-                                label: "Disable screen saver"
-
-                                Text {
-                                    color: Theme.white
-                                    font.pixelSize: 14
-                                    text: parent.label
-                                }
-                            }
-                            RatioChoice {
-                                id: disableScreensaverInput
-
-                                options: ["no", "while running", "while playing"]
-
-                                onSelectedChanged: themeColorTab.dirty = true
-                            }
-                        }
-                        RowLayout {
-                            Mixxx.SettingParameter {
-                                Layout.fillWidth: true
-                                label: "Start in full-screen mode"
-
-                                Text {
-                                    color: Theme.white
-                                    font.pixelSize: 14
-                                    text: parent.label
-                                }
-                            }
-                            RatioChoice {
-                                id: startFullscreenInput
-
-                                readonly property bool enabled: selected == "on"
-
-                                options: ["on", "off"]
-
-                                onSelectedChanged: themeColorTab.dirty = true
-                            }
-                        }
-                        RowLayout {
+                        ColumnLayout {
+                            Layout.alignment: Qt.AlignTop
                             Layout.fillWidth: true
+                            spacing: 15
 
-                            ColumnLayout {
-                                Layout.fillWidth: true
-
+                            RowLayout {
                                 Mixxx.SettingParameter {
                                     Layout.fillWidth: true
-                                    height: 14
-                                    label: "Auto-hide the menu bar"
+                                    label: "Skin"
 
                                     Text {
                                         color: Theme.white
@@ -409,500 +265,664 @@ Category {
                                         text: parent.label
                                     }
                                 }
-                                Text {
-                                    color: Theme.white
-                                    font.italic: true
-                                    font.pixelSize: 12
-                                    font.weight: Font.Thin
-                                    text: "Toggle it with a single Alt key press"
+                                Skin.ComboBox {
+                                    id: skinInput
+
+                                    model: ["Unnamed"]
+
+                                    onCurrentIndexChanged: themeColorTab.dirty = true
                                 }
                             }
-                            RatioChoice {
-                                id: autoHideMenuBarInput
+                            RowLayout {
+                                Mixxx.SettingParameter {
+                                    Layout.fillWidth: true
+                                    label: "Color"
 
-                                readonly property bool enabled: selected == "on"
+                                    Text {
+                                        color: Theme.white
+                                        font.pixelSize: 14
+                                        text: parent.label
+                                    }
+                                }
+                                Skin.ComboBox {
+                                    id: colorInput
 
-                                options: ["on", "off"]
+                                    model: ["Dark", "Light"]
 
-                                onSelectedChanged: themeColorTab.dirty = true
+                                    onCurrentIndexChanged: themeColorTab.dirty = true
+                                }
+                            }
+                            RowLayout {
+                                Mixxx.SettingParameter {
+                                    Layout.fillWidth: true
+                                    label: "Layout"
+
+                                    Text {
+                                        color: Theme.white
+                                        font.pixelSize: 14
+                                        text: parent.label
+                                    }
+                                }
+                                Skin.ComboBox {
+                                    id: layoutInput
+
+                                    model: ["Performance", "Broadcast"]
+
+                                    onCurrentIndexChanged: themeColorTab.dirty = true
+                                }
+                            }
+                            RowLayout {
+                                Mixxx.SettingParameter {
+                                    Layout.fillWidth: true
+                                    label: "Tool tips"
+
+                                    Text {
+                                        color: Theme.white
+                                        font.pixelSize: 14
+                                        text: parent.label
+                                    }
+                                }
+                                RatioChoice {
+                                    id: tooltipsInput
+
+                                    options: ["off", "library", "all"]
+
+                                    onSelectedChanged: themeColorTab.dirty = true
+                                }
+                            }
+                            RowLayout {
+                                Mixxx.SettingParameter {
+                                    Layout.fillWidth: true
+                                    label: "Browse tree icons"
+
+                                    Text {
+                                        color: Theme.white
+                                        font.pixelSize: 14
+                                        text: parent.label
+                                    }
+                                }
+                                RatioChoice {
+                                    id: browseIconsInput
+
+                                    readonly property bool enabled: selected == "on"
+
+                                    options: ["on", "off"]
+
+                                    onSelectedChanged: themeColorTab.dirty = true
+                                }
+                            }
+                            RowLayout {
+                                Mixxx.SettingParameter {
+                                    Layout.fillWidth: true
+                                    label: "Stem lane labels"
+
+                                    Text {
+                                        color: Theme.white
+                                        font.pixelSize: 14
+                                        text: parent.label
+                                    }
+                                }
+                                RatioChoice {
+                                    id: stemLabelsInput
+
+                                    // Index maps to [Waveform]/StemLabels: 0 off, 1 main,
+                                    // 2 Edge, 3 both. Order matters -- do not reorder.
+                                    options: ["off", "main", "edge", "both"]
+
+                                    onSelectedChanged: themeColorTab.dirty = true
+                                }
+                            }
+                            RowLayout {
+                                Mixxx.SettingParameter {
+                                    Layout.fillWidth: true
+                                    label: "Disable screen saver"
+
+                                    Text {
+                                        color: Theme.white
+                                        font.pixelSize: 14
+                                        text: parent.label
+                                    }
+                                }
+                                RatioChoice {
+                                    id: disableScreensaverInput
+
+                                    options: ["no", "while running", "while playing"]
+
+                                    onSelectedChanged: themeColorTab.dirty = true
+                                }
+                            }
+                            RowLayout {
+                                Mixxx.SettingParameter {
+                                    Layout.fillWidth: true
+                                    label: "Start in full-screen mode"
+
+                                    Text {
+                                        color: Theme.white
+                                        font.pixelSize: 14
+                                        text: parent.label
+                                    }
+                                }
+                                RatioChoice {
+                                    id: startFullscreenInput
+
+                                    readonly property bool enabled: selected == "on"
+
+                                    options: ["on", "off"]
+
+                                    onSelectedChanged: themeColorTab.dirty = true
+                                }
+                            }
+                            RowLayout {
+                                Layout.fillWidth: true
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+
+                                    Mixxx.SettingParameter {
+                                        Layout.fillWidth: true
+                                        height: 14
+                                        label: "Auto-hide the menu bar"
+
+                                        Text {
+                                            color: Theme.white
+                                            font.pixelSize: 14
+                                            text: parent.label
+                                        }
+                                    }
+                                    Text {
+                                        color: Theme.white
+                                        font.italic: true
+                                        font.pixelSize: 12
+                                        font.weight: Font.Thin
+                                        text: "Toggle it with a single Alt key press"
+                                    }
+                                }
+                                RatioChoice {
+                                    id: autoHideMenuBarInput
+
+                                    readonly property bool enabled: selected == "on"
+
+                                    options: ["on", "off"]
+
+                                    onSelectedChanged: themeColorTab.dirty = true
+                                }
+                            }
+                        }
+                        Item {
+                            Layout.preferredWidth: root.width * 0.35
+
+                            Rectangle {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: '#343434'
+                                height: width / 16 * 9
+                                width: parent.width - 160
+
+                                Skin.Button {
+                                    activeColor: Theme.white
+                                    anchors.bottom: parent.bottom
+                                    anchors.bottomMargin: 20
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: "Customize"
+                                    width: 80
+                                }
+                            }
+                        }
+                    }
+                    Mixxx.SettingGroup {
+                        Layout.bottomMargin: 6
+                        Layout.fillWidth: true
+                        Layout.topMargin: 40
+                        implicitHeight: libraryColumn.height
+                        label: "Library"
+
+                        Column {
+                            id: libraryColumn
+
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+
+                            Text {
+                                color: Theme.white
+                                font.pixelSize: 14
+                                font.weight: Font.DemiBold
+                                text: "Library"
+                            }
+                            Item {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                height: 10
+                            }
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                color: Theme.darkGray2
+                                implicitHeight: libraryPane.implicitHeight + 20
+
+                                GridLayout {
+                                    id: libraryPane
+
+                                    anchors.bottomMargin: 10
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 17
+                                    anchors.rightMargin: 17
+                                    anchors.topMargin: 10
+                                    columnSpacing: 80
+                                    columns: 2
+                                    rowSpacing: 15
+
+                                    RowLayout {
+                                        Layout.preferredWidth: libraryPane.width * 0.5
+
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            implicitWidth: searchCompletionText.implicitWidth
+                                            label: "Search completion"
+
+                                            Text {
+                                                id: searchCompletionText
+
+                                                anchors.fill: parent
+                                                color: Theme.white
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                horizontalAlignment: Text.AlignLeft
+                                                text: parent.label
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                        RatioChoice {
+                                            id: searchCompletionInput
+
+                                            readonly property bool enabled: selected == "on"
+
+                                            Layout.fillWidth: true
+                                            options: ["on", "off"]
+
+                                            onSelectedChanged: themeColorTab.dirty = true
+                                        }
+                                    }
+                                    RowLayout {
+                                        Layout.preferredWidth: libraryPane.width * 0.5
+
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            implicitWidth: searchHistoryText.implicitWidth
+                                            label: "Search history keyboard shortcuts"
+
+                                            Text {
+                                                id: searchHistoryText
+
+                                                anchors.fill: parent
+                                                color: Theme.white
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                horizontalAlignment: Text.AlignLeft
+                                                text: parent.label
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                        RatioChoice {
+                                            id: searchHistoryKeyboardInput
+
+                                            readonly property bool enabled: selected == "on"
+
+                                            Layout.fillWidth: true
+                                            options: ["on", "off"]
+
+                                            onSelectedChanged: themeColorTab.dirty = true
+                                        }
+                                    }
+                                    RowLayout {
+                                        Layout.preferredWidth: libraryPane.width * 0.5
+
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            implicitWidth: bpmDisplayText.implicitWidth
+                                            label: "BPM display precision"
+
+                                            Text {
+                                                id: bpmDisplayText
+
+                                                anchors.fill: parent
+                                                color: Theme.white
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                horizontalAlignment: Text.AlignLeft
+                                                text: parent.label
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                        SettingComponents.SpinBox {
+                                            id: bpmPrecisionInput
+
+                                            Layout.fillWidth: true
+                                            editable: false
+                                            implicitWidth: 180
+                                            max: 10
+                                            min: 0
+                                            precision: 0
+                                            // What the library BPM column will show at this precision.
+                                            previewText: (126.0).toFixed(bpmPrecisionInput.value)
+                                            realValue: 1
+                                        }
+                                    }
+                                    RowLayout {
+                                        Layout.preferredWidth: libraryPane.width * 0.5
+
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            label: "Library Row Height"
+
+                                            Text {
+                                                anchors.fill: parent
+                                                color: Theme.white
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                horizontalAlignment: Text.AlignLeft
+                                                text: parent.label
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                        SettingComponents.Slider {
+                                            id: libraryRowHeightInput
+
+                                            markers: [14, 20, 50, 80]
+                                            max: 100
+                                            min: 14
+                                            suffix: "px"
+                                            value: 14
+                                            width: 400
+
+                                            onValueChanged: themeColorTab.dirty = true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Mixxx.SettingGroup {
+                        Layout.bottomMargin: 6
+                        Layout.fillWidth: true
+                        Layout.topMargin: 40
+                        implicitHeight: colorColumn.height
+                        label: "Colors"
+
+                        Column {
+                            id: colorColumn
+
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+
+                            Text {
+                                color: Theme.white
+                                font.pixelSize: 14
+                                font.weight: Font.DemiBold
+                                text: "Colors"
+                            }
+                            Item {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                height: 10
+                            }
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                color: Theme.darkGray2
+                                implicitHeight: colorPane.implicitHeight + 20
+
+                                GridLayout {
+                                    id: colorPane
+
+                                    readonly property var defaultPalette: Mixxx.Config.getHotcueColorPalette(hotcuePaletteComboBox.currentText)
+                                    property int hotcuePaletteColorIndex: 0
+                                    property int jumpPaletteColorIndex: 0
+                                    property int loopPaletteColorIndex: 0
+
+                                    anchors.bottomMargin: 10
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 3
+                                    anchors.rightMargin: 3
+                                    anchors.topMargin: 10
+                                    columnSpacing: 20
+                                    columns: 2
+                                    rowSpacing: 8
+
+                                    onDefaultPaletteChanged: {
+                                        hotcuePaletteColorIndex = 0;
+                                        loopPaletteColorIndex = 1;
+                                        jumpPaletteColorIndex = 2;
+                                    }
+
+                                    RowLayout {
+                                        Layout.leftMargin: 14
+                                        Layout.preferredWidth: (colorPane.width - 56) * 0.5
+                                        Layout.rightMargin: 14
+
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            label: "Track palette"
+
+                                            Text {
+                                                anchors.fill: parent
+                                                color: Theme.white
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                horizontalAlignment: Text.AlignLeft
+                                                text: parent.label
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                        ColorPaletteComboBox {
+                                            id: trackPaletteComboBox
+
+                                            onCurrentIndexChanged: themeColorTab.dirty = true
+                                        }
+                                    }
+                                    Rectangle {
+                                        Layout.preferredWidth: (colorPane.width - 56) * 0.5
+                                        Layout.rightMargin: 14
+                                        color: Theme.darkGray3
+                                        implicitHeight: 45
+
+                                        ColumnLayout {
+                                            anchors.fill: parent
+                                            spacing: 0
+
+                                            Mixxx.SettingParameter {
+                                                Layout.fillWidth: true
+                                                implicitHeight: hotcueDefaultColorText.implicitHeight
+                                                implicitWidth: hotcueDefaultColorText.implicitWidth
+                                                label: "Hotcue default color"
+
+                                                Text {
+                                                    id: hotcueDefaultColorText
+
+                                                    anchors.fill: parent
+                                                    color: Theme.white
+                                                    elide: Text.ElideRight
+                                                    font.pixelSize: 14
+                                                    font.weight: Font.Medium
+                                                    horizontalAlignment: Text.AlignHCenter
+                                                    text: parent.label
+                                                    verticalAlignment: Text.AlignVCenter
+                                                }
+                                            }
+                                            DefaultColorSelector {
+                                                id: hotcuePaletteInput
+
+                                                Layout.alignment: Qt.AlignHCenter
+                                                Layout.preferredWidth: colorPane.defaultPalette.length * 20
+                                                currentIndex: colorPane.hotcuePaletteColorIndex
+                                                palette: colorPane.defaultPalette
+
+                                                onCurrentIndexChanged: themeColorTab.dirty = true
+                                            }
+                                        }
+                                    }
+                                    RowLayout {
+                                        Layout.leftMargin: 14
+                                        Layout.preferredWidth: (colorPane.width - 56) * 0.5
+                                        Layout.rightMargin: 14
+
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            implicitWidth: keyColorText.implicitWidth
+                                            label: "Key color"
+
+                                            Text {
+                                                id: keyColorText
+
+                                                anchors.fill: parent
+                                                color: Theme.white
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                horizontalAlignment: Text.AlignLeft
+                                                text: parent.label
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                        RatioChoice {
+                                            id: keyPaletteInput
+
+                                            readonly property bool enabled: selected == "on"
+
+                                            options: ["on", "off"]
+
+                                            onSelectedChanged: themeColorTab.dirty = true
+                                        }
+                                        ColorPaletteComboBox {
+                                            id: keyPaletteComboBox
+
+                                            enabled: keyPaletteInput.enabled
+                                            // model: Mixxx.Config.paletteNames.filter(palette => Mixxx.Config.colorPalette(palette).length == 12)
+                                            opacity: enabled ? 1 : 0.4
+
+                                            onCurrentIndexChanged: themeColorTab.dirty = true
+                                        }
+                                    }
+                                    Rectangle {
+                                        Layout.preferredWidth: (colorPane.width - 56) * 0.5
+                                        Layout.rightMargin: 14
+                                        color: Theme.darkGray3
+                                        implicitHeight: 45
+
+                                        ColumnLayout {
+                                            anchors.fill: parent
+                                            spacing: 0
+
+                                            Mixxx.SettingParameter {
+                                                Layout.fillWidth: true
+                                                implicitHeight: loopDefaultColorText.implicitHeight
+                                                implicitWidth: loopDefaultColorText.implicitWidth
+                                                label: "Loop default color"
+
+                                                Text {
+                                                    id: loopDefaultColorText
+
+                                                    anchors.fill: parent
+                                                    color: Theme.white
+                                                    elide: Text.ElideRight
+                                                    font.pixelSize: 14
+                                                    font.weight: Font.Medium
+                                                    horizontalAlignment: Text.AlignHCenter
+                                                    text: parent.label
+                                                    verticalAlignment: Text.AlignVCenter
+                                                }
+                                            }
+                                            DefaultColorSelector {
+                                                id: loopPaletteInput
+
+                                                Layout.alignment: Qt.AlignHCenter
+                                                Layout.preferredWidth: colorPane.defaultPalette.length * 20
+                                                currentIndex: colorPane.loopPaletteColorIndex
+                                                palette: colorPane.defaultPalette
+
+                                                onCurrentIndexChanged: themeColorTab.dirty = true
+                                            }
+                                        }
+                                    }
+                                    RowLayout {
+                                        Layout.leftMargin: 14
+                                        Layout.preferredWidth: (colorPane.width - 56) * 0.5
+                                        Layout.rightMargin: 14
+
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            label: "Hotcue palette"
+
+                                            Text {
+                                                anchors.fill: parent
+                                                color: Theme.white
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                horizontalAlignment: Text.AlignLeft
+                                                text: parent.label
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                        ColorPaletteComboBox {
+                                            id: hotcuePaletteComboBox
+
+                                            onCurrentIndexChanged: themeColorTab.dirty = true
+                                        }
+                                    }
+                                    Rectangle {
+                                        Layout.preferredWidth: (colorPane.width - 56) * 0.5
+                                        Layout.rightMargin: 14
+                                        color: Theme.darkGray3
+                                        implicitHeight: 45
+
+                                        ColumnLayout {
+                                            anchors.fill: parent
+                                            spacing: 0
+
+                                            Mixxx.SettingParameter {
+                                                Layout.fillWidth: true
+                                                implicitHeight: jumpDefaultColorText.implicitHeight
+                                                implicitWidth: jumpDefaultColorText.implicitWidth
+                                                label: "Jump default color"
+
+                                                Text {
+                                                    id: jumpDefaultColorText
+
+                                                    anchors.fill: parent
+                                                    color: Theme.white
+                                                    elide: Text.ElideRight
+                                                    font.pixelSize: 14
+                                                    font.weight: Font.Medium
+                                                    horizontalAlignment: Text.AlignHCenter
+                                                    text: parent.label
+                                                    verticalAlignment: Text.AlignVCenter
+                                                }
+                                            }
+                                            DefaultColorSelector {
+                                                id: jumpPaletteInput
+
+                                                Layout.alignment: Qt.AlignHCenter
+                                                Layout.preferredWidth: colorPane.defaultPalette.length * 20
+                                                currentIndex: colorPane.jumpPaletteColorIndex
+                                                palette: colorPane.defaultPalette
+
+                                                onCurrentIndexChanged: themeColorTab.dirty = true
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                     Item {
-                        Layout.preferredWidth: root.width * 0.35
-
-                        Rectangle {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: '#343434'
-                            height: width / 16 * 9
-                            width: parent.width - 160
-
-                            Skin.Button {
-                                activeColor: Theme.white
-                                anchors.bottom: parent.bottom
-                                anchors.bottomMargin: 20
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: "Customize"
-                                width: 80
-                            }
-                        }
+                        Layout.fillHeight: true
+                        Layout.fillWidth: true
                     }
-                }
-                Mixxx.SettingGroup {
-                    Layout.bottomMargin: 6
-                    Layout.fillWidth: true
-                    Layout.topMargin: 40
-                    implicitHeight: libraryColumn.height
-                    label: "Library"
-
-                    Column {
-                        id: libraryColumn
-
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-
-                        Text {
-                            color: Theme.white
-                            font.pixelSize: 14
-                            font.weight: Font.DemiBold
-                            text: "Library"
-                        }
-                        Item {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            height: 10
-                        }
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            color: Theme.darkGray2
-                            implicitHeight: libraryPane.implicitHeight + 20
-
-                            GridLayout {
-                                id: libraryPane
-
-                                anchors.bottomMargin: 10
-                                anchors.fill: parent
-                                anchors.leftMargin: 17
-                                anchors.rightMargin: 17
-                                anchors.topMargin: 10
-                                columnSpacing: 80
-                                columns: 2
-                                rowSpacing: 15
-
-                                RowLayout {
-                                    Layout.preferredWidth: libraryPane.width * 0.5
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        implicitWidth: searchCompletionText.implicitWidth
-                                        label: "Search completion"
-
-                                        Text {
-                                            id: searchCompletionText
-
-                                            anchors.fill: parent
-                                            color: Theme.white
-                                            elide: Text.ElideRight
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            horizontalAlignment: Text.AlignLeft
-                                            text: parent.label
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                    RatioChoice {
-                                        id: searchCompletionInput
-
-                                        readonly property bool enabled: selected == "on"
-
-                                        Layout.fillWidth: true
-                                        options: ["on", "off"]
-
-                                        onSelectedChanged: themeColorTab.dirty = true
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.preferredWidth: libraryPane.width * 0.5
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        implicitWidth: searchHistoryText.implicitWidth
-                                        label: "Search history keyboard shortcuts"
-
-                                        Text {
-                                            id: searchHistoryText
-
-                                            anchors.fill: parent
-                                            color: Theme.white
-                                            elide: Text.ElideRight
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            horizontalAlignment: Text.AlignLeft
-                                            text: parent.label
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                    RatioChoice {
-                                        id: searchHistoryKeyboardInput
-
-                                        readonly property bool enabled: selected == "on"
-
-                                        Layout.fillWidth: true
-                                        options: ["on", "off"]
-
-                                        onSelectedChanged: themeColorTab.dirty = true
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.preferredWidth: libraryPane.width * 0.5
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        implicitWidth: bpmDisplayText.implicitWidth
-                                        label: "BPM display precision"
-
-                                        Text {
-                                            id: bpmDisplayText
-
-                                            anchors.fill: parent
-                                            color: Theme.white
-                                            elide: Text.ElideRight
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            horizontalAlignment: Text.AlignLeft
-                                            text: parent.label
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                    SettingComponents.SpinBox {
-                                        id: bpmPrecisionInput
-
-                                        Layout.fillWidth: true
-                                        editable: false
-                                        implicitWidth: 180
-                                        max: 10
-                                        min: 0
-                                        precision: 0
-                                        // What the library BPM column will show at this precision.
-                                        previewText: (126.0).toFixed(bpmPrecisionInput.value)
-                                        realValue: 1
-
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.preferredWidth: libraryPane.width * 0.5
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        label: "Library Row Height"
-
-                                        Text {
-                                            anchors.fill: parent
-                                            color: Theme.white
-                                            elide: Text.ElideRight
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            horizontalAlignment: Text.AlignLeft
-                                            text: parent.label
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                    SettingComponents.Slider {
-                                        id: libraryRowHeightInput
-
-                                        markers: [14, 20, 50, 80]
-                                        max: 100
-                                        min: 14
-                                        suffix: "px"
-                                        value: 14
-                                        width: 400
-
-                                        onValueChanged: themeColorTab.dirty = true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                Mixxx.SettingGroup {
-                    Layout.bottomMargin: 6
-                    Layout.fillWidth: true
-                    Layout.topMargin: 40
-                    implicitHeight: colorColumn.height
-                    label: "Colors"
-
-                    Column {
-                        id: colorColumn
-
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-
-                        Text {
-                            color: Theme.white
-                            font.pixelSize: 14
-                            font.weight: Font.DemiBold
-                            text: "Colors"
-                        }
-                        Item {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            height: 10
-                        }
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            color: Theme.darkGray2
-                            implicitHeight: colorPane.implicitHeight + 20
-
-                            GridLayout {
-                                id: colorPane
-
-                                readonly property var defaultPalette: Mixxx.Config.getHotcueColorPalette(hotcuePaletteComboBox.currentText)
-                                property int hotcuePaletteColorIndex: 0
-                                property int jumpPaletteColorIndex: 0
-                                property int loopPaletteColorIndex: 0
-
-                                anchors.bottomMargin: 10
-                                anchors.fill: parent
-                                anchors.leftMargin: 3
-                                anchors.rightMargin: 3
-                                anchors.topMargin: 10
-                                columnSpacing: 20
-                                columns: 2
-                                rowSpacing: 8
-
-                                onDefaultPaletteChanged: {
-                                    hotcuePaletteColorIndex = 0;
-                                    loopPaletteColorIndex = 1;
-                                    jumpPaletteColorIndex = 2;
-                                }
-
-                                RowLayout {
-                                    Layout.leftMargin: 14
-                                    Layout.preferredWidth: (colorPane.width - 56) * 0.5
-                                    Layout.rightMargin: 14
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        label: "Track palette"
-
-                                        Text {
-                                            anchors.fill: parent
-                                            color: Theme.white
-                                            elide: Text.ElideRight
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            horizontalAlignment: Text.AlignLeft
-                                            text: parent.label
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                    ColorPaletteComboBox {
-                                        id: trackPaletteComboBox
-
-                                        onCurrentIndexChanged: themeColorTab.dirty = true
-                                    }
-                                }
-                                Rectangle {
-                                    Layout.preferredWidth: (colorPane.width - 56) * 0.5
-                                    Layout.rightMargin: 14
-                                    color: Theme.darkGray3
-                                    implicitHeight: 45
-
-                                    ColumnLayout {
-                                        anchors.fill: parent
-                                        spacing: 0
-
-                                        Mixxx.SettingParameter {
-                                            Layout.fillWidth: true
-                                            implicitHeight: hotcueDefaultColorText.implicitHeight
-                                            implicitWidth: hotcueDefaultColorText.implicitWidth
-                                            label: "Hotcue default color"
-
-                                            Text {
-                                                id: hotcueDefaultColorText
-
-                                                anchors.fill: parent
-                                                color: Theme.white
-                                                elide: Text.ElideRight
-                                                font.pixelSize: 14
-                                                font.weight: Font.Medium
-                                                horizontalAlignment: Text.AlignHCenter
-                                                text: parent.label
-                                                verticalAlignment: Text.AlignVCenter
-                                            }
-                                        }
-                                        DefaultColorSelector {
-                                            id: hotcuePaletteInput
-
-                                            Layout.alignment: Qt.AlignHCenter
-                                            Layout.preferredWidth: colorPane.defaultPalette.length * 20
-                                            currentIndex: colorPane.hotcuePaletteColorIndex
-                                            palette: colorPane.defaultPalette
-
-                                            onCurrentIndexChanged: themeColorTab.dirty = true
-                                        }
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.leftMargin: 14
-                                    Layout.preferredWidth: (colorPane.width - 56) * 0.5
-                                    Layout.rightMargin: 14
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        implicitWidth: keyColorText.implicitWidth
-                                        label: "Key color"
-
-                                        Text {
-                                            id: keyColorText
-
-                                            anchors.fill: parent
-                                            color: Theme.white
-                                            elide: Text.ElideRight
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            horizontalAlignment: Text.AlignLeft
-                                            text: parent.label
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                    RatioChoice {
-                                        id: keyPaletteInput
-
-                                        readonly property bool enabled: selected == "on"
-
-                                        options: ["on", "off"]
-
-                                        onSelectedChanged: themeColorTab.dirty = true
-                                    }
-                                    ColorPaletteComboBox {
-                                        id: keyPaletteComboBox
-
-                                        enabled: keyPaletteInput.enabled
-                                        // model: Mixxx.Config.paletteNames.filter(palette => Mixxx.Config.colorPalette(palette).length == 12)
-                                        opacity: enabled ? 1 : 0.4
-
-                                        onCurrentIndexChanged: themeColorTab.dirty = true
-                                    }
-                                }
-                                Rectangle {
-                                    Layout.preferredWidth: (colorPane.width - 56) * 0.5
-                                    Layout.rightMargin: 14
-                                    color: Theme.darkGray3
-                                    implicitHeight: 45
-
-                                    ColumnLayout {
-                                        anchors.fill: parent
-                                        spacing: 0
-
-                                        Mixxx.SettingParameter {
-                                            Layout.fillWidth: true
-                                            implicitHeight: loopDefaultColorText.implicitHeight
-                                            implicitWidth: loopDefaultColorText.implicitWidth
-                                            label: "Loop default color"
-
-                                            Text {
-                                                id: loopDefaultColorText
-
-                                                anchors.fill: parent
-                                                color: Theme.white
-                                                elide: Text.ElideRight
-                                                font.pixelSize: 14
-                                                font.weight: Font.Medium
-                                                horizontalAlignment: Text.AlignHCenter
-                                                text: parent.label
-                                                verticalAlignment: Text.AlignVCenter
-                                            }
-                                        }
-                                        DefaultColorSelector {
-                                            id: loopPaletteInput
-
-                                            Layout.alignment: Qt.AlignHCenter
-                                            Layout.preferredWidth: colorPane.defaultPalette.length * 20
-                                            currentIndex: colorPane.loopPaletteColorIndex
-                                            palette: colorPane.defaultPalette
-
-                                            onCurrentIndexChanged: themeColorTab.dirty = true
-                                        }
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.leftMargin: 14
-                                    Layout.preferredWidth: (colorPane.width - 56) * 0.5
-                                    Layout.rightMargin: 14
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        label: "Hotcue palette"
-
-                                        Text {
-                                            anchors.fill: parent
-                                            color: Theme.white
-                                            elide: Text.ElideRight
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            horizontalAlignment: Text.AlignLeft
-                                            text: parent.label
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                    ColorPaletteComboBox {
-                                        id: hotcuePaletteComboBox
-
-                                        onCurrentIndexChanged: themeColorTab.dirty = true
-                                    }
-                                }
-                                Rectangle {
-                                    Layout.preferredWidth: (colorPane.width - 56) * 0.5
-                                    Layout.rightMargin: 14
-                                    color: Theme.darkGray3
-                                    implicitHeight: 45
-
-                                    ColumnLayout {
-                                        anchors.fill: parent
-                                        spacing: 0
-
-                                        Mixxx.SettingParameter {
-                                            Layout.fillWidth: true
-                                            implicitHeight: jumpDefaultColorText.implicitHeight
-                                            implicitWidth: jumpDefaultColorText.implicitWidth
-                                            label: "Jump default color"
-
-                                            Text {
-                                                id: jumpDefaultColorText
-
-                                                anchors.fill: parent
-                                                color: Theme.white
-                                                elide: Text.ElideRight
-                                                font.pixelSize: 14
-                                                font.weight: Font.Medium
-                                                horizontalAlignment: Text.AlignHCenter
-                                                text: parent.label
-                                                verticalAlignment: Text.AlignVCenter
-                                            }
-                                        }
-                                        DefaultColorSelector {
-                                            id: jumpPaletteInput
-
-                                            Layout.alignment: Qt.AlignHCenter
-                                            Layout.preferredWidth: colorPane.defaultPalette.length * 20
-                                            currentIndex: colorPane.jumpPaletteColorIndex
-                                            palette: colorPane.defaultPalette
-
-                                            onCurrentIndexChanged: themeColorTab.dirty = true
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                Item {
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
                 }
             }
         }
@@ -919,55 +939,76 @@ Category {
                 root.selectedIndex = 1;
             }
 
-            ColumnLayout {
-                anchors.fill: parent
+            ScrollView {
+                // Anchor to the TAB, not to buttonActions: that lives on the
+                // Category root, so from inside a tab it is an uncle, not a
+                // sibling, and Qt refuses the anchor outright -- leaving the
+                // ScrollView with no height and letting it grow to its content,
+                // which is why wrapping the tabs appeared to do nothing at all.
+                // Reading its height for the margin is fine; only anchoring is
+                // restricted to a parent or sibling.
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: buttonActions.height + 18
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
                 anchors.topMargin: 20
+                // ScrollView does not clip by default, so without this the
+                // content draws straight past the viewport instead of being
+                // scrolled inside it -- which is exactly what wrapping the tab
+                // in a ScrollView appeared not to fix.
+                clip: true
                 spacing: 0
 
-                GridLayout {
-                    id: waveformPane
+                ColumnLayout {
+                    spacing: 0
+                    width: root.width - 10
 
-                    Layout.fillWidth: true
-                    columnSpacing: 20
-                    columns: 2
-                    rowSpacing: 15
+                    GridLayout {
+                        id: waveformPane
 
-                    RowLayout {
-                        Layout.leftMargin: 14
-                        // Half the tab, not half this pane: the pane sizes itself from
-                        // its rows, so a row measured against the pane is a loop, and
-                        // Qt Quick Layouts aborts the rearrange after two passes.
-                        Layout.preferredWidth: (waveformTab.width - 56) * 0.5
-                        Layout.rightMargin: 14
+                        Layout.fillWidth: true
+                        columnSpacing: 20
+                        columns: 2
+                        rowSpacing: 15
 
-                        Mixxx.SettingParameter {
-                            Layout.fillWidth: true
-                            label: "High detail waveform"
+                        RowLayout {
+                            Layout.leftMargin: 14
+                            // Half the tab, not half this pane: the pane sizes itself from
+                            // its rows, so a row measured against the pane is a loop, and
+                            // Qt Quick Layouts aborts the rearrange after two passes.
+                            Layout.preferredWidth: (waveformTab.width - 56) * 0.5
+                            Layout.rightMargin: 14
 
-                            Text {
-                                anchors.fill: parent
-                                color: Theme.white
-                                elide: Text.ElideRight
-                                font.pixelSize: 14
-                                font.weight: Font.Medium
-                                horizontalAlignment: Text.AlignLeft
-                                text: parent.label
-                                verticalAlignment: Text.AlignVCenter
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                label: "High detail waveform"
+
+                                Text {
+                                    anchors.fill: parent
+                                    color: Theme.white
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: parent.label
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                            RatioChoice {
+                                id: highDetailInput
+
+                                options: ["on", "off"]
+                                tooltips: ["Draws every pixel from the sample under it, in a shader", "Draws the waveform from cached tiles, which scroll"]
+
+                                onSelectedChanged: waveformTab.dirty = true
                             }
                         }
-                        RatioChoice {
-                            id: highDetailInput
-
-                            options: ["on", "off"]
-                            tooltips: ["Draws every pixel from the sample under it, in a shader", "Draws the waveform from cached tiles, which scroll"]
-
-                            onSelectedChanged: waveformTab.dirty = true
-                        }
                     }
-                }
-                Item {
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
+                    Item {
+                        Layout.fillHeight: true
+                        Layout.fillWidth: true
+                    }
                 }
             }
         }
@@ -984,728 +1025,749 @@ Category {
                 root.selectedIndex = 2;
             }
 
-            ColumnLayout {
-                anchors.fill: parent
+            ScrollView {
+                // Anchor to the TAB, not to buttonActions: that lives on the
+                // Category root, so from inside a tab it is an uncle, not a
+                // sibling, and Qt refuses the anchor outright -- leaving the
+                // ScrollView with no height and letting it grow to its content,
+                // which is why wrapping the tabs appeared to do nothing at all.
+                // Reading its height for the margin is fine; only anchoring is
+                // restricted to a parent or sibling.
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: buttonActions.height + 18
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
                 anchors.topMargin: 20
+                // ScrollView does not clip by default, so without this the
+                // content draws straight past the viewport instead of being
+                // scrolled inside it -- which is exactly what wrapping the tab
+                // in a ScrollView appeared not to fix.
+                clip: true
                 spacing: 0
 
-                GridLayout {
-                    id: deckPane
+                ColumnLayout {
+                    spacing: 0
+                    width: root.width - 10
 
-                    // Same loop waveformPane above had: without a width from the
-                    // ColumnLayout, the pane sizes itself from its rows while the
-                    // rows size themselves from the pane, and Qt Quick Layouts
-                    // gives up after two passes. anchors cannot be used on a
-                    // layout's child, which is why they are commented out rather
-                    // than deleted; Layout.fillWidth is the equivalent here.
-                    Layout.fillWidth: true
-                    columnSpacing: 20
-                    columns: 2
-                    rowSpacing: 15
+                    GridLayout {
+                        id: deckPane
 
-                    RowLayout {
-                        Layout.leftMargin: 14
-                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
-                        Layout.rightMargin: 14
+                        // Same loop waveformPane above had: without a width from the
+                        // ColumnLayout, the pane sizes itself from its rows while the
+                        // rows size themselves from the pane, and Qt Quick Layouts
+                        // gives up after two passes. anchors cannot be used on a
+                        // layout's child, which is why they are commented out rather
+                        // than deleted; Layout.fillWidth is the equivalent here.
+                        Layout.fillWidth: true
+                        columnSpacing: 20
+                        columns: 2
+                        rowSpacing: 15
 
-                        Mixxx.SettingParameter {
-                            Layout.fillWidth: true
-                            label: "Cue mode"
+                        RowLayout {
+                            Layout.leftMargin: 14
+                            Layout.preferredWidth: (decksTab.width - 56) * 0.5
+                            Layout.rightMargin: 14
 
-                            Text {
-                                anchors.fill: parent
-                                color: Theme.white
-                                elide: Text.ElideRight
-                                font.pixelSize: 14
-                                font.weight: Font.Medium
-                                horizontalAlignment: Text.AlignLeft
-                                text: parent.label
-                                verticalAlignment: Text.AlignVCenter
-                            }
-                        }
-                        Skin.ComboBox {
-                            id: cueModeInput
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                label: "Cue mode"
 
-                            implicitWidth: 200
-                            model: ["Mixxx", "Mixxx (no blinking)", "Pioneer", "Denon", "Numark", "CUP",]
-
-                            onCurrentIndexChanged: decksTab.dirty = true
-                        }
-                    }
-                    RowLayout {
-                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
-                        Layout.rightMargin: 14
-
-                        Mixxx.SettingParameter {
-                            Layout.fillWidth: true
-                            label: "Time format"
-
-                            Text {
-                                anchors.fill: parent
-                                color: Theme.white
-                                elide: Text.ElideRight
-                                font.pixelSize: 14
-                                font.weight: Font.Medium
-                                horizontalAlignment: Text.AlignLeft
-                                text: parent.label
-                                verticalAlignment: Text.AlignVCenter
-                            }
-                        }
-                        Skin.ComboBox {
-                            id: timeMode
-
-                            Layout.preferredWidth: (decksTab.width - 56) * 0.2
-                            model: [DeckComponents.TrackTime.Mode.Traditional, DeckComponents.TrackTime.Mode.TraditionalCoarse, DeckComponents.TrackTime.Mode.Seconds, DeckComponents.TrackTime.Mode.SecondsLong, DeckComponents.TrackTime.Mode.KiloSeconds, DeckComponents.TrackTime.Mode.HectoSeconds,]
-
-                            contentItem: Content {
-                                anchors.fill: parent
-                                anchors.leftMargin: 10
-                                anchors.rightMargin: 20
-                                mode: timeMode.model[timeMode.currentIndex]
-                            }
-                            delegate: ItemDelegate {
-                                id: itemDlgt
-
-                                required property int index
-
-                                highlighted: root.highlightedIndex === this.index
-                                text: content.text
-                                width: parent.width
-
-                                background: Rectangle {
-                                    border.color: Theme.deckLineColor
-                                    border.width: itemDlgt.highlighted ? 1 : 0
-                                    color: "transparent"
-                                    radius: 5
+                                Text {
+                                    anchors.fill: parent
+                                    color: Theme.white
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: parent.label
+                                    verticalAlignment: Text.AlignVCenter
                                 }
-                                contentItem: Content {
-                                    id: content
+                            }
+                            Skin.ComboBox {
+                                id: cueModeInput
 
+                                implicitWidth: 200
+                                model: ["Mixxx", "Mixxx (no blinking)", "Pioneer", "Denon", "Numark", "CUP",]
+
+                                onCurrentIndexChanged: decksTab.dirty = true
+                            }
+                        }
+                        RowLayout {
+                            Layout.preferredWidth: (decksTab.width - 56) * 0.5
+                            Layout.rightMargin: 14
+
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                label: "Time format"
+
+                                Text {
+                                    anchors.fill: parent
+                                    color: Theme.white
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: parent.label
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                            Skin.ComboBox {
+                                id: timeMode
+
+                                Layout.preferredWidth: (decksTab.width - 56) * 0.2
+                                model: [DeckComponents.TrackTime.Mode.Traditional, DeckComponents.TrackTime.Mode.TraditionalCoarse, DeckComponents.TrackTime.Mode.Seconds, DeckComponents.TrackTime.Mode.SecondsLong, DeckComponents.TrackTime.Mode.KiloSeconds, DeckComponents.TrackTime.Mode.HectoSeconds,]
+
+                                contentItem: Content {
                                     anchors.fill: parent
                                     anchors.leftMargin: 10
                                     anchors.rightMargin: 20
-                                    mode: timeMode.model[index]
+                                    mode: timeMode.model[timeMode.currentIndex]
+                                }
+                                delegate: ItemDelegate {
+                                    id: itemDlgt
+
+                                    required property int index
+
+                                    highlighted: root.highlightedIndex === this.index
+                                    text: content.text
+                                    width: parent.width
+
+                                    background: Rectangle {
+                                        border.color: Theme.deckLineColor
+                                        border.width: itemDlgt.highlighted ? 1 : 0
+                                        color: "transparent"
+                                        radius: 5
+                                    }
+                                    contentItem: Content {
+                                        id: content
+
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 10
+                                        anchors.rightMargin: 20
+                                        mode: timeMode.model[index]
+                                    }
+                                }
+
+                                onCurrentIndexChanged: decksTab.dirty = true
+                            }
+                        }
+                        RowLayout {
+                            Layout.leftMargin: 14
+                            Layout.preferredWidth: (decksTab.width - 56) * 0.5
+                            Layout.rightMargin: 14
+
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                label: "Set intro start to main cue when analyzing tracks"
+
+                                Text {
+                                    anchors.fill: parent
+                                    color: Theme.white
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: parent.label
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                             }
+                            RatioChoice {
+                                id: setIntroStartToMainCueInput
 
-                            onCurrentIndexChanged: decksTab.dirty = true
-                        }
-                    }
-                    RowLayout {
-                        Layout.leftMargin: 14
-                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
-                        Layout.rightMargin: 14
+                                readonly property bool enabled: selected == "on"
 
-                        Mixxx.SettingParameter {
-                            Layout.fillWidth: true
-                            label: "Set intro start to main cue when analyzing tracks"
+                                options: ["on", "off"]
 
-                            Text {
-                                anchors.fill: parent
-                                color: Theme.white
-                                elide: Text.ElideRight
-                                font.pixelSize: 14
-                                font.weight: Font.Medium
-                                horizontalAlignment: Text.AlignLeft
-                                text: parent.label
-                                verticalAlignment: Text.AlignVCenter
+                                onSelectedChanged: decksTab.dirty = true
                             }
                         }
-                        RatioChoice {
-                            id: setIntroStartToMainCueInput
+                        RowLayout {
+                            Layout.leftMargin: 14
+                            Layout.preferredWidth: (decksTab.width - 56) * 0.5
+                            Layout.rightMargin: 14
 
-                            readonly property bool enabled: selected == "on"
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                label: "Show stem strips under waveforms"
 
-                            options: ["on", "off"]
+                                Text {
+                                    anchors.fill: parent
+                                    color: Theme.white
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: parent.label
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                            RatioChoice {
+                                id: showStemStripsInput
 
-                            onSelectedChanged: decksTab.dirty = true
-                        }
-                    }
-                    RowLayout {
-                        Layout.leftMargin: 14
-                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
-                        Layout.rightMargin: 14
+                                readonly property bool enabled: selected == "on"
 
-                        Mixxx.SettingParameter {
-                            Layout.fillWidth: true
-                            label: "Show stem strips under waveforms"
+                                options: ["on", "off"]
 
-                            Text {
-                                anchors.fill: parent
-                                color: Theme.white
-                                elide: Text.ElideRight
-                                font.pixelSize: 14
-                                font.weight: Font.Medium
-                                horizontalAlignment: Text.AlignLeft
-                                text: parent.label
-                                verticalAlignment: Text.AlignVCenter
+                                onSelectedChanged: decksTab.dirty = true
                             }
                         }
-                        RatioChoice {
-                            id: showStemStripsInput
+                        RowLayout {
+                            Layout.preferredWidth: (decksTab.width - 56) * 0.5
+                            Layout.rightMargin: 14
 
-                            readonly property bool enabled: selected == "on"
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                label: "Track time display"
 
-                            options: ["on", "off"]
+                                Text {
+                                    anchors.fill: parent
+                                    color: Theme.white
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: parent.label
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                            RatioChoice {
+                                id: trackTimeDisplayInput
 
-                            onSelectedChanged: decksTab.dirty = true
-                        }
-                    }
-                    RowLayout {
-                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
-                        Layout.rightMargin: 14
+                                maxWidth: decksTab.width * 0.28
+                                normalizedWidth: false
+                                options: ["elapsed", "remaining", "both"]
 
-                        Mixxx.SettingParameter {
-                            Layout.fillWidth: true
-                            label: "Track time display"
-
-                            Text {
-                                anchors.fill: parent
-                                color: Theme.white
-                                elide: Text.ElideRight
-                                font.pixelSize: 14
-                                font.weight: Font.Medium
-                                horizontalAlignment: Text.AlignLeft
-                                text: parent.label
-                                verticalAlignment: Text.AlignVCenter
+                                onSelectedChanged: decksTab.dirty = true
                             }
                         }
-                        RatioChoice {
-                            id: trackTimeDisplayInput
+                        RowLayout {
+                            Layout.leftMargin: 14
+                            Layout.preferredWidth: (decksTab.width - 56) * 0.5
+                            Layout.rightMargin: 14
 
-                            maxWidth: decksTab.width * 0.28
-                            options: ["elapsed", "remaining", "both"]
-                            normalizedWidth: false
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                label: "Double-press Load button to clone playing track"
 
-                            onSelectedChanged: decksTab.dirty = true
-                        }
-                    }
-                    RowLayout {
-                        Layout.leftMargin: 14
-                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
-                        Layout.rightMargin: 14
+                                Text {
+                                    anchors.fill: parent
+                                    color: Theme.white
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: parent.label
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                            RatioChoice {
+                                id: doublePressLoadToCloneInput
 
-                        Mixxx.SettingParameter {
-                            Layout.fillWidth: true
-                            label: "Double-press Load button to clone playing track"
+                                options: ["on", "off"]
 
-                            Text {
-                                anchors.fill: parent
-                                color: Theme.white
-                                elide: Text.ElideRight
-                                font.pixelSize: 14
-                                font.weight: Font.Medium
-                                horizontalAlignment: Text.AlignLeft
-                                text: parent.label
-                                verticalAlignment: Text.AlignVCenter
+                                onSelectedChanged: decksTab.dirty = true
                             }
                         }
-                        RatioChoice {
-                            id: doublePressLoadToCloneInput
+                        RowLayout {
+                            Layout.preferredWidth: (decksTab.width - 56) * 0.5
+                            Layout.rightMargin: 14
 
-                            options: ["on", "off"]
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                label: "Track load point"
 
-                            onSelectedChanged: decksTab.dirty = true
-                        }
-                    }
-                    RowLayout {
-                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
-                        Layout.rightMargin: 14
+                                Text {
+                                    anchors.fill: parent
+                                    color: Theme.white
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: parent.label
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                            Skin.ComboBox {
+                                id: trackLoadPointInput
 
-                        Mixxx.SettingParameter {
-                            Layout.fillWidth: true
-                            label: "Track load point"
+                                model: ["Main cue", "Beginning of track", "First sound", "Intro start", "First hotcue",]
 
-                            Text {
-                                anchors.fill: parent
-                                color: Theme.white
-                                elide: Text.ElideRight
-                                font.pixelSize: 14
-                                font.weight: Font.Medium
-                                horizontalAlignment: Text.AlignLeft
-                                text: parent.label
-                                verticalAlignment: Text.AlignVCenter
+                                onCurrentIndexChanged: decksTab.dirty = true
                             }
                         }
-                        Skin.ComboBox {
-                            id: trackLoadPointInput
+                        RowLayout {
+                            Layout.leftMargin: 14
+                            Layout.preferredWidth: (decksTab.width - 56) * 0.5
+                            Layout.rightMargin: 14
 
-                            model: ["Main cue", "Beginning of track", "First sound", "Intro start", "First hotcue",]
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                label: "Loading a track when playing"
 
-                            onCurrentIndexChanged: decksTab.dirty = true
-                        }
-                    }
-                    RowLayout {
-                        Layout.leftMargin: 14
-                        Layout.preferredWidth: (decksTab.width - 56) * 0.5
-                        Layout.rightMargin: 14
+                                Text {
+                                    anchors.fill: parent
+                                    color: Theme.white
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: parent.label
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                            RatioChoice {
+                                id: loadingTrackWhenPlayingInput
 
-                        Mixxx.SettingParameter {
-                            Layout.fillWidth: true
-                            label: "Loading a track when playing"
+                                maxWidth: decksTab.width * 0.28
+                                normalizedWidth: false
+                                options: ["reject", "allow", "when stopped",]
 
-                            Text {
-                                anchors.fill: parent
-                                color: Theme.white
-                                elide: Text.ElideRight
-                                font.pixelSize: 14
-                                font.weight: Font.Medium
-                                horizontalAlignment: Text.AlignLeft
-                                text: parent.label
-                                verticalAlignment: Text.AlignVCenter
+                                onSelectedChanged: decksTab.dirty = true
                             }
                         }
-                        RatioChoice {
-                            id: loadingTrackWhenPlayingInput
-                            maxWidth: decksTab.width * 0.28
-
-                            options: ["reject", "allow", "when stopped",]
-                            normalizedWidth: false
-
-                            onSelectedChanged: decksTab.dirty = true
-                        }
                     }
-                }
-                Mixxx.SettingGroup {
-                    Layout.bottomMargin: 6
-                    Layout.fillWidth: true
-                    Layout.topMargin: 40
-                    implicitHeight: speedKeyColumn.height
-                    label: "Speed & Key"
+                    Mixxx.SettingGroup {
+                        Layout.bottomMargin: 6
+                        Layout.fillWidth: true
+                        Layout.topMargin: 40
+                        implicitHeight: speedKeyColumn.height
+                        label: "Speed & Key"
 
-                    Column {
-                        id: speedKeyColumn
+                        Column {
+                            id: speedKeyColumn
 
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-
-                        Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 17
-                            color: Theme.white
-                            font.pixelSize: 14
-                            font.weight: Font.DemiBold
-                            text: "Speed & Key"
-                        }
-                        Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 17
-                            color: Theme.white
-                            font.pixelSize: 11
-                            font.weight: Font.Thin
-                            text: "or tempo & pitch"
-                        }
-                        Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
-                            height: 10
-                        }
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            color: Theme.darkGray2
-                            implicitHeight: speedKeyPane.implicitHeight + 20
 
-                            GridLayout {
-                                id: speedKeyPane
-
-                                anchors.bottomMargin: 10
-                                anchors.fill: parent
+                            Text {
+                                anchors.left: parent.left
                                 anchors.leftMargin: 17
-                                anchors.rightMargin: 17
-                                anchors.topMargin: 10
-                                columnSpacing: 20
-                                columns: 2
-                                rowSpacing: 15
+                                color: Theme.white
+                                font.pixelSize: 14
+                                font.weight: Font.DemiBold
+                                text: "Speed & Key"
+                            }
+                            Text {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 17
+                                color: Theme.white
+                                font.pixelSize: 11
+                                font.weight: Font.Thin
+                                text: "or tempo & pitch"
+                            }
+                            Item {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                height: 10
+                            }
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                color: Theme.darkGray2
+                                implicitHeight: speedKeyPane.implicitHeight + 20
 
-                                RowLayout {
-                                    Layout.preferredWidth: speedKeyPane.width * 0.5
+                                GridLayout {
+                                    id: speedKeyPane
 
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        label: "Reset on track load"
+                                    anchors.bottomMargin: 10
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 17
+                                    anchors.rightMargin: 17
+                                    anchors.topMargin: 10
+                                    columnSpacing: 20
+                                    columns: 2
+                                    rowSpacing: 15
 
-                                        Text {
-                                            anchors.fill: parent
-                                            color: Theme.white
-                                            elide: Text.ElideRight
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            horizontalAlignment: Text.AlignLeft
-                                            text: parent.label
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                    RatioChoice {
-                                        id: resetOnTrackLoadInput
+                                    RowLayout {
+                                        Layout.preferredWidth: speedKeyPane.width * 0.5
 
-                                        options: ["none", "key", "both", "tempo",]
-
-                                        onSelectedChanged: decksTab.dirty = true
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.preferredWidth: speedKeyPane.width * 0.5
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        label: "Slider range"
-
-                                        Text {
-                                            anchors.fill: parent
-                                            color: Theme.white
-                                            elide: Text.ElideRight
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            horizontalAlignment: Text.AlignLeft
-                                            text: parent.label
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                    Skin.ComboBox {
-                                        id: sliderRangeInput
-
-                                        readonly property list<int> values: [4, 6, 8, 10, 16, 24, 50, 90]
-
-                                        model: ["4%", "6% (semitone)", "8% (Technics SL-1210)", "10%", "16%", "24%", "50%", "90%"]
-
-                                        onCurrentIndexChanged: decksTab.dirty = true
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.preferredWidth: speedKeyPane.width * 0.5
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        label: "Sync mode"
-
-                                        Text {
-                                            anchors.fill: parent
-                                            color: Theme.white
-                                            elide: Text.ElideRight
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            horizontalAlignment: Text.AlignLeft
-                                            text: parent.label
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                    RatioChoice {
-                                        id: syncModeInput
-
-                                        maxWidth: decksTab.width * 0.38
-                                        options: ["follow soft leader", "use steady"]
-                                        normalizedWidth: false
-
-                                        onSelectedChanged: decksTab.dirty = true
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.preferredWidth: speedKeyPane.width * 0.5
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        height: 32
-                                        label: "Slider orientation"
-
-                                        Column {
-                                            anchors.fill: parent
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            label: "Reset on track load"
 
                                             Text {
+                                                anchors.fill: parent
+                                                color: Theme.white
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                horizontalAlignment: Text.AlignLeft
+                                                text: parent.label
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                        RatioChoice {
+                                            id: resetOnTrackLoadInput
+
+                                            options: ["none", "key", "both", "tempo",]
+
+                                            onSelectedChanged: decksTab.dirty = true
+                                        }
+                                    }
+                                    RowLayout {
+                                        Layout.preferredWidth: speedKeyPane.width * 0.5
+
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            label: "Slider range"
+
+                                            Text {
+                                                anchors.fill: parent
+                                                color: Theme.white
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                horizontalAlignment: Text.AlignLeft
+                                                text: parent.label
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                        Skin.ComboBox {
+                                            id: sliderRangeInput
+
+                                            readonly property list<int> values: [4, 6, 8, 10, 16, 24, 50, 90]
+
+                                            model: ["4%", "6% (semitone)", "8% (Technics SL-1210)", "10%", "16%", "24%", "50%", "90%"]
+
+                                            onCurrentIndexChanged: decksTab.dirty = true
+                                        }
+                                    }
+                                    RowLayout {
+                                        Layout.preferredWidth: speedKeyPane.width * 0.5
+
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            label: "Sync mode"
+
+                                            Text {
+                                                anchors.fill: parent
+                                                color: Theme.white
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                horizontalAlignment: Text.AlignLeft
+                                                text: parent.label
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                        RatioChoice {
+                                            id: syncModeInput
+
+                                            maxWidth: decksTab.width * 0.38
+                                            normalizedWidth: false
+                                            options: ["follow soft leader", "use steady"]
+
+                                            onSelectedChanged: decksTab.dirty = true
+                                        }
+                                    }
+                                    RowLayout {
+                                        Layout.preferredWidth: speedKeyPane.width * 0.5
+
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            height: 32
+                                            label: "Slider orientation"
+
+                                            Column {
+                                                anchors.fill: parent
+
+                                                Text {
+                                                    color: Theme.white
+                                                    font.pixelSize: 14
+                                                    font.weight: Font.Medium
+                                                    text: "Slider orientation"
+                                                }
+                                                Text {
+                                                    color: Theme.white
+                                                    font.italic: true
+                                                    font.pixelSize: 11
+                                                    font.weight: Font.Thin
+                                                    text: "Define which end of the slider will increase the pitch"
+                                                }
+                                            }
+                                        }
+                                        RatioChoice {
+                                            id: sliderOrientationInput
+
+                                            options: ["down", "up"]
+
+                                            onSelectedChanged: decksTab.dirty = true
+                                        }
+                                    }
+                                    RowLayout {
+                                        Layout.preferredWidth: speedKeyPane.width * 0.5
+
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            label: "Keylock mode"
+
+                                            Text {
+                                                anchors.fill: parent
+                                                color: Theme.white
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                horizontalAlignment: Text.AlignLeft
+                                                text: parent.label
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                        RatioChoice {
+                                            id: keylockModeInput
+
+                                            maxWidth: decksTab.width * 0.34
+                                            normalizedWidth: false
+                                            options: ["original key", "current key"]
+
+                                            onSelectedChanged: decksTab.dirty = true
+                                        }
+                                    }
+                                    RowLayout {
+                                        Layout.preferredWidth: speedKeyPane.width * 0.5
+
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            label: "Keyunlock mode"
+
+                                            Text {
+                                                anchors.fill: parent
+                                                color: Theme.white
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                horizontalAlignment: Text.AlignLeft
+                                                text: parent.label
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                        RatioChoice {
+                                            id: keyunlockModeInput
+
+                                            maxWidth: decksTab.width * 0.3
+                                            options: ["reset key", "keep key"]
+
+                                            onSelectedChanged: decksTab.dirty = true
+                                        }
+                                    }
+                                    RowLayout {
+                                        Layout.preferredWidth: speedKeyPane.width * 0.5
+
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            Layout.preferredHeight: 32
+                                            label: "Key notation"
+
+                                            Column {
+                                                anchors.fill: parent
+
+                                                Text {
+                                                    color: Theme.white
+                                                    font.pixelSize: 14
+                                                    font.weight: Font.Medium
+                                                    text: "Key notation"
+                                                }
+                                                Text {
+                                                    color: Theme.white
+                                                    font.italic: true
+                                                    font.pixelSize: 11
+                                                    font.weight: Font.Thin
+                                                    text: "How keys read on the decks, in the library and on the Edge"
+                                                }
+                                            }
+                                        }
+                                        RatioChoice {
+                                            id: keyNotationInput
+
+                                            // KeyUtils::KeyNotation values, index-aligned with options.
+                                            // Open Key is 1d..12d/1m..12m, Lancelot (Camelot) is
+                                            // 1A..12B, traditional is Am / F#m / Bb.
+                                            readonly property var values: [2, 3, 4, 5, 6]
+
+                                            maxWidth: decksTab.width * 0.34
+                                            normalizedWidth: false
+                                            options: ["open key", "lancelot", "traditional", "open key + trad", "lancelot + trad"]
+                                            tooltips: ["1d..12d major, 1m..12m minor", "1B..12B major, 1A..12A minor (Camelot)", "C, Am, F#m, Bb", "Open Key with the traditional name after it", "Lancelot with the traditional name after it"]
+
+                                            onSelectedChanged: decksTab.dirty = true
+                                        }
+                                    }
+                                    RowLayout {
+                                        Layout.preferredWidth: speedKeyPane.width * 0.5
+
+                                        Mixxx.SettingParameter {
+                                            Layout.fillWidth: true
+                                            label: "Pitch bend behaviour"
+
+                                            Text {
+                                                anchors.fill: parent
+                                                color: Theme.white
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                horizontalAlignment: Text.AlignLeft
+                                                text: parent.label
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                        RatioChoice {
+                                            id: pitchBendBehaviourInput
+
+                                            options: ["abrupt jump", "smooth ramping",]
+
+                                            onSelectedChanged: decksTab.dirty = true
+                                        }
+                                    }
+                                    RowLayout {
+                                        Layout.preferredWidth: speedKeyPane.width * 0.5
+                                        Layout.rowSpan: 3
+
+                                        Mixxx.SettingParameter {
+                                            label: "Pitch bend behaviour"
+                                        }
+                                        GridLayout {
+                                            Layout.fillWidth: true
+                                            Layout.rightMargin: 20
+                                            columns: 3
+
+                                            Text {
+                                                // Layout.fillWidth: true
+                                                Layout.alignment: Qt.AlignHCenter
+                                                color: Theme.white
+                                                font.pixelSize: 14
+                                                font.weight: Font.DemiBold
+                                                text: "Adjustment buttons"
+                                            }
+                                            Text {
+                                                // Layout.fillWidth: true
+                                                Layout.alignment: Qt.AlignHCenter
                                                 color: Theme.white
                                                 font.pixelSize: 14
                                                 font.weight: Font.Medium
-                                                text: "Slider orientation"
+                                                text: "Fine"
                                             }
                                             Text {
-                                                color: Theme.white
-                                                font.italic: true
-                                                font.pixelSize: 11
-                                                font.weight: Font.Thin
-                                                text: "Define which end of the slider will increase the pitch"
-                                            }
-                                        }
-                                    }
-                                    RatioChoice {
-                                        id: sliderOrientationInput
-
-                                        options: ["down", "up"]
-
-                                        onSelectedChanged: decksTab.dirty = true
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.preferredWidth: speedKeyPane.width * 0.5
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        label: "Keylock mode"
-
-                                        Text {
-                                            anchors.fill: parent
-                                            color: Theme.white
-                                            elide: Text.ElideRight
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            horizontalAlignment: Text.AlignLeft
-                                            text: parent.label
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                    RatioChoice {
-                                        id: keylockModeInput
-
-                                        maxWidth: decksTab.width * 0.34
-                                        options: ["original key", "current key"]
-                                        normalizedWidth: false
-
-                                        onSelectedChanged: decksTab.dirty = true
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.preferredWidth: speedKeyPane.width * 0.5
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        label: "Keyunlock mode"
-
-                                        Text {
-                                            anchors.fill: parent
-                                            color: Theme.white
-                                            elide: Text.ElideRight
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            horizontalAlignment: Text.AlignLeft
-                                            text: parent.label
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                    RatioChoice {
-                                        id: keyunlockModeInput
-
-                                        maxWidth: decksTab.width * 0.3
-                                        options: ["reset key", "keep key"]
-
-                                        onSelectedChanged: decksTab.dirty = true
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.preferredWidth: speedKeyPane.width * 0.5
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 32
-                                        label: "Key notation"
-
-                                        Column {
-                                            anchors.fill: parent
-
-                                            Text {
+                                                // Layout.fillWidth: true
+                                                Layout.alignment: Qt.AlignHCenter
                                                 color: Theme.white
                                                 font.pixelSize: 14
                                                 font.weight: Font.Medium
-                                                text: "Key notation"
+                                                text: "Coarse"
                                             }
                                             Text {
+                                                Layout.leftMargin: 20
                                                 color: Theme.white
-                                                font.italic: true
-                                                font.pixelSize: 11
-                                                font.weight: Font.Thin
-                                                text: "How keys read on the decks, in the library and on the Edge"
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                text: "Temporary"
+                                            }
+                                            SettingComponents.SpinBox {
+                                                id: adjustmentButtonsTemporaryFineInput
+
+                                                Layout.alignment: Qt.AlignHCenter
+                                                Layout.fillWidth: true
+                                                Layout.leftMargin: 20
+                                                Layout.rightMargin: 20
+                                                max: 10
+                                                min: 0.01
+                                                precision: 2
+                                                realValue: 2
+                                                suffix: "%"
+
+                                                onValueChanged: decksTab.dirty = true
+                                            }
+                                            SettingComponents.SpinBox {
+                                                id: adjustmentButtonsTemporaryCoarseInput
+
+                                                Layout.alignment: Qt.AlignHCenter
+                                                Layout.fillWidth: true
+                                                Layout.leftMargin: 20
+                                                Layout.rightMargin: 20
+                                                max: 10
+                                                min: 0.01
+                                                precision: 2
+                                                realValue: 4
+                                                suffix: "%"
+
+                                                onValueChanged: decksTab.dirty = true
+                                            }
+                                            Text {
+                                                Layout.leftMargin: 20
+                                                color: Theme.white
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                text: "Permanent"
+                                            }
+                                            SettingComponents.SpinBox {
+                                                id: adjustmentButtonsPermanentFineInput
+
+                                                Layout.alignment: Qt.AlignHCenter
+                                                Layout.fillWidth: true
+                                                Layout.leftMargin: 20
+                                                Layout.rightMargin: 20
+                                                max: 10
+                                                min: 0.01
+                                                precision: 2
+                                                realValue: 0.05
+                                                suffix: "%"
+
+                                                onValueChanged: decksTab.dirty = true
+                                            }
+                                            SettingComponents.SpinBox {
+                                                id: adjustmentButtonsPermanentCoarseInput
+
+                                                Layout.alignment: Qt.AlignHCenter
+                                                Layout.fillWidth: true
+                                                Layout.leftMargin: 20
+                                                Layout.rightMargin: 20
+                                                max: 10
+                                                min: 0.01
+                                                precision: 2
+                                                realValue: 0.5
+                                                suffix: "%"
+
+                                                onValueChanged: decksTab.dirty = true
                                             }
                                         }
                                     }
-                                    RatioChoice {
-                                        id: keyNotationInput
+                                    RowLayout {
+                                        Layout.preferredWidth: speedKeyPane.width * 0.5
 
-                                        // KeyUtils::KeyNotation values, index-aligned with options.
-                                        // Open Key is 1d..12d/1m..12m, Lancelot (Camelot) is
-                                        // 1A..12B, traditional is Am / F#m / Bb.
-                                        readonly property var values: [2, 3, 4, 5, 6]
-
-                                        maxWidth: decksTab.width * 0.34
-                                        normalizedWidth: false
-                                        options: ["open key", "lancelot", "traditional", "open key + trad", "lancelot + trad"]
-                                        tooltips: ["1d..12d major, 1m..12m minor", "1B..12B major, 1A..12A minor (Camelot)", "C, Am, F#m, Bb", "Open Key with the traditional name after it", "Lancelot with the traditional name after it"]
-
-                                        onSelectedChanged: decksTab.dirty = true
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.preferredWidth: speedKeyPane.width * 0.5
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        label: "Pitch bend behaviour"
-
-                                        Text {
-                                            anchors.fill: parent
-                                            color: Theme.white
-                                            elide: Text.ElideRight
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            horizontalAlignment: Text.AlignLeft
-                                            text: parent.label
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                    RatioChoice {
-                                        id: pitchBendBehaviourInput
-
-                                        options: ["abrupt jump", "smooth ramping",]
-
-                                        onSelectedChanged: decksTab.dirty = true
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.preferredWidth: speedKeyPane.width * 0.5
-                                    Layout.rowSpan: 3
-
-                                    Mixxx.SettingParameter {
-                                        label: "Pitch bend behaviour"
-                                    }
-                                    GridLayout {
-                                        Layout.fillWidth: true
-                                        Layout.rightMargin: 20
-                                        columns: 3
-
-                                        Text {
-                                            // Layout.fillWidth: true
-                                            Layout.alignment: Qt.AlignHCenter
-                                            color: Theme.white
-                                            font.pixelSize: 14
-                                            font.weight: Font.DemiBold
-                                            text: "Adjustment buttons"
-                                        }
-                                        Text {
-                                            // Layout.fillWidth: true
-                                            Layout.alignment: Qt.AlignHCenter
-                                            color: Theme.white
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            text: "Fine"
-                                        }
-                                        Text {
-                                            // Layout.fillWidth: true
-                                            Layout.alignment: Qt.AlignHCenter
-                                            color: Theme.white
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            text: "Coarse"
-                                        }
-                                        Text {
-                                            Layout.leftMargin: 20
-                                            color: Theme.white
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            text: "Temporary"
-                                        }
-                                        SettingComponents.SpinBox {
-                                            id: adjustmentButtonsTemporaryFineInput
-
-                                            Layout.alignment: Qt.AlignHCenter
+                                        Mixxx.SettingParameter {
                                             Layout.fillWidth: true
-                                            Layout.leftMargin: 20
-                                            Layout.rightMargin: 20
-                                            max: 10
-                                            min: 0.01
-                                            precision: 2
-                                            realValue: 2
-                                            suffix: "%"
+                                            label: "Ramping sensitivity"
+
+                                            Text {
+                                                anchors.fill: parent
+                                                color: Theme.white
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                horizontalAlignment: Text.AlignLeft
+                                                text: parent.label
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                        SettingComponents.Slider {
+                                            id: rampingSensitivityInput
+
+                                            max: 2500
+                                            min: 100
+                                            value: 250
+                                            wheelStep: 50
+                                            width: 400
 
                                             onValueChanged: decksTab.dirty = true
                                         }
-                                        SettingComponents.SpinBox {
-                                            id: adjustmentButtonsTemporaryCoarseInput
-
-                                            Layout.alignment: Qt.AlignHCenter
-                                            Layout.fillWidth: true
-                                            Layout.leftMargin: 20
-                                            Layout.rightMargin: 20
-                                            max: 10
-                                            min: 0.01
-                                            precision: 2
-                                            realValue: 4
-                                            suffix: "%"
-
-                                            onValueChanged: decksTab.dirty = true
-                                        }
-                                        Text {
-                                            Layout.leftMargin: 20
-                                            color: Theme.white
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            text: "Permanent"
-                                        }
-                                        SettingComponents.SpinBox {
-                                            id: adjustmentButtonsPermanentFineInput
-
-                                            Layout.alignment: Qt.AlignHCenter
-                                            Layout.fillWidth: true
-                                            Layout.leftMargin: 20
-                                            Layout.rightMargin: 20
-                                            max: 10
-                                            min: 0.01
-                                            precision: 2
-                                            realValue: 0.05
-                                            suffix: "%"
-
-                                            onValueChanged: decksTab.dirty = true
-                                        }
-                                        SettingComponents.SpinBox {
-                                            id: adjustmentButtonsPermanentCoarseInput
-
-                                            Layout.alignment: Qt.AlignHCenter
-                                            Layout.fillWidth: true
-                                            Layout.leftMargin: 20
-                                            Layout.rightMargin: 20
-                                            max: 10
-                                            min: 0.01
-                                            precision: 2
-                                            realValue: 0.5
-                                            suffix: "%"
-
-                                            onValueChanged: decksTab.dirty = true
-                                        }
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.preferredWidth: speedKeyPane.width * 0.5
-
-                                    Mixxx.SettingParameter {
-                                        Layout.fillWidth: true
-                                        label: "Ramping sensitivity"
-
-                                        Text {
-                                            anchors.fill: parent
-                                            color: Theme.white
-                                            elide: Text.ElideRight
-                                            font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            horizontalAlignment: Text.AlignLeft
-                                            text: parent.label
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                    SettingComponents.Slider {
-                                        id: rampingSensitivityInput
-
-                                        max: 2500
-                                        min: 100
-                                        value: 250
-                                        wheelStep: 50
-                                        width: 400
-
-                                        onValueChanged: decksTab.dirty = true
                                     }
                                 }
                             }
                         }
                     }
-                }
-                Item {
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
+                    Item {
+                        Layout.fillHeight: true
+                        Layout.fillWidth: true
+                    }
                 }
             }
         }
@@ -1772,12 +1834,12 @@ Category {
                 }
             }
             SettingComponents.FormButton {
+                enabled: root.selectedIndex == 0 && themeColorTab.dirty || root.selectedIndex == 1 && waveformTab.dirty || root.selectedIndex == 2 && decksTab.dirty
+                opacity: enabled ? 1.0 : 0.5
                 // Was `root.hasChanges`, which Category does not define, so this was
                 // always undefined -- the Save button never highlighted, and once it fed
                 // a bool property Qt warned about it. Follow the same condition as enabled.
                 primary: enabled
-                enabled: root.selectedIndex == 0 && themeColorTab.dirty || root.selectedIndex == 1 && waveformTab.dirty || root.selectedIndex == 2 && decksTab.dirty
-                opacity: enabled ? 1.0 : 0.5
                 text: "Save"
 
                 onPressed: {
