@@ -31,12 +31,24 @@ Item {
     property int markerWidth: 1
     property int labelTopMargin: 2
     property int labelHorizontalMargin: 2
+    // The slice of the track being drawn, as fractions of its length. Every
+    // marker is placed through mapX, so setting this moves them all together
+    // with the waveform rather than leaving them on full-track coordinates.
+    property real rangeStart: 0
+    property real rangeEnd: 1
 
     function mapX(position) {
         if (trackSamplesProxy.value <= 0 || position < 0) {
             return -9999;
         }
-        return (root.width * position) / trackSamplesProxy.value;
+        const fraction = position / trackSamplesProxy.value;
+        const span = root.rangeEnd - root.rangeStart;
+        if (span <= 0) {
+            return root.width * fraction;
+        }
+        // Off-range markers land outside the item and are clipped away, which is
+        // what we want: a cue somewhere else in the source track is not in view.
+        return (root.width * (fraction - root.rangeStart)) / span;
     }
 
     function clampedX(position, itemWidth) {

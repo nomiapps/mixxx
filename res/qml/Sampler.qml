@@ -34,6 +34,14 @@ Rectangle {
     // Beats the running one-shot was asked for, 0 when none is counting.
     property real oneShotBeats: 0
     readonly property bool playing: playControl.value > 0
+    // A sample lifted off a deck with the SAMPLE button keeps the WHOLE source
+    // track and plays a loop of it, so drawing the whole waveform puts a few
+    // seconds of audio into a few pixels of a four-minute overview. Show the
+    // loop instead. With no loop set -- a track loaded into the sampler
+    // outright -- this stays 0..1 and the overview is unchanged.
+    readonly property bool sampleRangeValid: trackSamplesControl.value > 0 && loopStartControl.value >= 0 && loopEndControl.value > loopStartControl.value
+    readonly property real sampleRangeStart: root.sampleRangeValid ? loopStartControl.value / trackSamplesControl.value : 0
+    readonly property real sampleRangeEnd: root.sampleRangeValid ? loopEndControl.value / trackSamplesControl.value : 1
     property bool showFxAssignments: true
     property bool showHotcues: true
     property bool showLength: true
@@ -248,6 +256,8 @@ Rectangle {
             anchors.top: label.bottom
             anchors.topMargin: 2
             group: root.group
+            rangeEnd: root.sampleRangeEnd
+            rangeStart: root.sampleRangeStart
         }
         Skin.VuMeter {
             id: vuMeter
@@ -471,6 +481,24 @@ Rectangle {
 
         group: root.group
         key: "visual_bpm"
+    }
+    Mixxx.ControlProxy {
+        id: trackSamplesControl
+
+        group: root.group
+        key: "track_samples"
+    }
+    Mixxx.ControlProxy {
+        id: loopStartControl
+
+        group: root.group
+        key: "loop_start_position"
+    }
+    Mixxx.ControlProxy {
+        id: loopEndControl
+
+        group: root.group
+        key: "loop_end_position"
     }
     Mixxx.ControlProxy {
         id: playControl

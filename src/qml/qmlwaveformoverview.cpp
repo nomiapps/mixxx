@@ -1,5 +1,8 @@
 #include "qml/qmlwaveformoverview.h"
 
+#include <algorithm>
+#include <cmath>
+
 // QmlLibraryProxy::get() returns a Library*, and emitting its signal needs the
 // complete type, not the forward declaration the proxy header carries.
 #include "library/library.h"
@@ -23,7 +26,37 @@ QmlWaveformOverview::QmlWaveformOverview(QQuickItem* parent)
           m_renderer(Renderer::RGB),
           m_colorHigh(0xFF0000),
           m_colorMid(0x00FF00),
-          m_colorLow(0x0000FF) {
+          m_colorLow(0x0000FF),
+          m_rangeStart(0.0),
+          m_rangeEnd(1.0) {
+}
+
+qreal QmlWaveformOverview::getRangeStart() const {
+    return m_rangeStart;
+}
+
+void QmlWaveformOverview::setRangeStart(qreal start) {
+    const qreal clamped = std::clamp(start, 0.0, 1.0);
+    if (m_rangeStart == clamped) {
+        return;
+    }
+    m_rangeStart = clamped;
+    emit rangeStartChanged(clamped);
+    update();
+}
+
+qreal QmlWaveformOverview::getRangeEnd() const {
+    return m_rangeEnd;
+}
+
+void QmlWaveformOverview::setRangeEnd(qreal end) {
+    const qreal clamped = std::clamp(end, 0.0, 1.0);
+    if (m_rangeEnd == clamped) {
+        return;
+    }
+    m_rangeEnd = clamped;
+    emit rangeEndChanged(clamped);
+    update();
 }
 
 QmlTrackProxy* QmlWaveformOverview::getTrack() const {
@@ -104,14 +137,30 @@ void QmlWaveformOverview::paint(QPainter* pPainter) {
     // Test if there is some new to draw (at least of pixel width)
     const int completionIncrement = waveformCompletion - actualCompletion;
 
-    const qreal desiredWidth = static_cast<qreal>(dataSize) / 2;
-    const double visiblePixelIncrement = completionIncrement * desiredWidth / dataSize;
+    const qreal fullWidth = static_cast<qreal>(dataSize) / 2;
+    const double visiblePixelIncrement = completionIncrement * fullWidth / dataSize;
     if (waveformCompletion < (dataSize - 2) &&
             (completionIncrement < 2 || visiblePixelIncrement == 0)) {
         return;
     }
 
-    const int nextCompletion = actualCompletion + completionIncrement;
+    // The columns the range covers. Both are in waveform columns, not pixels:
+    // the data holds two entries per column, so a column index is always even
+    // when doubled back into the array. A degenerate or inverted range falls
+    // back to the whole track rather than drawing nothing.
+    qreal rangeStart = m_rangeStart;
+    qreal rangeEnd = m_rangeEnd;
+    if (!(rangeEnd > rangeStart)) {
+        rangeStart = 0.0;
+        rangeEnd = 1.0;
+    }
+    const int firstColumn = static_cast<int>(std::floor(rangeStart * fullWidth));
+    const int lastColumn = static_cast<int>(std::ceil(rangeEnd * fullWidth));
+    // At least one column, or the scale below divides by zero.
+    const qreal desiredWidth = std::max(1, lastColumn - firstColumn);
+
+    const int nextCompletion = std::min(actualCompletion + completionIncrement, lastColumn * 2);
+    const int startCompletion = std::max(actualCompletion, firstColumn * 2);
 
     const Channels channels = m_channels;
     pPainter->save();
@@ -135,9 +184,12 @@ void QmlWaveformOverview::paint(QPainter* pPainter) {
         // Set the x axis to half the height of the item
         pPainter->scale(width() / desiredWidth, height() / (2 * kDesiredChannelHeight));
     }
+    // Slide the first drawn column to x=0. Applied after the scale above, so it
+    // is expressed in waveform columns like the offsets drawFiltered/drawRgb use.
+    pPainter->translate(-static_cast<qreal>(firstColumn), 0.0);
 
     Renderer renderer = m_renderer;
-    for (int currentCompletion = actualCompletion;
+    for (int currentCompletion = startCompletion;
             currentCompletion < nextCompletion;
             currentCompletion += 2) {
         switch (renderer) {

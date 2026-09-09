@@ -47,6 +47,8 @@ Mixxx.WaveformOverview {
             loopColor: root.loopMarkerColor
             loopStartText: "LOOP"
             outroStartText: "OUT"
+            rangeEnd: root.rangeEnd
+            rangeStart: root.rangeStart
             showHotcueLabels: false
             showIntroOutroLabels: false
             showLoopLabel: false
@@ -58,19 +60,33 @@ Mixxx.WaveformOverview {
             color: root.playPositionMarkerColor
             group: root.group
             key: "playposition"
+            rangeEnd: root.rangeEnd
+            rangeStart: root.rangeStart
         }
     }
     MouseArea {
+        id: seekArea
+
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         hoverEnabled: true
 
+        // Seeking has to invert the view range too, or a click lands wherever
+        // that fraction falls in the WHOLE track instead of where it was aimed.
+        // Reached through the id rather than `this`: these handlers are arrow
+        // functions, which take their `this` from the enclosing scope.
+        function seek(x) {
+            const span = root.rangeEnd - root.rangeStart;
+            const fraction = x / seekArea.width;
+            playPositionControl.value = span > 0 ? root.rangeStart + fraction * span : fraction;
+        }
+
         onPositionChanged: mouse => {
-            if (this.containsPress)
-                playPositionControl.value = mouse.x / this.width;
+            if (seekArea.containsPress)
+                seekArea.seek(mouse.x);
         }
         onPressed: mouse => {
-            playPositionControl.value = mouse.x / this.width;
+            seekArea.seek(mouse.x);
         }
     }
 }

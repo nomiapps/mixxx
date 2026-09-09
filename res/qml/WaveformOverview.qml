@@ -8,6 +8,10 @@ Item {
     id: root
 
     required property string group
+    // The slice of the track to draw, as fractions of its length; the whole
+    // track by default. Passed straight through to the overview and its markers.
+    property real rangeStart: 0
+    property real rangeEnd: 1
 
     states: [
         State {
@@ -125,6 +129,8 @@ Item {
             colorMid: Theme.blue
             colorLow: Theme.green
             group: root.group
+            rangeEnd: root.rangeEnd
+            rangeStart: root.rangeStart
         }
     }
 

@@ -9,6 +9,18 @@ Item {
     property string color: "white"
     required property string group
     required property string key
+    // The slice of the track the overview beside us is drawing, as fractions of
+    // its length. The marker has to map through the same window or it points at
+    // where the position would be on a full-track waveform.
+    property real rangeStart: 0
+    property real rangeEnd: 1
+
+    function mapX(position) {
+        const span = root.rangeEnd - root.rangeStart;
+        if (span <= 0)
+            return root.width * position;
+        return root.width * (position - root.rangeStart) / span;
+    }
 
     Shape {
         id: shape
@@ -53,7 +65,7 @@ Item {
     Connections {
         function onAfterFrameEnd() {
             // Math.round saves tons of CPU by avoiding redrawing for fractional pixel positions.
-            const x = Math.round(root.width * control.value * Screen.devicePixelRatio) / Screen.devicePixelRatio;
+            const x = Math.round(root.mapX(control.value) * Screen.devicePixelRatio) / Screen.devicePixelRatio;
             if (x !== marker.x)
                 marker.x = x;
         }
