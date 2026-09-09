@@ -6,6 +6,10 @@
 
 #include "control/controlobject.h"
 #include "engine/controls/bpmcontrol.h"
+#include <QElapsedTimer>
+#include <QtTest>
+#include <cmath>
+#include "engine/sync/abletonlink.h"
 #include "engine/sync/synccontrol.h"
 #include "mixer/basetrackplayer.h"
 #include "preferences/usersettings.h"
@@ -26,6 +30,10 @@ constexpr double kMaxBeatDistanceEpsilon = 1e-9;
 /// * vinyl??
 class EngineSyncTest : public MockedEngineBackendTest {
   public:
+    AbletonLink* linkForTest() {
+        return m_pEngineSync->m_pAbletonLink;
+    }
+
     QString getLeaderGroup() {
         Syncable* pLeaderSyncable = m_pEngineSync->getLeaderSyncable();
         if (pLeaderSyncable) {
@@ -3185,4 +3193,71 @@ TEST_F(EngineSyncTest, DISABLED_KeepCorrectFactorOnLoad) {
     EXPECT_NEAR(getRateSliderValue(1.0574),
             ControlObject::get(ConfigKey(m_sGroup2, "rate")),
             0.005);
+}
+
+TEST_F(EngineSyncTest, LinkStartsDisabled) {
+    EXPECT_DOUBLE_EQ(ControlObject::getControl(
+            ConfigKey(QStringLiteral("[AbletonLink]"), QStringLiteral("sync_enabled")))->get(), 0.0);
+    EXPECT_FALSE(linkForTest()->isPlaying());
+}
+
+TEST_F(EngineSyncTest, LinkPhaseBeforeEpochIsNormalized) {
+    auto* link = linkForTest();
+    link->onCallbackStart(std::chrono::microseconds(-125000));
+    link->updateLeaderBpm(mixxx::Bpm(120.0));
+    const auto phase = link->getBeatDistance();
+    EXPECT_GE(phase, 0.0);
+    EXPECT_LT(phase, 1.0);
+    link->forceUpdateLeaderBeatDistance(0.25);
+    EXPECT_NEAR(link->getBeatDistance(), 0.25, 0.00001);
+}
+
+TEST_F(EngineSyncTest, LinkRejectsUndefinedTempo) {
+    auto* link = linkForTest();
+    link->updateLeaderBpm(mixxx::Bpm(123.0));
+    link->updateLeaderBpm(mixxx::Bpm());
+    EXPECT_DOUBLE_EQ(link->getBpm().value(), 123.0);
+}
+
+// AI-generated explanation begins.
+// Run explicitly with --gtest_also_run_disabled_tests: this test needs local
+// multicast networking and changes tempo in its Link session.
+// AI-generated explanation ends.
+TEST_F(EngineSyncTest, DISABLED_LinkPeerTempoAndPhase) {
+    ableton::BasicLink<MixxxClockRef> peer(133.0);
+    auto linkEnabled = std::make_unique<ControlProxy>(
+            QStringLiteral("[AbletonLink]"), QStringLiteral("sync_enabled"));
+    peer.enable(true);
+    linkEnabled->set(1.0);
+    auto* link = linkForTest();
+    auto waitUntil = [&](auto condition) {
+        QElapsedTimer timer;
+        timer.start();
+        while (!condition() && timer.elapsed() < 10000) {
+            QCoreApplication::processEvents();
+            link->onCallbackStart(peer.clock().micros());
+            QTest::qWait(10);
+        }
+        return condition();
+    };
+    ASSERT_TRUE(waitUntil([&] { return peer.numPeers() > 0 && link->isPlaying(); }));
+    auto state = peer.captureAppSessionState();
+    state.setTempo(133.0, peer.clock().micros());
+    peer.commitAppSessionState(state);
+    ASSERT_TRUE(waitUntil([&] { return std::abs(link->getBpm().value() - 133.0) < 0.001; }));
+    link->onCallbackStart(peer.clock().micros());
+    EXPECT_NEAR(ControlObject::getControl(ConfigKey(m_sInternalClockGroup, QStringLiteral("bpm")))->get(), 133.0, 0.001);
+
+    link->updateLeaderBpm(mixxx::Bpm(127.0));
+    ASSERT_TRUE(waitUntil([&] {
+        return std::abs(peer.captureAppSessionState().tempo() - 127.0) < 0.001;
+    }));
+    const auto now = peer.clock().micros();
+    link->onCallbackStart(now);
+    const double peerBeat = peer.captureAppSessionState().beatAtTime(now, 1.0);
+    const double phaseDifference = std::abs(link->getBeatDistance() - (peerBeat - std::floor(peerBeat)));
+    EXPECT_LT(std::min(phaseDifference, 1.0 - phaseDifference), 0.01);
+    linkEnabled->set(0.0);
+    EXPECT_FALSE(link->isPlaying());
+    peer.enable(false);
 }
