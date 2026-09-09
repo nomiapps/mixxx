@@ -258,8 +258,13 @@ class EngineBuffer : public EngineObject {
     /// snap that a play request queues (see slotControlPlayRequest). For
     /// callers that are themselves the clock, such as the step sequencer:
     /// with quantize on, a phase seek would move the start off frame 0 for
-    /// any track with a beatgrid while another deck plays. Engine thread only.
-    void playFromStartUnquantized();
+    /// any track with a beatgrid while another deck plays.
+    ///
+    /// startOffsetFrames places the start INSIDE the next buffer: process()
+    /// renders that many frames of silence first and playback begins on the
+    /// frame after, so a drum hit lands where its step is rather than at the
+    /// top of the buffer the step falls in. Engine thread only.
+    void playFromStartUnquantized(std::size_t startOffsetFrames = 0);
 
   public slots:
     void slotControlPlayRequest(double);
@@ -520,6 +525,10 @@ class EngineBuffer : public EngineObject {
     CSAMPLE* m_pCrossfadeBuffer;
     bool m_bCrossfadeReady;
     std::size_t m_lastBufferSize;
+    // Frames of silence to render at the head of the next process() call
+    // before playback begins there (playFromStartUnquantized). Written and
+    // consumed on the engine thread only.
+    std::size_t m_startOffsetFrames = 0;
 
     QSharedPointer<VisualPlayPosition> m_visualPlayPos;
 

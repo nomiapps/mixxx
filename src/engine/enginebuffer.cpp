@@ -845,13 +845,14 @@ void EngineBuffer::slotControlPlayFromStart(double v)
     }
 }
 
-void EngineBuffer::playFromStartUnquantized() {
+void EngineBuffer::playFromStartUnquantized(std::size_t startOffsetFrames) {
     doSeekFractional(0., SEEK_EXACT);
     // The play request may queue a phase seek when quantize is on ...
     m_playButton->set(1);
     // ... which is dropped here. Same thread, same callback: processSeek
     // has not run yet, so there is nothing to race.
     m_iSeekPhaseQueued = 0;
+    m_startOffsetFrames = startOffsetFrames;
 }
 
 void EngineBuffer::slotControlJumpToStartAndStop(double v)
@@ -1249,8 +1250,24 @@ void EngineBuffer::process(CSAMPLE* pOutput, const std::size_t bufferSize) {
     m_pScaleRB->setSignal(m_sampleRate, m_channelCount);
 #endif
 
+    // A start scheduled inside this buffer (playFromStartUnquantized with an
+    // offset): render the head silent and play from the frame after. One
+    // process() call, not two -- the reader, the seek, the rate ramp, the
+    // scratch controller and every EngineControl run once per callback and
+    // must not be run twice. The playhead then advances only by the frames
+    // actually rendered, which is exactly a start on that frame.
+    const std::size_t frames = bufferSize / m_channelCount;
+    const std::size_t headSamples = (m_startOffsetFrames > 0 && frames > 1)
+            ? std::min(m_startOffsetFrames, frames - 1) * m_channelCount
+            : 0;
+    m_startOffsetFrames = 0;
+
     if (isTrackLoaded() && m_pause.tryLock()) {
-        processTrackLocked(pOutput, bufferSize, m_sampleRate);
+        if (headSamples > 0) {
+            // What the pause branch would have written there anyway.
+            SampleUtil::clear(pOutput, headSamples);
+        }
+        processTrackLocked(pOutput + headSamples, bufferSize - headSamples, m_sampleRate);
         // release the pauselock
         m_pause.unlock();
     } else {

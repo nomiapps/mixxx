@@ -155,6 +155,13 @@ EngineSequencer::~EngineSequencer() {
     delete m_pRun;
 }
 
+int EngineSequencer::lastSamplerFireOffset(int lane) const {
+    if (lane < 0 || lane >= kSamplerLanes) {
+        return -1;
+    }
+    return m_lanes[lane].lastOffset;
+}
+
 int EngineSequencer::samplerFireCount(int lane) const {
     if (lane < 0 || lane >= kSamplerLanes) {
         return 0;
@@ -329,8 +336,8 @@ void EngineSequencer::dispatchPending(uint64_t bufferStart, uint64_t bufferEnd) 
             m_gated.reset(event.note);
             break;
         case EventKind::Sampler:
-            // Buffer-accurate: the deck starts at the top of this buffer.
-            fireSampler(event.lane);
+            // The deck renders a silent head and starts on this frame.
+            fireSampler(event.lane, offset);
             break;
         }
         // Unordered removal; the synth sorts its events by frame itself.
@@ -370,13 +377,14 @@ void EngineSequencer::cancelPendingNoteOff(int note) {
     }
 }
 
-void EngineSequencer::fireSampler(int lane) {
+void EngineSequencer::fireSampler(int lane, std::size_t offsetFrames) {
     ++m_lanes[lane].fireCount;
+    m_lanes[lane].lastOffset = static_cast<int>(offsetFrames);
     EngineBuffer* pBuffer = resolveSampler(lane);
     if (pBuffer) {
         // Not slotControlPlayFromStart: with quantize on, its play request
         // queues a phase seek that would move the start off frame 0.
-        pBuffer->playFromStartUnquantized();
+        pBuffer->playFromStartUnquantized(offsetFrames);
     }
 }
 

@@ -29,7 +29,8 @@ class EngineSynth;
 /// ticks it once per callback BEFORE any channel is processed, so the notes
 /// it schedules are seen by the synth's active-state check and a sampler it
 /// starts plays in the same buffer. Synth notes land on their exact frame
-/// (EngineSynth::scheduleNoteOn); sampler starts land on the buffer.
+/// (EngineSynth::scheduleNoteOn), and so do sampler starts
+/// (EngineBuffer::playFromStartUnquantized with the same frame offset).
 ///
 /// Controls, group "[Sequencer1]":
 ///   run, restart, swing (0..1), length (1..16), current_step (read-only)
@@ -73,6 +74,8 @@ class EngineSequencer : public QObject {
     /// Sampler events dispatched for a lane, whether or not a deck was there
     /// to receive them.
     int samplerFireCount(int lane) const;
+    /// The in-buffer frame offset of the last sampler event on a lane, or -1.
+    int lastSamplerFireOffset(int lane) const;
 
   private slots:
     void slotRestart(double v);
@@ -104,6 +107,7 @@ class EngineSequencer : public QObject {
         int cachedTarget = -1;
         int cachedNumSamplers = -1;
         int fireCount = 0;
+        int lastOffset = -1;
     };
 
     // A boundary yields at most 2 + kSamplerLanes events and a buffer holds a
@@ -116,7 +120,7 @@ class EngineSequencer : public QObject {
     void stop();
     bool push(const Event& event);
     void cancelPendingNoteOff(int note);
-    void fireSampler(int lane);
+    void fireSampler(int lane, std::size_t offsetFrames);
     EngineBuffer* resolveSampler(int lane);
 
     const QString m_group;

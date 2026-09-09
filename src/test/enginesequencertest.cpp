@@ -256,6 +256,16 @@ TEST_F(EngineSequencerTest, SamplerLanesDispatchWithoutAMixer) {
     EXPECT_EQ(0, m_pSeq->samplerFireCount(2));
 }
 
+TEST_F(EngineSequencerTest, SamplerEventCarriesItsOffset) {
+    setSeq("sampler_1_step_1_enabled", 1);
+    setSeq("run", 1);
+    // 130 frames before a beat: the clock primes at ceil(3.975) = 4, a beat
+    // boundary, so step 0 fires 130 frames into this buffer.
+    callback(1.0 - 130.0 / kBeatFrames);
+    EXPECT_EQ(1, m_pSeq->samplerFireCount(0));
+    EXPECT_NEAR(130, m_pSeq->lastSamplerFireOffset(0), 1);
+}
+
 // The sampler lanes against a real sampler deck in the mixer.
 class EngineSequencerSamplerTest : public EngineSequencerTest {
   protected:
@@ -357,6 +367,39 @@ TEST_F(EngineSequencerSamplerTest, SamplerStartsAtFrameZeroWithQuantizeOn) {
     EXPECT_EQ(1.0, ControlObject::get(ConfigKey(kSamplerGroup, "play")));
     // Started at frame 0 and advanced by at most the one buffer just mixed.
     EXPECT_LT(samplerPlayFrames(), kProcessBufferSize);
+}
+
+TEST_F(EngineSequencerSamplerTest, SamplerStartsOnItsExactFrame) {
+    setSeq("sampler_1_step_1_enabled", 1);
+    setSeq("run", 1);
+    mixerCallback(1.0 - 130.0 / kBeatFrames);
+    const int off = m_pSeq->lastSamplerFireOffset(0);
+    ASSERT_GT(off, 0);
+    // Only the frames after the silent head were rendered, so the playhead
+    // sits that far short of a full buffer.
+    EXPECT_NEAR(kProcessBufferSize / 2 - off, samplerPlayFrames(), 1.0);
+    const auto buffer = m_pEngineMixer->getChannelBuffer(kSamplerGroup);
+    // The channel buffer is preallocated at its maximum; only the first
+    // kProcessBufferSize samples were written this callback.
+    ASSERT_GE(buffer.size(), static_cast<std::size_t>(kProcessBufferSize));
+    for (int i = 0; i < 2 * off; ++i) {
+        ASSERT_FLOAT_EQ(0.0f, buffer[i]) << "sample " << i;
+    }
+    // The reader fills its cache asynchronously, so the first buffer after
+    // the seek may legitimately be silent past the head as well; that the
+    // sampler is really playing is checked over the buffers that follow.
+    bool sounded = false;
+    for (int b = 0; b < 20 && !sounded; ++b) {
+        ProcessBuffer();
+        const auto later = m_pEngineMixer->getChannelBuffer(kSamplerGroup);
+        for (int i = 0; i < kProcessBufferSize; ++i) {
+            if (later[i] != 0.0f) {
+                sounded = true;
+                break;
+            }
+        }
+    }
+    EXPECT_TRUE(sounded);
 }
 
 } // namespace
