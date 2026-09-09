@@ -13,20 +13,85 @@ Rectangle {
     // notifies before PlayerManager has finished adding them, so a strip can be
     // created a moment early. Tolerate the gap instead of throwing on every
     // evaluation until the player lands.
+    // The length currently in force, or 0. A beatloop reports itself, so in
+    // Loop mode it is read back from the engine rather than remembered here;
+    // a one-shot is only known to the timer counting it out.
+    readonly property real activeLength: root.looping ? (loopEnabledControl.value > 0 ? beatloopSizeControl.value : 0) : root.oneShotBeats
+    // The sampler's BPM as it is playing, rate included. `bpm` is 0 until a
+    // beatgrid exists, which is exactly when the length buttons cannot work.
+    readonly property real beats: bpmControl.value > 0 ? bpmControl.value : root.visualBpm
     property var currentTrack: root.deckPlayer?.currentTrack ?? null
     property var deckPlayer: Mixxx.PlayerManager.getPlayer(group)
     property int fxUnitCount: 4
     required property string group
     property int hotcueCount: 8
+    readonly property var lengthChoices: [0.5, 1, 2, 4, 8, 16]
     readonly property bool loaded: trackLoadedControl.value > 0
+    // The strip's Loop button (`repeat`), which is what decides whether a
+    // length loops or cuts.
+    readonly property bool looping: repeatControl.value > 0
     property bool minimized: false
+    // Beats the running one-shot was asked for, 0 when none is counting.
+    property real oneShotBeats: 0
     readonly property bool playing: playControl.value > 0
     property bool showFxAssignments: true
     property bool showHotcues: true
+    property bool showLength: true
     property bool showRateControl: true
     readonly property real visualBpm: visualBpmControl.value
 
     signal fxAssignmentChanged(int unitNumber, bool enabled)
+
+    // Something else stopped the sample -- Stop, Eject, the end of the file --
+    // so the count that was running no longer means anything.
+    onPlayingChanged: {
+        if (!root.playing) {
+            oneShotTimer.stop();
+            root.oneShotBeats = 0;
+        }
+    }
+
+    // Ends whichever kind of length is running and parks the sample on its cue,
+    // the same place the Stop button leaves it.
+    function stopLength() {
+        oneShotTimer.stop();
+        root.oneShotBeats = 0;
+        if (loopEnabledControl.value > 0) {
+            loopExitControl.value = 1;
+            loopExitControl.value = 0;
+        }
+        cueGotoAndStopControl.value = 1;
+        cueGotoAndStopControl.value = 0;
+    }
+    // Pressing the length that is already running cancels it, the way the play
+    // button doubles as stop: a second press of 4 stops a 4-beat loop or cuts
+    // a 4-beat one-shot short.
+    function toggleLength(length) {
+        if (root.activeLength === length) {
+            root.stopLength();
+            return;
+        }
+        oneShotTimer.stop();
+        root.oneShotBeats = 0;
+        // Whatever was looping belongs to the old length.
+        if (loopEnabledControl.value > 0) {
+            loopExitControl.value = 1;
+            loopExitControl.value = 0;
+        }
+        cueGotoAndPlayControl.value = 1;
+        cueGotoAndPlayControl.value = 0;
+        if (root.looping) {
+            beatloopSizeControl.value = length;
+            // Set on the beat the sample has just started from, so the loop
+            // covers its opening rather than wherever it had got to.
+            beatloopActivateControl.value = 1;
+            beatloopActivateControl.value = 0;
+        } else {
+            root.oneShotBeats = length;
+            oneShotTimer.interval = Math.max(20, length * 60000 / root.beats);
+            oneShotTimer.restart();
+        }
+    }
 
     Drag.active: dragArea.drag.active
     Drag.dragType: Drag.Automatic
@@ -46,7 +111,9 @@ Rectangle {
             return Theme.backgroundColor;
         return Qt.darker(trackColor, 2);
     }
-    implicitHeight: root.minimized ? 50 : 170
+    // The length row is 20 high plus the column's 3 spacing; without the extra
+    // the hotcue grid pays for it out of its own pads.
+    implicitHeight: root.minimized ? 50 : (root.showLength ? 193 : 170)
     implicitWidth: 230
 
     Skin.SectionBackground {
@@ -258,6 +325,50 @@ Rectangle {
                 text: "Eject"
             }
         }
+        // How much of the sample a hit plays. The Loop button beside it decides
+        // what that means: with Loop on the length is a beatloop and the sample
+        // cycles it until you stop it; with Loop off it is a one-shot cut that
+        // plays that many beats and stops itself. Both restart from the cue, so
+        // a length button is also a trigger.
+        //
+        // The one-shot is timed in QML from the sampler's own BPM rather than
+        // by the engine -- Mixxx has no "play N beats and stop" control -- so
+        // it lands within a buffer or two of the beat, which is right for a
+        // stab and is not sample-accurate. The loop is the engine's own
+        // beatloop and is exact.
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 2
+            visible: root.showLength
+
+            Skin.Button {
+                Layout.preferredWidth: 26
+                enabled: false
+                implicitHeight: 20
+                opacity: 0.7
+                text: "LEN"
+            }
+            Repeater {
+                model: root.lengthChoices
+
+                Skin.Button {
+                    required property real modelData
+
+                    Layout.fillWidth: true
+                    activeColor: Theme.samplerColor
+                    // Without a beatgrid neither half of this works: a beatloop
+                    // has no beats to measure and the one-shot has no BPM to
+                    // count with.
+                    enabled: root.loaded && root.beats > 0
+                    highlight: root.activeLength === modelData
+                    implicitHeight: 20
+                    opacity: enabled ? 1 : 0.5
+                    text: modelData < 1 ? "1/" + (1 / modelData) : modelData
+
+                    onClicked: root.toggleLength(modelData)
+                }
+            }
+        }
         RowLayout {
             Layout.fillHeight: true
             Layout.fillWidth: true
@@ -392,6 +503,56 @@ Rectangle {
 
         group: root.group
         key: "cue_gotoandstop"
+    }
+    Mixxx.ControlProxy {
+        id: repeatControl
+
+        group: root.group
+        key: "repeat"
+    }
+    Mixxx.ControlProxy {
+        id: bpmControl
+
+        group: root.group
+        key: "bpm"
+    }
+    Mixxx.ControlProxy {
+        id: beatloopSizeControl
+
+        group: root.group
+        key: "beatloop_size"
+    }
+    Mixxx.ControlProxy {
+        id: beatloopActivateControl
+
+        group: root.group
+        key: "beatloop_activate"
+    }
+    Mixxx.ControlProxy {
+        id: loopEnabledControl
+
+        group: root.group
+        key: "loop_enabled"
+    }
+    Mixxx.ControlProxy {
+        id: loopExitControl
+
+        group: root.group
+        key: "loop_exit"
+    }
+    // A one-shot is only counted while the sample is actually running: stopping
+    // it by any other means -- the Stop button, an eject, the sequencer firing
+    // it again -- must not leave a timer behind to stop something else later.
+    Timer {
+        id: oneShotTimer
+
+        onTriggered: {
+            root.oneShotBeats = 0;
+            if (root.playing) {
+                cueGotoAndStopControl.value = 1;
+                cueGotoAndStopControl.value = 0;
+            }
+        }
     }
     Mixxx.ControlProxy {
         id: ejectControl

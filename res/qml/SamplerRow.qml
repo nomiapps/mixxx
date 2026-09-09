@@ -15,6 +15,7 @@ GridLayout {
     property int samplerCount: 8
     property bool showFxAssignments: true
     property bool showHotcues: true
+    property bool showLength: true
     property bool showRateControl: true
 
     columnSpacing: 0
@@ -40,6 +41,7 @@ GridLayout {
             minimized: root.minimized
             showFxAssignments: root.showFxAssignments
             showHotcues: root.showHotcues
+            showLength: root.showLength
             showRateControl: root.showRateControl
         }
     }

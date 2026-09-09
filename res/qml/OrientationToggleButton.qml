@@ -105,6 +105,30 @@ Item {
             if (value != control.value)
                 control.value = value;
         }
+
+    }
+    // Clicking a seat selects it. Edge.Controls.Slider moves on a DRAG, a wheel
+    // or an arrow key and has no notion of a click, and this control turns the
+    // wheel off -- so pressing one of the three seats, which is the obvious
+    // thing to do with a three-position control, did nothing at all and it read
+    // as a dead widget. A drag still works and still snaps on release; this only
+    // adds the press.
+    //
+    // On `root` rather than on the slider: the slider is inset 8 px each side
+    // inside the frame, and on a strip this narrow that is a third of the
+    // control's width left dead. The whole framed control now picks the nearest
+    // seat.
+    TapHandler {
+        gesturePolicy: TapHandler.ReleaseWithinBounds
+
+        onSingleTapped: eventPoint => {
+            const span = Math.max(1, orientationSlider.width - 4);
+            const seat = Math.round((eventPoint.position.x - orientationSlider.x - 2) / span * 2);
+            const value = Math.max(0, Math.min(2, seat));
+            if (value !== control.value) {
+                control.value = value;
+            }
+        }
     }
     Mixxx.ControlProxy {
         id: control
