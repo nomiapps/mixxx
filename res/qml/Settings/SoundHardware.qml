@@ -21,6 +21,12 @@ Category {
     property string audioTestTarget: ""
     property real audioTestTonePeak: -1
     property bool committing: false
+    // Set once Save has been refused for having no output, so a second press
+    // goes through: emptying the routing on purpose is rare but legitimate.
+    property bool emptyOutputConfirmed: false
+    // The engine's real rate against the one configured. Both are only
+    // meaningful once a device is open, hence the > 0 test.
+    readonly property bool engineSampleRateDiffers: appSampleRate.value > 0 && sampleRate.selected && Math.round(appSampleRate.value) !== parseInt(sampleRate.selected)
     property bool hasChanges: router.hasChanges
 
     function load() {
@@ -56,9 +62,41 @@ Category {
         root.hasChanges = Qt.binding(function () {
             return router.hasChanges;
         });
+        // Re-arm the no-output warning: load() runs after a commit and after
+        // Cancel, so each fresh round of edits gets warned about once.
+        root.emptyOutputConfirmed = false;
+    }
+    // Output connections currently drawn in the router, counted the same way
+    // save() serialises them.
+    function connectedOutputCount() {
+        let count = 0;
+        for (let device of Object.keys(router.outputs)) {
+            for (let address of Object.keys(router.outputs[device].gateways)) {
+                const gateway = router.outputs[device].gateways[address];
+                const connections = gateway.node && gateway.node.assignedEdges ? gateway.node.assignedEdges() : {};
+                count += Object.keys(connections).length;
+            }
+        }
+        return count;
     }
     function save() {
         const manager = Mixxx.SoundManager;
+        // Saving a routing with nothing connected leaves Mixxx silent, and the
+        // page used to accept it without a word. It is easy to arrive at by
+        // accident: changing the Sound API rebuilds the device list, which
+        // drops the connections that belonged to the old API, so an API change
+        // followed by Save is enough. Legacy warns about this (noOutputDlg,
+        // "Mixxx will barely work with no outs"); the New UI said nothing and
+        // wrote a config with no device in it -- which, until the startup
+        // dialog landed, also meant the next launch died. Refuse once, with a
+        // reason, and let a second press through: an empty routing is rare but
+        // it is allowed.
+        if (root.connectedOutputCount() === 0 && !root.emptyOutputConfirmed) {
+            root.emptyOutputConfirmed = true;
+            errorMessage.text = "No output connected -- Mixxx would be silent. Connect the mixer's Main to a device, or press Save again to save it anyway.";
+            return;
+        }
+        root.emptyOutputConfirmed = false;
         mainEnabled.value = mainMixEnabled.options.indexOf(mainMixEnabled.selected);
         monoMix.value = !mainOutputMode.options.indexOf(mainOutputMode.selected);
         manager.setForceNetworkClock(soundClock.options[1] == soundClock.selected);
@@ -288,6 +326,12 @@ Category {
 
         group: "[Master]"
         key: "talkover_mix"
+    }
+    Mixxx.ControlProxy {
+        id: appSampleRate
+
+        group: "[App]"
+        key: "samplerate"
     }
     Mixxx.ControlProxy {
         id: synthNoteOn
@@ -551,9 +595,19 @@ Category {
                             RowLayout {
                                 Text {
                                     Layout.fillWidth: true
-                                    color: Theme.white
+                                    color: root.engineSampleRateDiffers ? Theme.amber : Theme.white
                                     font.pixelSize: 14
-                                    text: "Sample Rate"
+                                    // What is chosen and what the engine ended
+                                    // up running at are two different numbers,
+                                    // and only the first was ever shown. A
+                                    // device can refuse the rate and impose its
+                                    // own -- ASIO4ALL answered 44100 to a
+                                    // config asking for 48000 -- and nothing
+                                    // said so, which is how you end up chasing a
+                                    // 44.1/48 mismatch you cannot see. [App]
+                                    // samplerate is what the engine actually
+                                    // runs at, so say it when it disagrees.
+                                    text: root.engineSampleRateDiffers ? "Sample Rate  (running at " + Math.round(appSampleRate.value) + " Hz)" : "Sample Rate"
 
                                     Mixxx.SettingParameter {
                                         label: "Sample Rate"
