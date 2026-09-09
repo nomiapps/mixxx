@@ -8,6 +8,10 @@ import "../Theme"
 Category {
     id: root
 
+    // The synth routing to put back when the test tone ends, and which output
+    // is being tested ("" when nothing is sounding).
+    property var audioTestSaved: null
+    property string audioTestTarget: ""
     property bool committing: false
     property bool hasChanges: router.hasChanges
 
@@ -146,11 +150,65 @@ Category {
         manager.commit();
     }
 
+    // Plays a tone so you can hear whether an output is actually working, and
+    // which one you are hearing. Mixxx has no test-tone generator, but the
+    // fork's synth channel is one: [Synth1] exists from startup (coreservices,
+    // kSynthCount) and `note_on` takes a MIDI note number. Which output hears
+    // it is that channel's own routing -- `main_mix` reaches the main output,
+    // and the booth output carries the same mix through its own gain, so a
+    // booth test is the main tone with a reminder of that; `pfl` reaches the
+    // headphones and is PRE-fader, so the headphone test can silence the main
+    // mix and still sound. The routing found is put back when the tone ends,
+    // including if the page is left mid-tone.
+    function startAudioTest(target) {
+        if (root.audioTestTarget !== "") {
+            root.stopAudioTest();
+        }
+        root.audioTestSaved = {
+            "mainMix": synthMainMix.value,
+            "pfl": synthPfl.value,
+            "volume": synthVolume.value,
+            "mute": synthMute.value
+        };
+        root.audioTestTarget = target;
+        synthMute.value = 0;
+        synthVolume.value = 1;
+        synthMainMix.value = target === "headphones" ? 0 : 1;
+        synthPfl.value = target === "headphones" ? 1 : 0;
+        // A4. An integer note is full velocity (the fractional part is where
+        // velocity would go), and 440 Hz is high enough to be unmistakable on a
+        // laptop speaker and low enough not to be shrill on monitors.
+        synthNoteOn.value = 69;
+        audioTestTimer.restart();
+    }
+    function stopAudioTest() {
+        audioTestTimer.stop();
+        synthNoteOff.value = 69;
+        // The note above may still be in its release; this cuts it either way.
+        synthAllNotesOff.value = 1;
+        synthAllNotesOff.value = 0;
+        if (root.audioTestSaved) {
+            synthMainMix.value = root.audioTestSaved.mainMix;
+            synthPfl.value = root.audioTestSaved.pfl;
+            synthVolume.value = root.audioTestSaved.volume;
+            synthMute.value = root.audioTestSaved.mute;
+            root.audioTestSaved = null;
+        }
+        root.audioTestTarget = "";
+    }
+
     label: "Sound hardware"
-    tabs: ["engine", "delays", "stats"]
+    tabs: ["engine", "delays", "stats", "audio test"]
 
     Component.onCompleted: {
         load();
+    }
+    // Applying a new configuration closes and reopens the devices under the
+    // tone, and leaving the page would strand the synth muted or cued.
+    onDeactivated: {
+        if (root.audioTestTarget !== "") {
+            root.stopAudioTest();
+        }
     }
 
     Mixxx.ControlProxy {
@@ -201,6 +259,57 @@ Category {
         group: "[Master]"
         key: "talkover_mix"
     }
+    Mixxx.ControlProxy {
+        id: synthNoteOn
+
+        group: "[Synth1]"
+        key: "note_on"
+    }
+    Mixxx.ControlProxy {
+        id: synthNoteOff
+
+        group: "[Synth1]"
+        key: "note_off"
+    }
+    Mixxx.ControlProxy {
+        id: synthAllNotesOff
+
+        group: "[Synth1]"
+        key: "all_notes_off"
+    }
+    Mixxx.ControlProxy {
+        id: synthMainMix
+
+        group: "[Synth1]"
+        key: "main_mix"
+    }
+    Mixxx.ControlProxy {
+        id: synthPfl
+
+        group: "[Synth1]"
+        key: "pfl"
+    }
+    Mixxx.ControlProxy {
+        id: synthVolume
+
+        group: "[Synth1]"
+        key: "volume"
+    }
+    Mixxx.ControlProxy {
+        id: synthMute
+
+        group: "[Synth1]"
+        key: "mute"
+    }
+    Timer {
+        id: audioTestTimer
+
+        interval: 1500
+
+        onTriggered: {
+            root.stopAudioTest();
+        }
+    }
     ScrollView {
         id: scrollView
 
@@ -211,7 +320,9 @@ Category {
                 id: tabSection
 
                 Layout.fillWidth: true
-                Layout.preferredHeight: root.selectedIndex == 0 ? engine.height : delays.height
+                // Stats has no measurable content of its own, so it borrows the
+                // delays height the way it always has.
+                Layout.preferredHeight: root.selectedIndex == 0 ? engine.height : (root.selectedIndex == 3 ? audioTest.height : delays.height)
 
                 Mixxx.SettingGroup {
                     anchors.left: parent.left
@@ -598,6 +709,106 @@ Category {
                             color: 'white'
                             height: 20
                             width: 20
+                        }
+                    }
+                }
+                Mixxx.SettingGroup {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    label: "Audio test"
+                    visible: root.selectedIndex == 3
+
+                    onActivated: {
+                        root.selectedIndex = 3;
+                    }
+
+                    ColumnLayout {
+                        id: audioTest
+
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        spacing: 10
+
+                        Text {
+                            Layout.fillWidth: true
+                            color: Theme.white
+                            font.pixelSize: 14
+                            text: "Play a 440 Hz tone through an output. A button is off when that output is not configured."
+                            wrapMode: Text.WordWrap
+
+                            Mixxx.SettingParameter {
+                                keywords: ["test", "tone", "sound", "check"]
+                                label: "Audio test"
+                            }
+                        }
+                        RowLayout {
+                            spacing: 8
+
+                            Skin.FormButton {
+                                enabled: mainEnabled.value && !root.committing
+                                opacity: enabled ? 1.0 : 0.5
+                                primary: root.audioTestTarget === "main"
+                                text: "Main"
+
+                                onPressed: {
+                                    root.startAudioTest("main");
+                                }
+                            }
+                            Skin.FormButton {
+                                enabled: boothEnabled.value && !root.committing
+                                opacity: enabled ? 1.0 : 0.5
+                                primary: root.audioTestTarget === "booth"
+                                text: "Booth"
+
+                                onPressed: {
+                                    root.startAudioTest("booth");
+                                }
+                            }
+                            Skin.FormButton {
+                                enabled: headEnabled.value && !root.committing
+                                opacity: enabled ? 1.0 : 0.5
+                                primary: root.audioTestTarget === "headphones"
+                                text: "Headphones"
+
+                                onPressed: {
+                                    root.startAudioTest("headphones");
+                                }
+                            }
+                            Skin.FormButton {
+                                backgroundColor: Theme.warningColor
+                                enabled: root.audioTestTarget !== ""
+                                opacity: enabled ? 1.0 : 0.5
+                                text: "Stop"
+
+                                onPressed: {
+                                    root.stopAudioTest();
+                                }
+                            }
+                            Item {
+                                Layout.fillWidth: true
+                            }
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            color: root.audioTestTarget === "" ? Theme.deckTextColor : Theme.blue
+                            font.pixelSize: 14
+                            text: {
+                                switch (root.audioTestTarget) {
+                                case "main":
+                                    return "Sounding on the main output. Silence here with a device selected means the wrong device, a muted output or a dead cable -- the routing below says which device the main mix goes to.";
+                                case "booth":
+                                    // Worth saying rather than pretending the
+                                    // booth is a separate signal: it is the main
+                                    // mix again, so this tells apart a booth
+                                    // wiring or gain problem from a main one.
+                                    return "Sounding on the booth output, which carries the main mix through the booth gain. If Main was audible and this is not, the problem is the booth output, not the mix.";
+                                case "headphones":
+                                    return "Sounding on the headphone output only -- the tone is cued, not in the main mix, so main staying silent here is correct.";
+                                default:
+                                    return "Nothing sounding.";
+                                }
+                            }
+                            wrapMode: Text.WordWrap
                         }
                     }
                 }

@@ -4,6 +4,10 @@
 #include <QGuiApplication>
 #include <QLocale>
 #include <QMessageBox>
+// QMessageBox only forward-declares QPushButton, which is enough to hold what
+// addButton() returns but not to compare it with clickedButton()'s
+// QAbstractButton*: the derivation is invisible and the conversion is an error.
+#include <QPushButton>
 #include <QQmlEngineExtensionPlugin>
 #include <QQuickStyle>
 #include <QQuickWindow>
@@ -163,14 +167,60 @@ QmlApplication::QmlApplication(
         exit(-1);
     }
 
-    SoundDeviceStatus result = m_pCoreServices->getSoundManager()->setupDevices();
-    if (result != SoundDeviceStatus::Ok) {
-        const int reInt = static_cast<int>(result);
-        qCritical() << "Error setting up sound devices:" << reInt;
+    // Sound hardware setup. A configured device that no longer opens -- renamed
+    // or re-enumerated by Windows, taken by another application, or asked for a
+    // sample rate it will not give -- used to end the process here, with nothing
+    // on screen and only "Error setting up sound devices: -1" in the log. The
+    // legacy window has offered Retry / Reconfigure / Exit for this since
+    // forever (MixxxMainWindow::soundDeviceErrorMsgDlg); the New UI just died,
+    // which reads as "Mixxx does not start any more".
+    //
+    // Same choices here, minus Reconfigure: the preferences dialog does not
+    // exist yet at this point in startup, and the New UI has its own Settings >
+    // Sound Hardware page whose Apply re-runs exactly this setup. So the third
+    // option starts Mixxx with no audio, which is what makes that page
+    // reachable at all.
+    bool retryClicked = false;
+    do {
+        retryClicked = false;
+        SoundDeviceStatus result = m_pCoreServices->getSoundManager()->setupDevices();
+        if (result == SoundDeviceStatus::Ok) {
+            break;
+        }
+        qCritical() << "Error setting up sound devices:" << static_cast<int>(result);
 #ifndef Q_OS_ANDROID
-        exit(reInt);
+        const QString error = m_pCoreServices->getSoundManager()
+                                      ->getLastErrorMessage(result)
+                                      .replace(QChar('\n'), QStringLiteral("<br/>"));
+        QMessageBox msgBox;
+        msgBox.setIcon(QMessageBox::Warning);
+        msgBox.setWindowTitle(tr("Sound Device Error"));
+        msgBox.setText(QStringLiteral("<html><p>") +
+                tr("Mixxx was unable to open all the configured sound devices.") +
+                QStringLiteral("</p><p>") + error + QStringLiteral("</p><ul><li>") +
+                tr("<b>Retry</b> after fixing an issue, for example closing "
+                   "the application holding the device.") +
+                QStringLiteral("</li><li>") +
+                tr("<b>Start without sound</b> and fix the devices in "
+                   "Settings &gt; Sound Hardware, which applies them "
+                   "without a restart.") +
+                QStringLiteral("</li><li>") + tr("<b>Exit</b> Mixxx.") +
+                QStringLiteral("</li></ul></html>"));
+        QPushButton* pRetryButton = msgBox.addButton(tr("Retry"), QMessageBox::ActionRole);
+        QPushButton* pContinueButton =
+                msgBox.addButton(tr("Start without sound"), QMessageBox::ActionRole);
+        msgBox.addButton(tr("Exit"), QMessageBox::ActionRole);
+        msgBox.exec();
+        if (msgBox.clickedButton() == pRetryButton) {
+            // The device list is stale by definition here: whatever the user
+            // just went and fixed happened after Mixxx enumerated.
+            m_pCoreServices->getSoundManager()->clearAndQueryDevices();
+            retryClicked = true;
+        } else if (msgBox.clickedButton() != pContinueButton) {
+            exit(static_cast<int>(result));
+        }
 #endif
-    }
+    } while (retryClicked);
 
     setupSpinnyCoverControls();
 

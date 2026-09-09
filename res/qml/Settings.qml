@@ -405,6 +405,13 @@ Popup {
                         // It would seems there is a bug, where the component's layout appears out of date.
                         // Setting the value to its current one seems to be triggering a component update which help fixing the layout
                         root.activeCategoryIndex = root.activeCategoryIndex;
+                        // ... and being the value it already holds, that assignment
+                        // emits nothing, so updateActiveCategory() never ran for the
+                        // category shown at open: activeCategory stayed null, the
+                        // header read "SETTINGS" instead of the page's name, and the
+                        // page's tab strip -- delays, stats -- was hidden until you
+                        // clicked another category and came back. Do it directly.
+                        root.updateActiveCategory();
                     }
 
                     Settings.SoundHardware {
