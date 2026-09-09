@@ -1,0 +1,33 @@
+{
+    "name": "Launchpad X",
+    "canvas": [
+        2560,
+        720
+    ],
+    "elements": [
+        {
+            "type": "sequencer",
+            "group": "[Sequencer1]",
+            "steps": 16,
+            "samplerLanes": 4,
+            "samplerCount": 8,
+            "rect": [
+                16,
+                8,
+                2528,
+                400
+            ]
+        },
+        {
+            "type": "synth",
+            "group": "[Synth1]",
+            "octaves": 4,
+            "rect": [
+                16,
+                416,
+                2528,
+                296
+            ]
+        }
+    ]
+}

@@ -64,7 +64,13 @@ LaunchpadX.colors = {
     sampler: [96, 40, 0]
 };
 
-// Scales as semitone offsets from the root.
+// Every note set: the value scale_mask carries when no scale is chosen.
+LaunchpadX.chromaticMask = 4095;
+
+// Scales as semitone offsets from the root. Only the NAMES need this table --
+// the mask on the control says which notes are in the scale, so the pad and
+// the screen cannot disagree even if one of them offers scales the other
+// does not.
 LaunchpadX.scales = [
     {name: "Chromatic", degrees: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]},
     {name: "Major", degrees: [0, 2, 4, 5, 7, 9, 11]},
@@ -76,14 +82,16 @@ LaunchpadX.scales = [
 
 // ------------------------------------------------------------------- state
 
+// The key, the scale and the octave are NOT kept here. They live in the
+// synth's scale_mask / scale_root / base_note controls, so the keyboard on
+// screen and this pad are the same instrument in the same key: transpose
+// either and the other follows.
 LaunchpadX.mode = LaunchpadX.MODE_NOTES;
-LaunchpadX.baseNote = 48;   // C3, the note in the bottom-left corner
-LaunchpadX.root = 0;        // pitch class the scale is built on
-LaunchpadX.scaleIndex = 1;  // Major
-// The chromatic layout puts 8 semitones across a row and steps rows by a
-// fourth; the in-key layout drops the out-of-scale notes so every pad plays.
-LaunchpadX.inKey = false;
 LaunchpadX.recording = false;
+// The scale button doubles as a modifier. Held, a pad sets the root; tapped
+// on its own, it steps to the next scale.
+LaunchpadX.scaleHeld = false;
+LaunchpadX.scalePickedRoot = false;
 LaunchpadX.stepPage = 0;    // 0 = steps 1..8, 1 = steps 9..16
 // MIDI note -> how many pads are holding it, so a note that appears twice in
 // the overlapping rows releases only when the last finger lifts.
@@ -134,6 +142,76 @@ LaunchpadX.light = function(index, color) {
 // ------------------------------------------------------------- note layout
 
 /**
+ * Semitone offsets to the 12-bit mask scale_mask carries.
+ *
+ * @param {Array} degrees semitone offsets from the root
+ * @returns {number} bit N set when N semitones above the root is in the scale
+ */
+LaunchpadX.maskFor = function(degrees) {
+    let mask = 0;
+    for (let i = 0; i < degrees.length; i++) {
+        mask |= 1 << degrees[i];
+    }
+    return mask;
+};
+
+/**
+ * The lowest note on the grid.
+ *
+ * @returns {number} a MIDI note number
+ */
+LaunchpadX.baseNote = function() {
+    return Math.round(engine.getValue(LaunchpadX.synthGroup, "base_note"));
+};
+
+/**
+ * The pitch class the scale is rooted on.
+ *
+ * @returns {number} 0..11, 0 = C
+ */
+LaunchpadX.scaleRoot = function() {
+    const root = Math.round(engine.getValue(LaunchpadX.synthGroup, "scale_root"));
+    return ((root % 12) + 12) % 12;
+};
+
+/**
+ * The scale as twelve bits. An empty or missing mask reads as chromatic, so a
+ * control that never got a value cannot silence the grid.
+ *
+ * @returns {number} the mask, always with at least the root bit set
+ */
+LaunchpadX.scaleMask = function() {
+    const mask = Math.round(engine.getValue(LaunchpadX.synthGroup, "scale_mask")) & 0xFFF;
+    return mask > 0 ? mask : LaunchpadX.chromaticMask;
+};
+
+/**
+ * The scale as ascending semitone offsets.
+ *
+ * @returns {Array} the offsets from the root that are in the scale
+ */
+LaunchpadX.scaleDegrees = function() {
+    const mask = LaunchpadX.scaleMask();
+    const degrees = [];
+    for (let i = 0; i < 12; i++) {
+        if (mask & (1 << i)) {
+            degrees.push(i);
+        }
+    }
+    return degrees;
+};
+
+/**
+ * Whether no scale is selected, in which case the grid is laid out
+ * chromatically rather than dropping notes nothing has excluded.
+ *
+ * @returns {boolean} true when every note is in the scale
+ */
+LaunchpadX.isChromatic = function() {
+    return LaunchpadX.scaleMask() === LaunchpadX.chromaticMask;
+};
+
+/**
  * The MIDI note a pad plays under the current layout.
  *
  * @param {number} row 0 at the bottom
@@ -142,18 +220,19 @@ LaunchpadX.light = function(index, color) {
  */
 LaunchpadX.noteFor = function(row, col) {
     let note;
-    if (!LaunchpadX.inKey) {
+    const base = LaunchpadX.baseNote();
+    if (LaunchpadX.isChromatic()) {
         // The chromatic layout: a row spans 8 semitones and the next row starts
         // a fourth up, so a shape played anywhere transposes anywhere.
-        note = LaunchpadX.baseNote + row * 5 + col;
+        note = base + row * 5 + col;
     } else {
-        const degrees = LaunchpadX.scales[LaunchpadX.scaleIndex].degrees;
+        const degrees = LaunchpadX.scaleDegrees();
         // Three scale degrees per row is roughly a fourth in a 7-note scale,
         // which keeps the fingering the chromatic layout teaches.
         const degree = row * 3 + col;
         const octave = Math.floor(degree / degrees.length);
         const within = degree - octave * degrees.length;
-        note = LaunchpadX.baseNote + LaunchpadX.root + octave * 12 + degrees[within];
+        note = base + LaunchpadX.scaleRoot() + octave * 12 + degrees[within];
     }
     if (note < 0 || note > 127) {
         return -1;
@@ -168,9 +247,8 @@ LaunchpadX.noteFor = function(row, col) {
  * @returns {boolean} true when the note is in the scale
  */
 LaunchpadX.isInScale = function(note) {
-    const degrees = LaunchpadX.scales[LaunchpadX.scaleIndex].degrees;
-    const pitchClass = ((note - LaunchpadX.root) % 12 + 12) % 12;
-    return degrees.indexOf(pitchClass) !== -1;
+    const pitchClass = ((note - LaunchpadX.scaleRoot()) % 12 + 12) % 12;
+    return (LaunchpadX.scaleMask() & (1 << pitchClass)) !== 0;
 };
 
 /**
@@ -180,7 +258,7 @@ LaunchpadX.isInScale = function(note) {
  * @returns {boolean} true when the note is a root
  */
 LaunchpadX.isRoot = function(note) {
-    return ((note - LaunchpadX.root) % 12 + 12) % 12 === 0;
+    return ((note - LaunchpadX.scaleRoot()) % 12 + 12) % 12 === 0;
 };
 
 /**
@@ -467,6 +545,14 @@ LaunchpadX.onPad = function(channel, control, value, status) {
     if (note < 0) {
         return;
     }
+    // Held scale button: the pad picks the key rather than playing it.
+    if (LaunchpadX.scaleHeld) {
+        if (pressed) {
+            LaunchpadX.scalePickedRoot = true;
+            LaunchpadX.setRootFromNote(note);
+        }
+        return;
+    }
     if (pressed) {
         LaunchpadX.noteOn(note, value);
     } else {
@@ -501,34 +587,39 @@ LaunchpadX.onRightColumn = function(index, pressed) {
  * @param {number} direction -1 or 1
  */
 LaunchpadX.shiftOctave = function(direction) {
-    const next = LaunchpadX.baseNote + direction * 12;
+    const next = LaunchpadX.baseNote() + direction * 12;
     if (next < 0 || next > 108) {
         return;
     }
     LaunchpadX.allNotesOff();
-    LaunchpadX.baseNote = next;
-    LaunchpadX.drawGrid();
+    // The control change comes back through the connection in init, which is
+    // what repaints the grid -- here and when the screen moves it instead.
+    engine.setValue(LaunchpadX.synthGroup, "base_note", next);
 };
 
 /**
- * Step through the scales, and through the chromatic and in-key layouts.
- *
- * Chromatic comes once, ahead of the scales, because it is the layout you
- * want before you know the key.
+ * Step to the next scale, chromatic included: no scale selected is the layout
+ * you want before you know the key, so it sits in the cycle rather than being
+ * a mode of its own. A mask set elsewhere that is not in the table restarts
+ * from the top.
  */
 LaunchpadX.cycleScale = function() {
     LaunchpadX.allNotesOff();
-    if (!LaunchpadX.inKey) {
-        LaunchpadX.inKey = true;
-        LaunchpadX.scaleIndex = 1;
-    } else {
-        LaunchpadX.scaleIndex += 1;
-        if (LaunchpadX.scaleIndex >= LaunchpadX.scales.length) {
-            LaunchpadX.scaleIndex = 1;
-            LaunchpadX.inKey = false;
-        }
-    }
-    LaunchpadX.drawGrid();
+    const masks = LaunchpadX.scales.map(function(scale) {
+        return LaunchpadX.maskFor(scale.degrees);
+    });
+    const current = masks.indexOf(LaunchpadX.scaleMask());
+    engine.setValue(LaunchpadX.synthGroup, "scale_mask", masks[(current + 1) % masks.length]);
+};
+
+/**
+ * Root the scale on a note that was played, keeping its pitch class.
+ *
+ * @param {number} note a MIDI note number
+ */
+LaunchpadX.setRootFromNote = function(note) {
+    LaunchpadX.allNotesOff();
+    engine.setValue(LaunchpadX.synthGroup, "scale_root", ((note % 12) + 12) % 12);
 };
 
 /**
@@ -568,6 +659,21 @@ LaunchpadX.onCC = function(channel, control, value) {
         LaunchpadX.onRightColumn(rightIndex, value > 0);
         return;
     }
+    // The scale button acts on RELEASE, because holding it means something
+    // else: while it is down a pad sets the root, and then letting go must not
+    // also step the scale on.
+    if (control === LaunchpadX.CC_SCALE) {
+        if (value > 0) {
+            LaunchpadX.scaleHeld = true;
+            LaunchpadX.scalePickedRoot = false;
+        } else {
+            LaunchpadX.scaleHeld = false;
+            if (!LaunchpadX.scalePickedRoot) {
+                LaunchpadX.cycleScale();
+            }
+        }
+        return;
+    }
     if (value === 0) {
         return;
     }
@@ -583,9 +689,6 @@ LaunchpadX.onCC = function(channel, control, value) {
         break;
     case LaunchpadX.CC_OCT_UP:
         LaunchpadX.shiftOctave(1);
-        break;
-    case LaunchpadX.CC_SCALE:
-        LaunchpadX.cycleScale();
         break;
     case LaunchpadX.CC_RECORD:
         LaunchpadX.recording = !LaunchpadX.recording;
@@ -609,6 +712,15 @@ LaunchpadX.onCC = function(channel, control, value) {
  */
 LaunchpadX.init = function() {
     LaunchpadX.selectMode(LaunchpadX.modeProgrammer);
+    // Whatever moves the key, the scale or the octave -- these pads or the
+    // keyboard on screen -- comes back through here and repaints the grid.
+    const shared = ["scale_mask", "scale_root", "base_note"];
+    for (let i = 0; i < shared.length; i++) {
+        LaunchpadX.connections.push(
+            engine.makeConnection(LaunchpadX.synthGroup, shared[i], function() {
+                LaunchpadX.drawGrid();
+            }));
+    }
     LaunchpadX.connections.push(
         engine.makeConnection(LaunchpadX.seqGroup, "current_step", function(value) {
             LaunchpadX.onStepChanged(value);

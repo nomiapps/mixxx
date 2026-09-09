@@ -11,6 +11,7 @@
         "quad-decks.json",
         "quad-decks-mixer.json",
         "synth.json",
-        "sequencer.json"
+        "sequencer.json",
+        "launchpad-x.json"
     ]
 }
