@@ -61,8 +61,20 @@ LaunchpadX.colors = {
     runOn: [0, 127, 32],
     runOff: [2, 16, 6],
     action: [24, 24, 8],
-    sampler: [96, 40, 0]
+    sampler: [96, 40, 0],
+    editHeld: [127, 127, 127],
+    editPitch: [0, 127, 127],
+    gateOn: [127, 52, 0],
+    gateOff: [8, 5, 2]
 };
+
+// The step editor's rows, counted from the bottom. Row 7 stays the synth lane
+// so the held step is visible; the gate row is the bottom one; the pitch
+// keyboard is everything between, laid out like notes mode.
+LaunchpadX.gateRow = 0;
+LaunchpadX.pitchRowFirst = 1;
+LaunchpadX.pitchRowLast = 6;
+LaunchpadX.gateLevels = 8;
 
 // Every note set: the value scale_mask carries when no scale is chosen.
 LaunchpadX.chromaticMask = 4095;
@@ -93,6 +105,11 @@ LaunchpadX.recording = false;
 LaunchpadX.scaleHeld = false;
 LaunchpadX.scalePickedRoot = false;
 LaunchpadX.stepPage = 0;    // 0 = steps 1..8, 1 = steps 9..16
+// Hold a synth-lane step and the grid becomes that step's editor: the rows
+// below show a keyboard with the step's pitch lit, and the bottom row its
+// gate. Tap the step without touching either and it toggles, as before.
+LaunchpadX.editStep = -1;   // 0..15 while a synth step is held
+LaunchpadX.editUsed = false; // the editor changed the step: release must not toggle it
 // MIDI note -> how many pads are holding it, so a note that appears twice in
 // the overlapping rows releases only when the last finger lifts.
 LaunchpadX.heldNotes = {};
@@ -374,13 +391,62 @@ LaunchpadX.stepColor = function(row, col) {
 };
 
 /**
+ * The pitch a pad in the editor's keyboard plays.
+ *
+ * The keyboard is notes mode shifted down a row, so a shape learnt there is
+ * the same shape here.
+ *
+ * @param {number} row a row between pitchRowFirst and pitchRowLast
+ * @param {number} col 0 at the left
+ * @returns {number} a MIDI note number, or -1 off the end of the layout
+ */
+LaunchpadX.editNoteFor = function(row, col) {
+    return LaunchpadX.noteFor(row - LaunchpadX.pitchRowFirst, col);
+};
+
+/**
+ * One field of the step being edited.
+ *
+ * @param {string} field note, velocity or gate
+ * @returns {number} the control's value
+ */
+LaunchpadX.editValue = function(field) {
+    return engine.getValue(LaunchpadX.seqGroup, LaunchpadX.synthStepKey(LaunchpadX.editStep, field));
+};
+
+/**
+ * The colour of one pad while a step is being edited.
+ *
+ * @param {number} row 0 at the bottom
+ * @param {number} col 0 at the left
+ * @returns {Array} an [r, g, b] colour
+ */
+LaunchpadX.editColor = function(row, col) {
+    if (row === 7) {
+        const step = LaunchpadX.stepPage * 8 + col;
+        return step === LaunchpadX.editStep ? LaunchpadX.colors.editHeld : LaunchpadX.stepColor(row, col);
+    }
+    if (row === LaunchpadX.gateRow) {
+        const level = Math.round(LaunchpadX.editValue("gate") * LaunchpadX.gateLevels);
+        return col < level ? LaunchpadX.colors.gateOn : LaunchpadX.colors.gateOff;
+    }
+    const note = LaunchpadX.editNoteFor(row, col);
+    if (note >= 0 && note === Math.round(LaunchpadX.editValue("note"))) {
+        return LaunchpadX.colors.editPitch;
+    }
+    return LaunchpadX.noteColor(note);
+};
+
+/**
  * Repaint the 8x8 grid for the current mode.
  */
 LaunchpadX.drawGrid = function() {
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
             const index = LaunchpadX.padIndex(row, col);
-            if (LaunchpadX.mode === LaunchpadX.MODE_NOTES) {
+            if (LaunchpadX.editStep >= 0) {
+                LaunchpadX.light(index, LaunchpadX.editColor(row, col));
+            } else if (LaunchpadX.mode === LaunchpadX.MODE_NOTES) {
                 LaunchpadX.light(index, LaunchpadX.noteColor(LaunchpadX.noteFor(row, col)));
             } else {
                 LaunchpadX.light(index, LaunchpadX.stepColor(row, col));
@@ -433,7 +499,7 @@ LaunchpadX.draw = function() {
 LaunchpadX.onStepChanged = function(value) {
     const previous = LaunchpadX.lastPlayhead;
     LaunchpadX.lastPlayhead = Math.floor(value);
-    if (LaunchpadX.mode !== LaunchpadX.MODE_STEPS) {
+    if (LaunchpadX.mode !== LaunchpadX.MODE_STEPS || LaunchpadX.editStep >= 0) {
         return;
     }
     const columns = [previous, LaunchpadX.lastPlayhead];
@@ -456,15 +522,18 @@ LaunchpadX.onStepChanged = function(value) {
  *
  * @param {number} note a MIDI note number
  * @param {number} velocity MIDI velocity, 1..127
+ * @param {boolean} audition true to sound the note without recording it: the
+ *     step editor plays what it just wrote, and record arm must not then
+ *     write it a second time onto whatever step is sounding
  */
-LaunchpadX.noteOn = function(note, velocity) {
+LaunchpadX.noteOn = function(note, velocity, audition) {
     const held = LaunchpadX.heldNotes[note] || 0;
     LaunchpadX.heldNotes[note] = held + 1;
     if (held === 0) {
         // [Synth1] reads velocity out of the fractional part: note + v / 128.
         engine.setValue(LaunchpadX.synthGroup, "note_on", note + velocity / 128);
     }
-    if (LaunchpadX.recording) {
+    if (LaunchpadX.recording && !audition) {
         LaunchpadX.captureNote(note, velocity);
     }
 };
@@ -536,9 +605,7 @@ LaunchpadX.onPad = function(channel, control, value, status) {
     // real note-off too in case the pad is configured otherwise.
     const pressed = (status & 0xF0) === 0x90 && value > 0;
     if (LaunchpadX.mode === LaunchpadX.MODE_STEPS) {
-        if (pressed) {
-            LaunchpadX.toggleStep(coords.row, coords.col);
-        }
+        LaunchpadX.onStepPad(coords.row, coords.col, value, pressed);
         return;
     }
     const note = LaunchpadX.noteFor(coords.row, coords.col);
@@ -562,6 +629,109 @@ LaunchpadX.onPad = function(channel, control, value, status) {
 };
 
 /**
+ * A pad in steps mode. Sampler lanes toggle on press, as a drum row should.
+ * The synth lane is held: pressing opens the step's editor, and releasing
+ * toggles the step only if the editor was not touched in between.
+ *
+ * @param {number} row 0 at the bottom
+ * @param {number} col 0 at the left
+ * @param {number} value velocity of the press
+ * @param {boolean} pressed true on press
+ */
+LaunchpadX.onStepPad = function(row, col, value, pressed) {
+    if (LaunchpadX.editStep >= 0) {
+        LaunchpadX.onEditorPad(row, col, value, pressed);
+        return;
+    }
+    if (row !== 7) {
+        if (pressed) {
+            LaunchpadX.toggleStep(row, col);
+        }
+        return;
+    }
+    if (pressed) {
+        LaunchpadX.editStep = LaunchpadX.stepPage * 8 + col;
+        LaunchpadX.editUsed = false;
+        LaunchpadX.drawGrid();
+    }
+};
+
+/**
+ * A pad while a step is being edited.
+ *
+ * Releasing the held step ends the edit. A pad on the keyboard rows writes
+ * its pitch and the strike's velocity into the step and sounds it; a pad on
+ * the gate row sets how much of the step the note holds. Either enables the
+ * step, since a note has just been put there.
+ *
+ * @param {number} row 0 at the bottom
+ * @param {number} col 0 at the left
+ * @param {number} value velocity of the press
+ * @param {boolean} pressed true on press
+ */
+LaunchpadX.onEditorPad = function(row, col, value, pressed) {
+    const step = LaunchpadX.editStep;
+    if (row === 7) {
+        // Only the held step's own release matters; a second step pressed
+        // while one is held is ignored rather than switching mid-edit.
+        if (!pressed && LaunchpadX.stepPage * 8 + col === step) {
+            LaunchpadX.endEdit();
+        }
+        return;
+    }
+    if (row === LaunchpadX.gateRow) {
+        if (pressed) {
+            engine.setValue(LaunchpadX.seqGroup, LaunchpadX.synthStepKey(step, "gate"),
+                (col + 1) / LaunchpadX.gateLevels);
+            LaunchpadX.markEdited();
+            for (let c = 0; c < 8; c++) {
+                LaunchpadX.light(LaunchpadX.padIndex(row, c), LaunchpadX.editColor(row, c));
+            }
+        }
+        return;
+    }
+    const note = LaunchpadX.editNoteFor(row, col);
+    if (note < 0) {
+        return;
+    }
+    if (pressed) {
+        engine.setValue(LaunchpadX.seqGroup, LaunchpadX.synthStepKey(step, "note"), note);
+        engine.setValue(LaunchpadX.seqGroup, LaunchpadX.synthStepKey(step, "velocity"), value / 127);
+        LaunchpadX.markEdited();
+        LaunchpadX.noteOn(note, value, true);
+        LaunchpadX.drawGrid();
+    } else {
+        LaunchpadX.noteOff(note);
+    }
+};
+
+/**
+ * Enable the step being edited and remember that its release must not toggle.
+ */
+LaunchpadX.markEdited = function() {
+    LaunchpadX.editUsed = true;
+    engine.setValue(LaunchpadX.seqGroup, LaunchpadX.synthStepKey(LaunchpadX.editStep, "enabled"), 1);
+};
+
+/**
+ * Leave the step editor, toggling the step if it was only tapped.
+ */
+LaunchpadX.endEdit = function() {
+    const step = LaunchpadX.editStep;
+    const used = LaunchpadX.editUsed;
+    LaunchpadX.editStep = -1;
+    LaunchpadX.editUsed = false;
+    // A pitch pad still under a finger would otherwise be stranded on: its
+    // release lands in steps mode, which does not route to noteOff.
+    LaunchpadX.allNotesOff();
+    if (!used) {
+        const key = LaunchpadX.synthStepKey(step, "enabled");
+        engine.setValue(LaunchpadX.seqGroup, key, engine.getValue(LaunchpadX.seqGroup, key) > 0 ? 0 : 1);
+    }
+    LaunchpadX.drawGrid();
+};
+
+/**
  * The right-hand column: sampler triggers, or the pattern page in steps mode.
  *
  * @param {number} index 0 at the top
@@ -572,7 +742,7 @@ LaunchpadX.onRightColumn = function(index, pressed) {
         return;
     }
     if (LaunchpadX.mode === LaunchpadX.MODE_STEPS) {
-        if (index === 0) {
+        if (index === 0 && LaunchpadX.editStep < 0) {
             LaunchpadX.stepPage = LaunchpadX.stepPage === 0 ? 1 : 0;
             LaunchpadX.draw();
         }
@@ -632,6 +802,8 @@ LaunchpadX.setMode = function(mode) {
         return;
     }
     LaunchpadX.allNotesOff();
+    LaunchpadX.editStep = -1;
+    LaunchpadX.editUsed = false;
     LaunchpadX.mode = mode;
     LaunchpadX.draw();
 };
