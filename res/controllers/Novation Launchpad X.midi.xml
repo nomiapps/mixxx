@@ -1,0 +1,1324 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!--
+  Novation Launchpad X mapping for Mixxx.
+
+  An instrument mapping: the 8x8 grid plays the built-in synth ([Synth1]) and
+  edits the step sequencer ([Sequencer1]). See the script for the layout.
+
+  The pad runs in Programmer mode, so the grid sends notes 11..88 (note =
+  row * 10 + column, row 1 at the bottom), the top row sends CC 91..98 and the
+  right-hand column CC 89, 79, ... 19 from the top down. Every grid pad goes to
+  one handler and every button to another; the handlers read the index off the
+  message rather than having a control per function.
+-->
+<MixxxControllerPreset mixxxVersion="2.6+" schemaVersion="1">
+    <info>
+        <name>Novation Launchpad X</name>
+        <author>NomiApps</author>
+        <description>Plays the Mixxx synth and step sequencer from the 8x8 grid, with velocity, scales and RGB feedback.</description>
+    </info>
+    <controller id="Launchpad X">
+        <scriptfiles>
+            <file functionprefix="LaunchpadX" filename="Novation-Launchpad-X-scripts.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 1</description>
+                <status>0x90</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 1</description>
+                <status>0x80</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 2</description>
+                <status>0x90</status>
+                <midino>0x0C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 2</description>
+                <status>0x80</status>
+                <midino>0x0C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 3</description>
+                <status>0x90</status>
+                <midino>0x0D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 3</description>
+                <status>0x80</status>
+                <midino>0x0D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 4</description>
+                <status>0x90</status>
+                <midino>0x0E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 4</description>
+                <status>0x80</status>
+                <midino>0x0E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 5</description>
+                <status>0x90</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 5</description>
+                <status>0x80</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 6</description>
+                <status>0x90</status>
+                <midino>0x10</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 6</description>
+                <status>0x80</status>
+                <midino>0x10</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 7</description>
+                <status>0x90</status>
+                <midino>0x11</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 7</description>
+                <status>0x80</status>
+                <midino>0x11</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 8</description>
+                <status>0x90</status>
+                <midino>0x12</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 1 column 8</description>
+                <status>0x80</status>
+                <midino>0x12</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 1</description>
+                <status>0x90</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 1</description>
+                <status>0x80</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 2</description>
+                <status>0x90</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 2</description>
+                <status>0x80</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 3</description>
+                <status>0x90</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 3</description>
+                <status>0x80</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 4</description>
+                <status>0x90</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 4</description>
+                <status>0x80</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 5</description>
+                <status>0x90</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 5</description>
+                <status>0x80</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 6</description>
+                <status>0x90</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 6</description>
+                <status>0x80</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 7</description>
+                <status>0x90</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 7</description>
+                <status>0x80</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 8</description>
+                <status>0x90</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 2 column 8</description>
+                <status>0x80</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 1</description>
+                <status>0x90</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 1</description>
+                <status>0x80</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 2</description>
+                <status>0x90</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 2</description>
+                <status>0x80</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 3</description>
+                <status>0x90</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 3</description>
+                <status>0x80</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 4</description>
+                <status>0x90</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 4</description>
+                <status>0x80</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 5</description>
+                <status>0x90</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 5</description>
+                <status>0x80</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 6</description>
+                <status>0x90</status>
+                <midino>0x24</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 6</description>
+                <status>0x80</status>
+                <midino>0x24</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 7</description>
+                <status>0x90</status>
+                <midino>0x25</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 7</description>
+                <status>0x80</status>
+                <midino>0x25</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 8</description>
+                <status>0x90</status>
+                <midino>0x26</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 3 column 8</description>
+                <status>0x80</status>
+                <midino>0x26</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 1</description>
+                <status>0x90</status>
+                <midino>0x29</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 1</description>
+                <status>0x80</status>
+                <midino>0x29</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 2</description>
+                <status>0x90</status>
+                <midino>0x2A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 2</description>
+                <status>0x80</status>
+                <midino>0x2A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 3</description>
+                <status>0x90</status>
+                <midino>0x2B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 3</description>
+                <status>0x80</status>
+                <midino>0x2B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 4</description>
+                <status>0x90</status>
+                <midino>0x2C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 4</description>
+                <status>0x80</status>
+                <midino>0x2C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 5</description>
+                <status>0x90</status>
+                <midino>0x2D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 5</description>
+                <status>0x80</status>
+                <midino>0x2D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 6</description>
+                <status>0x90</status>
+                <midino>0x2E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 6</description>
+                <status>0x80</status>
+                <midino>0x2E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 7</description>
+                <status>0x90</status>
+                <midino>0x2F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 7</description>
+                <status>0x80</status>
+                <midino>0x2F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 8</description>
+                <status>0x90</status>
+                <midino>0x30</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 4 column 8</description>
+                <status>0x80</status>
+                <midino>0x30</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 1</description>
+                <status>0x90</status>
+                <midino>0x33</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 1</description>
+                <status>0x80</status>
+                <midino>0x33</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 2</description>
+                <status>0x90</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 2</description>
+                <status>0x80</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 3</description>
+                <status>0x90</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 3</description>
+                <status>0x80</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 4</description>
+                <status>0x90</status>
+                <midino>0x36</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 4</description>
+                <status>0x80</status>
+                <midino>0x36</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 5</description>
+                <status>0x90</status>
+                <midino>0x37</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 5</description>
+                <status>0x80</status>
+                <midino>0x37</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 6</description>
+                <status>0x90</status>
+                <midino>0x38</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 6</description>
+                <status>0x80</status>
+                <midino>0x38</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 7</description>
+                <status>0x90</status>
+                <midino>0x39</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 7</description>
+                <status>0x80</status>
+                <midino>0x39</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 8</description>
+                <status>0x90</status>
+                <midino>0x3A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 5 column 8</description>
+                <status>0x80</status>
+                <midino>0x3A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 1</description>
+                <status>0x90</status>
+                <midino>0x3D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 1</description>
+                <status>0x80</status>
+                <midino>0x3D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 2</description>
+                <status>0x90</status>
+                <midino>0x3E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 2</description>
+                <status>0x80</status>
+                <midino>0x3E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 3</description>
+                <status>0x90</status>
+                <midino>0x3F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 3</description>
+                <status>0x80</status>
+                <midino>0x3F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 4</description>
+                <status>0x90</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 4</description>
+                <status>0x80</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 5</description>
+                <status>0x90</status>
+                <midino>0x41</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 5</description>
+                <status>0x80</status>
+                <midino>0x41</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 6</description>
+                <status>0x90</status>
+                <midino>0x42</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 6</description>
+                <status>0x80</status>
+                <midino>0x42</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 7</description>
+                <status>0x90</status>
+                <midino>0x43</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 7</description>
+                <status>0x80</status>
+                <midino>0x43</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 8</description>
+                <status>0x90</status>
+                <midino>0x44</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 6 column 8</description>
+                <status>0x80</status>
+                <midino>0x44</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 1</description>
+                <status>0x90</status>
+                <midino>0x47</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 1</description>
+                <status>0x80</status>
+                <midino>0x47</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 2</description>
+                <status>0x90</status>
+                <midino>0x48</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 2</description>
+                <status>0x80</status>
+                <midino>0x48</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 3</description>
+                <status>0x90</status>
+                <midino>0x49</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 3</description>
+                <status>0x80</status>
+                <midino>0x49</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 4</description>
+                <status>0x90</status>
+                <midino>0x4A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 4</description>
+                <status>0x80</status>
+                <midino>0x4A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 5</description>
+                <status>0x90</status>
+                <midino>0x4B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 5</description>
+                <status>0x80</status>
+                <midino>0x4B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 6</description>
+                <status>0x90</status>
+                <midino>0x4C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 6</description>
+                <status>0x80</status>
+                <midino>0x4C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 7</description>
+                <status>0x90</status>
+                <midino>0x4D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 7</description>
+                <status>0x80</status>
+                <midino>0x4D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 8</description>
+                <status>0x90</status>
+                <midino>0x4E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 7 column 8</description>
+                <status>0x80</status>
+                <midino>0x4E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 1</description>
+                <status>0x90</status>
+                <midino>0x51</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 1</description>
+                <status>0x80</status>
+                <midino>0x51</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 2</description>
+                <status>0x90</status>
+                <midino>0x52</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 2</description>
+                <status>0x80</status>
+                <midino>0x52</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 3</description>
+                <status>0x90</status>
+                <midino>0x53</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 3</description>
+                <status>0x80</status>
+                <midino>0x53</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 4</description>
+                <status>0x90</status>
+                <midino>0x54</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 4</description>
+                <status>0x80</status>
+                <midino>0x54</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 5</description>
+                <status>0x90</status>
+                <midino>0x55</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 5</description>
+                <status>0x80</status>
+                <midino>0x55</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 6</description>
+                <status>0x90</status>
+                <midino>0x56</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 6</description>
+                <status>0x80</status>
+                <midino>0x56</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 7</description>
+                <status>0x90</status>
+                <midino>0x57</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 7</description>
+                <status>0x80</status>
+                <midino>0x57</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 8</description>
+                <status>0x90</status>
+                <midino>0x58</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onPad</key>
+                <description>Grid pad row 8 column 8</description>
+                <status>0x80</status>
+                <midino>0x58</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Notes mode</description>
+                <status>0xB0</status>
+                <midino>0x5B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Steps mode</description>
+                <status>0xB0</status>
+                <midino>0x5C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Octave down</description>
+                <status>0xB0</status>
+                <midino>0x5D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Octave up</description>
+                <status>0xB0</status>
+                <midino>0x5E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Scale / layout</description>
+                <status>0xB0</status>
+                <midino>0x5F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Record arm</description>
+                <status>0xB0</status>
+                <midino>0x60</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Sequencer run</description>
+                <status>0xB0</status>
+                <midino>0x61</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Clear pattern</description>
+                <status>0xB0</status>
+                <midino>0x62</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Sampler 1 / pattern page</description>
+                <status>0xB0</status>
+                <midino>0x59</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Sampler 2 / pattern page</description>
+                <status>0xB0</status>
+                <midino>0x4F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Sampler 3 / pattern page</description>
+                <status>0xB0</status>
+                <midino>0x45</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Sampler 4 / pattern page</description>
+                <status>0xB0</status>
+                <midino>0x3B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Sampler 5 / pattern page</description>
+                <status>0xB0</status>
+                <midino>0x31</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Sampler 6 / pattern page</description>
+                <status>0xB0</status>
+                <midino>0x27</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Sampler 7 / pattern page</description>
+                <status>0xB0</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <key>LaunchpadX.onCC</key>
+                <description>Sampler 8 / pattern page</description>
+                <status>0xB0</status>
+                <midino>0x13</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+        </controls>
+        <outputs/>
+    </controller>
+</MixxxControllerPreset>
