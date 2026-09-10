@@ -17,6 +17,10 @@ Item {
     // What the search box holds, for anything outside that reflects it -- the
     // Camelot wheel marks the key it is filtered on.
     readonly property alias searchText: searchField.text
+    // The track list, so a host can load the current selection to a deck of its
+    // choosing without going through the [ChannelN],LoadSelectedTrack control,
+    // which every library in the process answers at once.
+    readonly property alias trackList: trackList
 
     // A smart crate is a saved query that acts as its own SCOPE, independent of the
     // search box. It used to be applied BY writing into the search field, which meant
@@ -397,6 +401,8 @@ Item {
             }
         }
         LibraryComponent.TrackList {
+            id: trackList
+
             SplitView.fillHeight: true
 
             // FIXME: this is necessary to prevent the header label to render outside of the table when horizontally scrolling: https://github.com/mixxxdj/mixxx/pull/14514#issuecomment-3311914346

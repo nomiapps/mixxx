@@ -1,6 +1,6 @@
 {
     "name": "Library",
-    "_comment": "The library, full surface. WAVEFORMS switches on a monitor strip along the top -- both decks' waveform, overview, title and transport -- and the library gives up the space for it; switch it off and the browser is the whole panel again. The strip is off by default, so this opens as a pure browsing view. Mechanism: a 'surfacetoggle' element flips a named flag, elements with \"showIf\" exist only while it is on, and the library's \"rectIf\" gives its shrunken rect for that case.",
+    "_comment": "The library, full surface. WAVEFORMS switches on a monitor strip along the top -- both decks' waveform, overview, title and transport -- and the library gives up the space for it; switch it off and the browser is the whole panel again. The strip is off by default, so this opens as a pure browsing view. Mechanism: a 'surfacetoggle' element flips a named flag, elements with \"showIf\" exist only while it is on, and the library's \"rectIf\" gives its shrunken rect for that case. A column of load buttons runs down the right-hand edge: the library's own double-click loads the first STOPPED deck, which is no use when you mean deck 3, so each button loads the current selection into the deck it names. Targets that are playing go dim.",
     "canvas": [
         2560,
         720
@@ -189,7 +189,36 @@
                     2544,
                     456
                 ]
-            }
+            },
+            "loadTargetWidth": 170,
+            "loadTargets": [
+                {
+                    "group": "[Channel1]",
+                    "label": "DECK 1"
+                },
+                {
+                    "group": "[Channel2]",
+                    "label": "DECK 2"
+                },
+                {
+                    "group": "[Channel3]",
+                    "label": "DECK 3"
+                },
+                {
+                    "group": "[Channel4]",
+                    "label": "DECK 4"
+                },
+                {
+                    "group": "[PreviewDeck1]",
+                    "label": "PREVIEW",
+                    "allowWhilePlaying": true
+                },
+                {
+                    "group": "[Sampler1]",
+                    "label": "SAMPLER 1",
+                    "allowWhilePlaying": true
+                }
+            ]
         }
     ]
 }

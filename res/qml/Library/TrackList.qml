@@ -342,6 +342,16 @@ Rectangle {
         root.saveLayout();
     }
 
+    // Load whatever is selected in THIS list to a group. Firing the
+    // [ChannelN],LoadSelectedTrack control instead reaches every TrackList in
+    // the process at once -- the main window's and the Edge surface's both --
+    // and each loads its own selection to the same deck, so the one that wins
+    // depends on connection order. A caller that knows which list the user is
+    // looking at should say so.
+    function loadSelectedTrack(group, play) {
+        view.loadSelectedTrack(group, play);
+    }
+
     color: Theme.darkGray
 
     Timer {
@@ -624,7 +634,14 @@ Rectangle {
             if (urls.length == 0)
                 return;
 
-            Mixxx.PlayerManager.getPlayer(group).loadTrackFromLocationUrl(urls[0], play);
+            // getPlayer() warns and returns null for a group with no player --
+            // deck 3 with two decks configured, say. Calling through that null
+            // is a TypeError, and the surface's load buttons make it reachable
+            // by tapping.
+            const player = Mixxx.PlayerManager.getPlayer(group);
+            if (!player)
+                return;
+            player.loadTrackFromLocationUrl(urls[0], play);
         }
         function loadSelectedTrackIntoNextAvailableDeck(play) {
             const urls = this.selectionModel.selectedTrackUrls();
