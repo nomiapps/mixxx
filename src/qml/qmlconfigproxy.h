@@ -159,6 +159,21 @@ class QmlConfigProxy : public QmlConfigProxyBase {
                     controlSetIntroStartAtMainCue WRITE
                             set_controlSetIntroStartAtMainCue NOTIFY
                                     controlSetIntroStartAtMainCueChanged);
+    // Beat detection, [BPM] and [Vamp]. The keys keep the British "Analyser"
+    // spelling of the Vamp ones: user config files already contain them.
+    Q_PROPERTY(bool analyzerBpmEnabled READ analyzerBpmEnabled WRITE
+                    set_analyzerBpmEnabled NOTIFY analyzerBpmEnabledChanged);
+    Q_PROPERTY(bool analyzerBpmFixedTempo READ analyzerBpmFixedTempo WRITE
+                    set_analyzerBpmFixedTempo NOTIFY analyzerBpmFixedTempoChanged);
+    Q_PROPERTY(bool analyzerBpmFastAnalysis READ analyzerBpmFastAnalysis WRITE
+                    set_analyzerBpmFastAnalysis NOTIFY analyzerBpmFastAnalysisChanged);
+    Q_PROPERTY(bool analyzerBpmReanalyze READ analyzerBpmReanalyze WRITE
+                    set_analyzerBpmReanalyze NOTIFY analyzerBpmReanalyzeChanged);
+    Q_PROPERTY(bool analyzerBpmReanalyzeImported READ analyzerBpmReanalyzeImported
+                    WRITE set_analyzerBpmReanalyzeImported NOTIFY
+                            analyzerBpmReanalyzeImportedChanged);
+    Q_PROPERTY(QString analyzerBeatPluginId READ analyzerBeatPluginId WRITE
+                    set_analyzerBeatPluginId NOTIFY analyzerBeatPluginIdChanged);
     Q_PROPERTY(bool controlCloneDeckOnLoadDoubleTap READ
                     controlCloneDeckOnLoadDoubleTap WRITE
                             set_controlCloneDeckOnLoadDoubleTap NOTIFY
@@ -322,6 +337,10 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     Q_INVOKABLE QVariantList getTrackColorPalette(const QString& paletteName) const;
     Q_INVOKABLE void setTrackColorPalette(const QString& paletteName);
     QVariantList keyColorPalette() const;
+    /// The beat analysers this build actually has, newest first, as
+    /// [{name, id}]. Not a config value -- it comes from
+    /// AnalyzerBeats::availablePlugins() -- so it cannot be a Q_PROPERTY.
+    Q_INVOKABLE QVariantList availableBeatPlugins() const;
     Q_INVOKABLE QVariantList getKeyColorPalette(const QString& paletteName) const;
     Q_INVOKABLE void setKeyColorPalette(const QString& paletteName);
     Q_INVOKABLE QVariantList colorPalette(const QString& paletteName) const;
@@ -386,6 +405,12 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     PROPERTY_DECL_ACCESSOR(double, controlLoopDefaultColorIndex);
     PROPERTY_DECL_ACCESSOR(CueMode, controlCueDefault);
     PROPERTY_DECL_ACCESSOR(bool, controlSetIntroStartAtMainCue);
+    PROPERTY_DECL_ACCESSOR(bool, analyzerBpmEnabled);
+    PROPERTY_DECL_ACCESSOR(bool, analyzerBpmFixedTempo);
+    PROPERTY_DECL_ACCESSOR(bool, analyzerBpmFastAnalysis);
+    PROPERTY_DECL_ACCESSOR(bool, analyzerBpmReanalyze);
+    PROPERTY_DECL_ACCESSOR(bool, analyzerBpmReanalyzeImported);
+    PROPERTY_DECL_ACCESSOR(QString, analyzerBeatPluginId);
     PROPERTY_DECL_ACCESSOR(bool, controlCloneDeckOnLoadDoubleTap);
     PROPERTY_DECL_ACCESSOR(LoadWhenDeckPlaying, controlLoadWhenDeckPlaying);
     PROPERTY_DECL_ACCESSOR(TrackTime::DisplayFormat, controlTimeFormat);
@@ -487,6 +512,12 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     void controlLoopDefaultColorIndexChanged();
     void controlCueDefaultChanged();
     void controlSetIntroStartAtMainCueChanged();
+    void analyzerBpmEnabledChanged();
+    void analyzerBpmFixedTempoChanged();
+    void analyzerBpmFastAnalysisChanged();
+    void analyzerBpmReanalyzeChanged();
+    void analyzerBpmReanalyzeImportedChanged();
+    void analyzerBeatPluginIdChanged();
     void controlCloneDeckOnLoadDoubleTapChanged();
     void controlLoadWhenDeckPlayingChanged();
     void controlTimeFormatChanged();

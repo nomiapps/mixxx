@@ -6,6 +6,7 @@
 #include "library/basetracktablemodel.h"
 #include "library/library.h"
 #include "library/library_prefs.h"
+#include "analyzer/analyzerbeats.h"
 #include "moc_qmlconfigproxy.cpp"
 #include "preferences/colorpalettesettings.h"
 #include "preferences/constants.h"
@@ -95,6 +96,17 @@ const QString kHotcueDefaultColorIndexKey = QStringLiteral("HotcueDefaultColorIn
 const QString kLoopDefaultColorIndexKey = QStringLiteral("LoopDefaultColorIndex");
 const QString kCueDefaultKey = QStringLiteral("CueDefault");
 const QString kSetIntroStartAtMainCueKey = QStringLiteral("SetIntroStartAtMainCue");
+// Beat detection. The literals match beatdetectionsettings.h, including the
+// British "Analyser" spelling of the Vamp keys, which existing user config
+// files already contain and so must not be corrected.
+// kBpmGroup is already declared above, for the sync-lock setting.
+const QString kVampGroup = QStringLiteral("[Vamp]");
+const QString kBpmDetectionEnabledKey = QStringLiteral("BPMDetectionEnabled");
+const QString kBpmFixedTempoKey = QStringLiteral("BeatDetectionFixedTempoAssumption");
+const QString kBpmFastAnalysisKey = QStringLiteral("FastAnalysisEnabled");
+const QString kBpmReanalyzeKey = QStringLiteral("ReanalyzeWhenSettingsChange");
+const QString kBpmReanalyzeImportedKey = QStringLiteral("ReanalyzeImported");
+const QString kBeatPluginIdKey = QStringLiteral("AnalyserBeatPluginID");
 const QString kCloneDeckOnLoadDoubleTapKey = QStringLiteral("CloneDeckOnLoadDoubleTap");
 const QString kLoadWhenDeckPlayingKey = QStringLiteral("LoadWhenDeckPlaying");
 const QString kTimeFormatKey = QStringLiteral("TimeFormat");           // TrackTime::DisplayFormat
@@ -411,6 +423,25 @@ PROPERTY_IMPL(kControlGroup, kHotcueDefaultColorIndexKey, int, controlHotcueDefa
 PROPERTY_IMPL(kControlGroup, kLoopDefaultColorIndexKey, double, controlLoopDefaultColorIndex, -1);
 PROPERTY_IMPL(kControlGroup, kCueDefaultKey, CueMode, controlCueDefault, CueMode::Mixxx);
 PROPERTY_IMPL(kControlGroup, kSetIntroStartAtMainCueKey, bool, controlSetIntroStartAtMainCue, true);
+// Defaults deliberately mirror BeatDetectionSettings, so a setting never reads
+// differently here than it does in the legacy dialog.
+PROPERTY_IMPL(kBpmGroup, kBpmDetectionEnabledKey, bool, analyzerBpmEnabled, true);
+PROPERTY_IMPL(kBpmGroup, kBpmFixedTempoKey, bool, analyzerBpmFixedTempo, true);
+PROPERTY_IMPL(kBpmGroup, kBpmFastAnalysisKey, bool, analyzerBpmFastAnalysis, false);
+PROPERTY_IMPL(kBpmGroup, kBpmReanalyzeKey, bool, analyzerBpmReanalyze, false);
+PROPERTY_IMPL(kBpmGroup, kBpmReanalyzeImportedKey, bool, analyzerBpmReanalyzeImported, false);
+PROPERTY_IMPL(kVampGroup, kBeatPluginIdKey, QString, analyzerBeatPluginId, QString());
+
+QVariantList QmlConfigProxy::availableBeatPlugins() const {
+    QVariantList plugins;
+    for (const auto& info : AnalyzerBeats::availablePlugins()) {
+        plugins.append(QVariantMap{
+                {QStringLiteral("name"), info.name()},
+                {QStringLiteral("id"), info.id()},
+        });
+    }
+    return plugins;
+}
 PROPERTY_IMPL(kControlGroup,
         kCloneDeckOnLoadDoubleTapKey,
         bool,
