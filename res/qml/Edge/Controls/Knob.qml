@@ -37,7 +37,10 @@ Item {
     property real knobCenterOffsetX: 0
     property real knobCenterOffsetY: 0
     property real max: 1
+    readonly property real maximumValue: root.max
     property real min: 0
+    readonly property real minimumValue: root.min
+    readonly property real stepSize: root.wheelStepSize
     property real value: min
     readonly property real valueCenter: (max - min) / 2
     // QWheelEvent::angleDelta() reports one standard mouse-wheel step as 120.
@@ -51,6 +54,13 @@ Item {
     function angleFrom(targetValue) {
         return targetValue * 2 * root.angle;
     }
+
+    // As for Slider: a bare Item has no accessible role, so every knob in the
+    // skin was invisible to assistive technology. Dial rather than Slider
+    // because that is what Qt maps a rotary control to. minimumValue/maximumValue
+    // /stepSize are looked up by name on the item by QAccessibleQuickItem's value
+    // interface -- they are not Accessible attached properties.
+    Accessible.role: Accessible.Dial
 
     Item {
         id: background

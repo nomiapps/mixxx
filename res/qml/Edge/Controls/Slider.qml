@@ -23,6 +23,8 @@ Item {
     readonly property bool horizontal: orientation === Qt.Horizontal
     property real leftPadding: 0
     property bool live: true
+    readonly property real maximumValue: Math.max(root.from, root.to)
+    readonly property real minimumValue: Math.min(root.from, root.to)
     property int orientation: Qt.Vertical
     readonly property real position: valueToPosition(displayValue)
     readonly property bool pressed: dragHandler.active
@@ -73,6 +75,18 @@ Item {
         return Math.max(0, Math.min(1, (targetValue - root.from) / (root.to - root.from)));
     }
 
+    // Every fader in the skin is one of these, and a bare Item declares no
+    // accessible role, so until this was here a screen reader was told nothing
+    // about any of them -- the only things exposing a value anywhere in the New
+    // UI were three scrollbars. The name has to come from the call site, which
+    // is the only place that knows what the slider controls.
+    //
+    // The range is read off the ITEM, not off the attached object: for a Slider
+    // or Dial role, Qt's QAccessibleQuickItem implements the value interface by
+    // looking up properties literally named value, minimumValue, maximumValue
+    // and stepSize on the item. Accessible.minimumValue does not exist, and
+    // assigning it silently gets you a slider with no range.
+    Accessible.role: Accessible.Slider
     activeFocusOnTab: true
     implicitHeight: Math.max(backgroundItem.implicitHeight, handleItem.implicitHeight)
     implicitWidth: Math.max(backgroundItem.implicitWidth, handleItem.implicitWidth)
@@ -106,14 +120,14 @@ Item {
         z: 2
     }
     Shape {
-        // Qt 6.6+ resolution-independent antialiasing; the older
-        // geometry renderer stair-steps curves on some displays.
-        preferredRendererType: Shape.CurveRenderer
         id: barShape
 
         anchors.fill: parent
         anchors.margins: root.bar.margin
         antialiasing: true
+        // Qt 6.6+ resolution-independent antialiasing; the older
+        // geometry renderer stair-steps curves on some displays.
+        preferredRendererType: Shape.CurveRenderer
         visible: root.bar.enabled
         z: 1
 

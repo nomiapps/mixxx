@@ -7,6 +7,11 @@ import "Theme"
 AbstractButton {
     id: root
 
+    // What a screen reader reads out. Qt uses `text` as a button's accessible
+    // name, so an icon-only button reaches assistive technology nameless -- 23
+    // of the 54 buttons the New UI exposes did. Subclasses and call sites that
+    // know what the button does set this instead.
+    property string accessibleName: root.text
     property color activeColor: Theme.buttonActiveColor
     property bool compact: false
     readonly property color faceColor: root.pressed ? root.pressedColor : ((root.highlight || root.checked) ? root.activeColor : root.normalColor)
@@ -16,6 +21,7 @@ AbstractButton {
     property color normalColor: Theme.buttonNormalColor
     property color pressedColor: activeColor
 
+    Accessible.name: root.accessibleName
     implicitHeight: 26
     implicitWidth: 52
 

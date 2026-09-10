@@ -715,6 +715,15 @@ Rectangle {
             required property int row
             required property bool selected
 
+            // A TableView delegate is one item per cell, and a bare Item declares
+            // no accessible role -- so the library reached a screen reader as a few
+            // hundred anonymous groups with nothing in them. The cell's own text is
+            // already here in `display`; this is what makes it speakable. It is not
+            // a substitute for the table semantics a QTableView gives for free
+            // (there is still no row, column or header relationship), but a named
+            // cell can at least be read.
+            Accessible.name: item.display !== undefined && item.display !== null ? String(item.display) : ""
+            Accessible.role: Accessible.Cell
             implicitHeight: Mixxx.Config.libraryRowHeight
 
             Loader {
