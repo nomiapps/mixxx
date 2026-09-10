@@ -1,0 +1,363 @@
+{
+    "name": "Effects",
+    "_comment": "Both effect units with their three slots each, at touch size. The 'effect' element is the only one whose controls are not known from the layout file: it reads the EffectsManager slot the main window reads, so the knobs and buttons follow whatever effect is loaded -- three for Echo, one for Filter -- and are labelled with that effect's own parameter names. The chooser, ON button and meta knob sit to the left of them. Unit dry/wet, super and the channel assigns are ordinary control elements.",
+    "canvas": [
+        2560,
+        720
+    ],
+    "elements": [
+        {
+            "type": "label",
+            "label": "FX UNIT 1",
+            "rect": [
+                8,
+                8,
+                260,
+                36
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "group_[Channel1]_enable",
+            "label": "CH 1",
+            "toggle": true,
+            "rect": [
+                284,
+                6,
+                100,
+                40
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "group_[Channel2]_enable",
+            "label": "CH 2",
+            "toggle": true,
+            "rect": [
+                392,
+                6,
+                100,
+                40
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "group_[Channel3]_enable",
+            "label": "CH 3",
+            "toggle": true,
+            "rect": [
+                500,
+                6,
+                100,
+                40
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "group_[Channel4]_enable",
+            "label": "CH 4",
+            "toggle": true,
+            "rect": [
+                608,
+                6,
+                100,
+                40
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "next_chain_preset",
+            "label": "PRESET >",
+            "rect": [
+                724,
+                6,
+                150,
+                40
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "mix_mode",
+            "label": "D/W  SEND",
+            "toggle": true,
+            "rect": [
+                882,
+                6,
+                190,
+                40
+            ]
+        },
+        {
+            "type": "effect",
+            "unit": 1,
+            "effect": 1,
+            "knobSize": 84,
+            "cellWidth": 130,
+            "buttonHeight": 56,
+            "controlWidth": 110,
+            "selectorWidth": 520,
+            "rect": [
+                8,
+                60,
+                1256,
+                132
+            ]
+        },
+        {
+            "type": "effect",
+            "unit": 1,
+            "effect": 2,
+            "knobSize": 84,
+            "cellWidth": 130,
+            "buttonHeight": 56,
+            "controlWidth": 110,
+            "selectorWidth": 520,
+            "rect": [
+                8,
+                200,
+                1256,
+                132
+            ]
+        },
+        {
+            "type": "effect",
+            "unit": 1,
+            "effect": 3,
+            "knobSize": 84,
+            "cellWidth": 130,
+            "buttonHeight": 56,
+            "controlWidth": 110,
+            "selectorWidth": 520,
+            "rect": [
+                8,
+                340,
+                1256,
+                132
+            ]
+        },
+        {
+            "type": "knob",
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "mix",
+            "label": "DRY/WET",
+            "rect": [
+                48,
+                500,
+                150,
+                180
+            ]
+        },
+        {
+            "type": "knob",
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "super1",
+            "label": "SUPER",
+            "rect": [
+                238,
+                500,
+                150,
+                180
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit1]",
+            "key": "enabled",
+            "label": "UNIT ON",
+            "toggle": true,
+            "rect": [
+                438,
+                560,
+                200,
+                60
+            ]
+        },
+        {
+            "type": "divider",
+            "rect": [
+                1276,
+                60,
+                4,
+                640
+            ]
+        },
+        {
+            "type": "label",
+            "label": "FX UNIT 2",
+            "rect": [
+                1296,
+                8,
+                260,
+                36
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "group_[Channel1]_enable",
+            "label": "CH 1",
+            "toggle": true,
+            "rect": [
+                1572,
+                6,
+                100,
+                40
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "group_[Channel2]_enable",
+            "label": "CH 2",
+            "toggle": true,
+            "rect": [
+                1680,
+                6,
+                100,
+                40
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "group_[Channel3]_enable",
+            "label": "CH 3",
+            "toggle": true,
+            "rect": [
+                1788,
+                6,
+                100,
+                40
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "group_[Channel4]_enable",
+            "label": "CH 4",
+            "toggle": true,
+            "rect": [
+                1896,
+                6,
+                100,
+                40
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "next_chain_preset",
+            "label": "PRESET >",
+            "rect": [
+                2012,
+                6,
+                150,
+                40
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "mix_mode",
+            "label": "D/W  SEND",
+            "toggle": true,
+            "rect": [
+                2170,
+                6,
+                190,
+                40
+            ]
+        },
+        {
+            "type": "effect",
+            "unit": 2,
+            "effect": 1,
+            "knobSize": 84,
+            "cellWidth": 130,
+            "buttonHeight": 56,
+            "controlWidth": 110,
+            "selectorWidth": 520,
+            "rect": [
+                1296,
+                60,
+                1256,
+                132
+            ]
+        },
+        {
+            "type": "effect",
+            "unit": 2,
+            "effect": 2,
+            "knobSize": 84,
+            "cellWidth": 130,
+            "buttonHeight": 56,
+            "controlWidth": 110,
+            "selectorWidth": 520,
+            "rect": [
+                1296,
+                200,
+                1256,
+                132
+            ]
+        },
+        {
+            "type": "effect",
+            "unit": 2,
+            "effect": 3,
+            "knobSize": 84,
+            "cellWidth": 130,
+            "buttonHeight": 56,
+            "controlWidth": 110,
+            "selectorWidth": 520,
+            "rect": [
+                1296,
+                340,
+                1256,
+                132
+            ]
+        },
+        {
+            "type": "knob",
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "mix",
+            "label": "DRY/WET",
+            "rect": [
+                1336,
+                500,
+                150,
+                180
+            ]
+        },
+        {
+            "type": "knob",
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "super1",
+            "label": "SUPER",
+            "rect": [
+                1526,
+                500,
+                150,
+                180
+            ]
+        },
+        {
+            "type": "button",
+            "group": "[EffectRack1_EffectUnit2]",
+            "key": "enabled",
+            "label": "UNIT ON",
+            "toggle": true,
+            "rect": [
+                1726,
+                560,
+                200,
+                60
+            ]
+        }
+    ]
+}

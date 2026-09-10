@@ -5,6 +5,10 @@ Item {
     id: root
 
     required property var spec
+    // Unused here, but the surface hands every element a reference to itself
+    // when it loads one; without the property the assignment is an error and
+    // the element is the only one in the set that logs on every layout load.
+    property var surface: null
 
     Text {
         anchors.fill: parent

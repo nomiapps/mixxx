@@ -88,6 +88,8 @@ Window {
             return "EdgeElementDeckSwitch.qml";
         case "divider":
             return "EdgeElementDivider.qml";
+        case "effect":
+            return "EdgeElementEffect.qml";
         case "synth":
             return "EdgeElementSynth.qml";
         case "sequencer":

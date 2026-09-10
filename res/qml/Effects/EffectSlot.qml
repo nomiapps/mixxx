@@ -8,12 +8,23 @@ import "../Theme"
 Item {
     id: root
 
+    // Sizes are properties rather than literals so the same slot can be drawn
+    // at touch size on the Edge surface. The defaults are the desktop values
+    // this file has always used, so the main window is unchanged.
+    property int cellWidth: 55
     required property int effectNumber
     readonly property string effectUnitGroup: slot.chainSlotGroup
     property bool expanded: false
     readonly property string group: slot.group
+    property int focusButtonSize: 16
+    property int knobSize: 30
     property real maxSelectorWidth: 300
     readonly property int maximumParametersPerType: 8
+    property int parameterButtonHeight: 22
+    property int selectorControlWidth: 40
+    // The per-parameter LINK / invert row. Desktop power-user controls at 7 px:
+    // a touch surface turns them off rather than shrinking to nothing.
+    property bool showParameterLinkControls: true
     property Mixxx.EffectSlotProxy slot: Mixxx.EffectsManager.getEffectSlot(unitNumber, effectNumber)
     required property int unitNumber
 
@@ -35,8 +46,8 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             effectNumber: root.effectNumber
             effectUnitGroup: root.effectUnitGroup
-            height: 16
-            width: visible ? 16 : 0
+            height: root.focusButtonSize
+            width: visible ? root.focusButtonSize : 0
         }
         Skin.ControlButton {
             id: effectEnableButton
@@ -50,7 +61,7 @@ Item {
             key: "enabled"
             text: "ON"
             toggleable: true
-            width: 40
+            width: root.selectorControlWidth
         }
         EffectSelector {
             id: effectSelector
@@ -73,7 +84,7 @@ Item {
             color: Theme.effectColor
             group: root.group
             key: "meta"
-            width: 40
+            width: root.selectorControlWidth
         }
     }
     ListView {
@@ -108,9 +119,9 @@ Item {
             }
             required property int type
 
-            height: 50
+            height: parametersView.height
             visible: shown
-            width: shown ? 55 : 0
+            width: shown ? root.cellWidth : 0
 
             Skin.EmbeddedText {
                 anchors.fill: parent
@@ -121,8 +132,8 @@ Item {
             Loader {
                 active: parameter.shown && parameter.isKnob
                 anchors.horizontalCenter: parent.horizontalCenter
-                height: 30
-                width: 30
+                height: root.knobSize
+                width: root.knobSize
 
                 sourceComponent: Skin.ControlMiniKnob {
                     arcStart: 0
@@ -134,7 +145,7 @@ Item {
             Loader {
                 active: parameter.shown && parameter.isButton
                 anchors.horizontalCenter: parent.horizontalCenter
-                height: 22
+                height: root.parameterButtonHeight
                 width: parent.width
 
                 sourceComponent: Skin.ControlButton {
@@ -149,7 +160,7 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
                 height: 8
-                visible: parameter.shown && parameter.isKnob
+                visible: parameter.shown && parameter.isKnob && root.showParameterLinkControls
 
                 Skin.ControlButton {
                     activeColor: Theme.effectColor
