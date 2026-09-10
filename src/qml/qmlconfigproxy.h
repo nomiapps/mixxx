@@ -174,6 +174,16 @@ class QmlConfigProxy : public QmlConfigProxyBase {
                             analyzerBpmReanalyzeImportedChanged);
     Q_PROPERTY(QString analyzerBeatPluginId READ analyzerBeatPluginId WRITE
                     set_analyzerBeatPluginId NOTIFY analyzerBeatPluginIdChanged);
+    // Key detection, [Key] and [Vamp]. The notation setting is deliberately not
+    // here: it is a display choice, and already lives on the Decks page.
+    Q_PROPERTY(bool analyzerKeyEnabled READ analyzerKeyEnabled WRITE
+                    set_analyzerKeyEnabled NOTIFY analyzerKeyEnabledChanged);
+    Q_PROPERTY(bool analyzerKeyFastAnalysis READ analyzerKeyFastAnalysis WRITE
+                    set_analyzerKeyFastAnalysis NOTIFY analyzerKeyFastAnalysisChanged);
+    Q_PROPERTY(bool analyzerKeyReanalyze READ analyzerKeyReanalyze WRITE
+                    set_analyzerKeyReanalyze NOTIFY analyzerKeyReanalyzeChanged);
+    Q_PROPERTY(QString analyzerKeyPluginId READ analyzerKeyPluginId WRITE
+                    set_analyzerKeyPluginId NOTIFY analyzerKeyPluginIdChanged);
     Q_PROPERTY(bool controlCloneDeckOnLoadDoubleTap READ
                     controlCloneDeckOnLoadDoubleTap WRITE
                             set_controlCloneDeckOnLoadDoubleTap NOTIFY
@@ -341,6 +351,9 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     /// [{name, id}]. Not a config value -- it comes from
     /// AnalyzerBeats::availablePlugins() -- so it cannot be a Q_PROPERTY.
     Q_INVOKABLE QVariantList availableBeatPlugins() const;
+    /// The key analysers this build has, as [{name, id}]. Same reasoning as
+    /// availableBeatPlugins(): a static, not a config value.
+    Q_INVOKABLE QVariantList availableKeyPlugins() const;
     Q_INVOKABLE QVariantList getKeyColorPalette(const QString& paletteName) const;
     Q_INVOKABLE void setKeyColorPalette(const QString& paletteName);
     Q_INVOKABLE QVariantList colorPalette(const QString& paletteName) const;
@@ -411,6 +424,10 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     PROPERTY_DECL_ACCESSOR(bool, analyzerBpmReanalyze);
     PROPERTY_DECL_ACCESSOR(bool, analyzerBpmReanalyzeImported);
     PROPERTY_DECL_ACCESSOR(QString, analyzerBeatPluginId);
+    PROPERTY_DECL_ACCESSOR(bool, analyzerKeyEnabled);
+    PROPERTY_DECL_ACCESSOR(bool, analyzerKeyFastAnalysis);
+    PROPERTY_DECL_ACCESSOR(bool, analyzerKeyReanalyze);
+    PROPERTY_DECL_ACCESSOR(QString, analyzerKeyPluginId);
     PROPERTY_DECL_ACCESSOR(bool, controlCloneDeckOnLoadDoubleTap);
     PROPERTY_DECL_ACCESSOR(LoadWhenDeckPlaying, controlLoadWhenDeckPlaying);
     PROPERTY_DECL_ACCESSOR(TrackTime::DisplayFormat, controlTimeFormat);
@@ -518,6 +535,10 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     void analyzerBpmReanalyzeChanged();
     void analyzerBpmReanalyzeImportedChanged();
     void analyzerBeatPluginIdChanged();
+    void analyzerKeyEnabledChanged();
+    void analyzerKeyFastAnalysisChanged();
+    void analyzerKeyReanalyzeChanged();
+    void analyzerKeyPluginIdChanged();
     void controlCloneDeckOnLoadDoubleTapChanged();
     void controlLoadWhenDeckPlayingChanged();
     void controlTimeFormatChanged();

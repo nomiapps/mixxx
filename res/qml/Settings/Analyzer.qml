@@ -25,6 +25,13 @@ Category {
         beatPluginInput.ids = plugins.map(p => p.id);
         beatPluginInput.model = plugins.map(p => p.name);
         beatPluginInput.currentIndex = beatPluginInput.ids.indexOf(Mixxx.Config.analyzerBeatPluginId);
+        keyEnabledInput.selected = Mixxx.Config.analyzerKeyEnabled ? "on" : "off";
+        keyFastAnalysisInput.selected = Mixxx.Config.analyzerKeyFastAnalysis ? "on" : "off";
+        keyReanalyzeInput.selected = Mixxx.Config.analyzerKeyReanalyze ? "on" : "off";
+        const keyPlugins = Mixxx.Config.availableKeyPlugins();
+        keyPluginInput.ids = keyPlugins.map(p => p.id);
+        keyPluginInput.model = keyPlugins.map(p => p.name);
+        keyPluginInput.currentIndex = keyPluginInput.ids.indexOf(Mixxx.Config.analyzerKeyPluginId);
         root.dirty = false;
     }
     function save() {
@@ -35,6 +42,12 @@ Category {
         Mixxx.Config.analyzerBpmReanalyzeImported = reanalyzeImportedInput.on;
         if (beatPluginInput.currentIndex >= 0)
             Mixxx.Config.analyzerBeatPluginId = beatPluginInput.ids[beatPluginInput.currentIndex];
+
+        Mixxx.Config.analyzerKeyEnabled = keyEnabledInput.on;
+        Mixxx.Config.analyzerKeyFastAnalysis = keyFastAnalysisInput.on;
+        Mixxx.Config.analyzerKeyReanalyze = keyReanalyzeInput.on;
+        if (keyPluginInput.currentIndex >= 0)
+            Mixxx.Config.analyzerKeyPluginId = keyPluginInput.ids[keyPluginInput.currentIndex];
 
         root.dirty = false;
     }
@@ -379,6 +392,205 @@ Category {
                 color: Theme.deckTextColor
                 font.pixelSize: 12
                 text: qsTr("Imported beatgrids come from other DJ software. Re-analysing replaces them with Mixxx's own.")
+                wrapMode: Text.WordWrap
+            }
+            RowLayout {
+                Text {
+                    Layout.bottomMargin: 14
+                    Layout.leftMargin: 17
+                    Layout.topMargin: 24
+                    color: Theme.white
+                    font.pixelSize: 16
+                    font.weight: Font.DemiBold
+                    text: qsTr("Key detection")
+                }
+            }
+            Mixxx.SettingGroup {
+                Layout.bottomMargin: 6
+                Layout.fillWidth: true
+                implicitHeight: keyPane.implicitHeight + 20
+                label: qsTr("Key detection")
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: Theme.darkGray2
+
+                    GridLayout {
+                        id: keyPane
+
+                        anchors.bottomMargin: 10
+                        anchors.fill: parent
+                        anchors.leftMargin: 17
+                        anchors.rightMargin: 17
+                        anchors.topMargin: 10
+                        columnSpacing: 20
+                        columns: 2
+                        rowSpacing: 15
+
+                        RowLayout {
+                            Layout.preferredWidth: (keyPane.width - keyPane.columnSpacing) / 2
+
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                // SettingParameter is a bare QQuickItem: implicit size 0. Without
+                                // this the label has no height and paints nothing at all.
+                                implicitHeight: keyEnabledLabel.implicitHeight
+                                keywords: ["key", "camelot", "harmonic", "detect"]
+                                label: qsTr("Detect musical key")
+
+                                Text {
+                                    id: keyEnabledLabel
+
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Theme.white
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: parent.label
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                            RatioChoice {
+                                id: keyEnabledInput
+
+                                readonly property bool on: selected == "on"
+
+                                inactiveColor: Theme.darkGray4
+                                options: ["on", "off"]
+
+                                onSelectedChanged: root.dirty = true
+                            }
+                        }
+                        RowLayout {
+                            Layout.preferredWidth: (keyPane.width - keyPane.columnSpacing) / 2
+
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                // SettingParameter is a bare QQuickItem: implicit size 0. Without
+                                // this the label has no height and paints nothing at all.
+                                implicitHeight: keyPluginLabel.implicitHeight
+                                keywords: ["plugin", "vamp", "analyser", "queen mary"]
+                                label: qsTr("Key analyser")
+
+                                Text {
+                                    id: keyPluginLabel
+
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Theme.white
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: parent.label
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                            Skin.ComboBox {
+                                id: keyPluginInput
+
+                                property var ids: []
+
+                                Layout.preferredWidth: (keyPane.width - keyPane.columnSpacing) * 0.4
+                                enabled: keyEnabledInput.on
+                                model: []
+                                opacity: enabled ? 1 : 0.5
+
+                                onCurrentIndexChanged: root.dirty = true
+                            }
+                        }
+                        RowLayout {
+                            Layout.preferredWidth: (keyPane.width - keyPane.columnSpacing) / 2
+
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                // SettingParameter is a bare QQuickItem: implicit size 0. Without
+                                // this the label has no height and paints nothing at all.
+                                implicitHeight: keyFastLabel.implicitHeight
+                                keywords: ["fast", "quick", "import"]
+                                label: qsTr("Fast analysis")
+
+                                Text {
+                                    id: keyFastLabel
+
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Theme.white
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: parent.label
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                            RatioChoice {
+                                id: keyFastAnalysisInput
+
+                                readonly property bool on: selected == "on"
+
+                                enabled: keyEnabledInput.on
+                                inactiveColor: Theme.darkGray4
+                                opacity: enabled ? 1 : 0.5
+                                options: ["on", "off"]
+
+                                onSelectedChanged: root.dirty = true
+                            }
+                        }
+                        RowLayout {
+                            Layout.preferredWidth: (keyPane.width - keyPane.columnSpacing) / 2
+
+                            Mixxx.SettingParameter {
+                                Layout.fillWidth: true
+                                // SettingParameter is a bare QQuickItem: implicit size 0. Without
+                                // this the label has no height and paints nothing at all.
+                                implicitHeight: keyReanalyzeLabel.implicitHeight
+                                keywords: ["reanalyse", "reanalyze", "settings"]
+                                label: qsTr("Re-analyse when these settings change")
+
+                                Text {
+                                    id: keyReanalyzeLabel
+
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Theme.white
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: parent.label
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                            RatioChoice {
+                                id: keyReanalyzeInput
+
+                                readonly property bool on: selected == "on"
+
+                                enabled: keyEnabledInput.on
+                                inactiveColor: Theme.darkGray4
+                                opacity: enabled ? 1 : 0.5
+                                options: ["on", "off"]
+
+                                onSelectedChanged: root.dirty = true
+                            }
+                        }
+                    }
+                }
+            }
+            Text {
+                Layout.leftMargin: 17
+                Layout.preferredWidth: root.width - 44
+                Layout.topMargin: 8
+                color: Theme.deckTextColor
+                font.pixelSize: 12
+                text: qsTr("How the detected key is written -- Camelot, Lancelot, traditional -- is a display choice and lives under Decks.")
                 wrapMode: Text.WordWrap
             }
         }

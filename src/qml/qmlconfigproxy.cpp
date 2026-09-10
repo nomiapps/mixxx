@@ -7,6 +7,7 @@
 #include "library/library.h"
 #include "library/library_prefs.h"
 #include "analyzer/analyzerbeats.h"
+#include "analyzer/analyzerkey.h"
 #include "moc_qmlconfigproxy.cpp"
 #include "preferences/colorpalettesettings.h"
 #include "preferences/constants.h"
@@ -107,6 +108,13 @@ const QString kBpmFastAnalysisKey = QStringLiteral("FastAnalysisEnabled");
 const QString kBpmReanalyzeKey = QStringLiteral("ReanalyzeWhenSettingsChange");
 const QString kBpmReanalyzeImportedKey = QStringLiteral("ReanalyzeImported");
 const QString kBeatPluginIdKey = QStringLiteral("AnalyserBeatPluginID");
+// Key detection. Same British "Analyser" spelling in the Vamp key, for the same
+// reason. kKeyGroup is [Key]; the notation value in it is read elsewhere.
+const QString kKeyGroup = QStringLiteral("[Key]");
+const QString kKeyDetectionEnabledKey = QStringLiteral("KeyDetectionEnabled");
+const QString kKeyFastAnalysisKey = QStringLiteral("FastAnalysisEnabled");
+const QString kKeyReanalyzeKey = QStringLiteral("ReanalyzeWhenSettingsChange");
+const QString kKeyPluginIdKey = QStringLiteral("AnalyserKeyPluginID");
 const QString kCloneDeckOnLoadDoubleTapKey = QStringLiteral("CloneDeckOnLoadDoubleTap");
 const QString kLoadWhenDeckPlayingKey = QStringLiteral("LoadWhenDeckPlaying");
 const QString kTimeFormatKey = QStringLiteral("TimeFormat");           // TrackTime::DisplayFormat
@@ -432,9 +440,25 @@ PROPERTY_IMPL(kBpmGroup, kBpmReanalyzeKey, bool, analyzerBpmReanalyze, false);
 PROPERTY_IMPL(kBpmGroup, kBpmReanalyzeImportedKey, bool, analyzerBpmReanalyzeImported, false);
 PROPERTY_IMPL(kVampGroup, kBeatPluginIdKey, QString, analyzerBeatPluginId, QString());
 
+PROPERTY_IMPL(kKeyGroup, kKeyDetectionEnabledKey, bool, analyzerKeyEnabled, true);
+PROPERTY_IMPL(kKeyGroup, kKeyFastAnalysisKey, bool, analyzerKeyFastAnalysis, false);
+PROPERTY_IMPL(kKeyGroup, kKeyReanalyzeKey, bool, analyzerKeyReanalyze, false);
+PROPERTY_IMPL(kVampGroup, kKeyPluginIdKey, QString, analyzerKeyPluginId, QString());
+
 QVariantList QmlConfigProxy::availableBeatPlugins() const {
     QVariantList plugins;
     for (const auto& info : AnalyzerBeats::availablePlugins()) {
+        plugins.append(QVariantMap{
+                {QStringLiteral("name"), info.name()},
+                {QStringLiteral("id"), info.id()},
+        });
+    }
+    return plugins;
+}
+
+QVariantList QmlConfigProxy::availableKeyPlugins() const {
+    QVariantList plugins;
+    for (const auto& info : AnalyzerKey::availablePlugins()) {
         plugins.append(QVariantMap{
                 {QStringLiteral("name"), info.name()},
                 {QStringLiteral("id"), info.id()},
