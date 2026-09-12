@@ -320,6 +320,28 @@ SoundDeviceStatus SoundDevicePortAudio::open(bool isClkRefDevice, int syncBuffer
     m_inputParams.suggestedLatency = bufferSizeMillis / 1000.0;
     m_inputParams.hostApiSpecificStreamInfo = nullptr;
 
+    // A shared-mode host such as WASAPI only opens a device at the rate the
+    // OS has it set to, and a configured 48 kHz against a 44.1 kHz device
+    // used to fail with "Invalid sample rate" and leave Mixxx silent. Ask
+    // first; when the configured rate is refused and the device's own is
+    // not, open at the device's. The manager then writes that rate back
+    // to the configuration (see SoundManager::setupDevices), so the next
+    // launch asks for the right one.
+    if (Pa_IsFormatSupported(pInputParams, pOutputParams, m_sampleRate.toDouble()) ==
+            paInvalidSampleRate) {
+        const mixxx::audio::SampleRate deviceRate = getDefaultSampleRate();
+        if (deviceRate.isValid() && deviceRate != m_sampleRate &&
+                Pa_IsFormatSupported(pInputParams, pOutputParams, deviceRate.toDouble()) ==
+                        paFormatIsSupported) {
+            qWarning() << "Sound device" << getDisplayName() << "does not open at"
+                       << m_sampleRate << "; using its own" << deviceRate;
+            m_sampleRate = deviceRate;
+            bufferSizeMillis = framesPerBuffer / m_sampleRate.toDouble() * 1000;
+            m_outputParams.suggestedLatency = bufferSizeMillis / 1000.0;
+            m_inputParams.suggestedLatency = bufferSizeMillis / 1000.0;
+        }
+    }
+
     qDebug() << "Opening stream with id" << m_deviceId.deviceIndex;
 
     m_lastCallbackEntrytoDacSecs = bufferSizeMillis / 1000.0;

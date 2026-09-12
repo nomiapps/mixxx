@@ -31,6 +31,11 @@ class SoundDevice {
         return m_hostAPI;
     }
     void setSampleRate(mixxx::audio::SampleRate sampleRate);
+    /// The rate the device was asked for, or after open() the rate it
+    /// actually runs at.
+    mixxx::audio::SampleRate getSampleRate() const {
+        return m_sampleRate;
+    }
     void setConfigFramesPerBuffer(unsigned int framesPerBuffer);
     virtual SoundDeviceStatus open(bool isClkRefDevice, int syncBuffers) = 0;
     virtual bool isOpen() const = 0;

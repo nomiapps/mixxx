@@ -453,6 +453,17 @@ SoundDeviceStatus SoundManager::setupDevices() {
     if (pNewMainClockRef) {
         qDebug() << "Using" << pNewMainClockRef->getDisplayName()
                  << "as output sound device clock reference";
+        // The clock device may have opened at its own rate rather than the
+        // configured one (SoundDevicePortAudio::open). The engine already
+        // follows the device; make the configuration follow it too, so
+        // the next launch does not go through the same refusal.
+        const mixxx::audio::SampleRate actualRate = pNewMainClockRef->getSampleRate();
+        if (actualRate.isValid() && actualRate != m_config.getSampleRate()) {
+            qInfo() << "Sound configuration sample rate" << m_config.getSampleRate()
+                    << "corrected to the device's" << actualRate;
+            m_config.setSampleRate(actualRate);
+            m_config.writeToDisk();
+        }
     } else {
         qWarning() << "No output devices opened, no clock reference device set";
     }
