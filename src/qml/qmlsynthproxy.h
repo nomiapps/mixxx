@@ -36,6 +36,9 @@ class QmlSynthProxy : public QObject {
     /// Moves the selection by delta, wrapping at either end.
     Q_INVOKABLE void stepWavetable(const QString& group, int delta);
     Q_INVOKABLE void rescanWavetables(const QString& group);
+    /// The engine's LFO shape function, for drawing it: -1..1 for shape
+    /// 0..4 at a phase whose integer part is the cycle.
+    Q_INVOKABLE double lfoValue(int shape, double phase) const;
 
     /// The Synth behind a "[SynthN]" group, nullptr for anything else. For
     /// the QML items that watch one synth directly.

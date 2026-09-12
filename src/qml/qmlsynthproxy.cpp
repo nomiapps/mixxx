@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "control/controlobject.h"
+#include "engine/channels/enginesynth.h"
 #include "mixer/synth.h"
 #include "moc_qmlsynthproxy.cpp"
 #include "util/assert.h"
@@ -91,6 +92,10 @@ void QmlSynthProxy::stepWavetable(const QString& group, int delta) {
     }
     const int next = ((pSynth->currentWavetable() + delta) % count + count) % count;
     pSynth->selectWavetable(next);
+}
+
+double QmlSynthProxy::lfoValue(int shape, double phase) const {
+    return EngineSynth::lfoValue(shape, phase);
 }
 
 void QmlSynthProxy::rescanWavetables(const QString& group) {

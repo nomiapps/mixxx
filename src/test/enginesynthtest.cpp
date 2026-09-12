@@ -65,6 +65,34 @@ class EngineSynthTest : public SignalPathTest {
         return static_cast<float>(std::sin(2.0 * M_PI * i / kWavetableFrameSize));
     }
 
+    // Zero crossings of the left channel over the last rendered buffer: a
+    // frequency count that needs no FFT.
+    int zeroCrossings() const {
+        int count = 0;
+        for (std::size_t i = 2; i < kBufferSize; i += 2) {
+            if ((m_pOutput[i - 2] < 0.0f) != (m_pOutput[i] < 0.0f)) {
+                ++count;
+            }
+        }
+        return count;
+    }
+
+    // Peak of the left channel per block of frames over the last buffer,
+    // as max/min so a level that moves inside the buffer shows as > 1.
+    float blockPeakRatio(std::size_t blockFrames) const {
+        float lo = 1e9f;
+        float hi = 0.0f;
+        for (std::size_t start = 0; start + blockFrames <= kBufferSize / 2; start += blockFrames) {
+            float peak = 0.0f;
+            for (std::size_t f = start; f < start + blockFrames; ++f) {
+                peak = std::max(peak, std::fabs(m_pOutput[2 * f]));
+            }
+            lo = std::min(lo, peak);
+            hi = std::max(hi, peak);
+        }
+        return lo > 0.0f ? hi / lo : 1e9f;
+    }
+
     // Instant envelope, open filter: the output is the oscillator itself.
     void setupClean() {
         set("attack", 0.0);
@@ -324,6 +352,92 @@ TEST_F(EngineSynthTest, WavetableOutputStaysBounded) {
     for (int i = 0; i < 20; ++i) {
         EXPECT_LT(render(1), 1.5f);
     }
+}
+
+TEST_F(EngineSynthTest, LfoValueShapes) {
+    const double phases[4] = {0.0, 0.25, 0.5, 0.75};
+    const double sine[4] = {0.0, 1.0, 0.0, -1.0};
+    const double triangle[4] = {1.0, 0.0, -1.0, 0.0};
+    const double saw[4] = {1.0, 0.5, 0.0, -0.5};
+    const double square[4] = {1.0, 1.0, -1.0, -1.0};
+    for (int i = 0; i < 4; ++i) {
+        EXPECT_NEAR(sine[i], EngineSynth::lfoValue(0, phases[i]), 1e-9) << i;
+        EXPECT_NEAR(triangle[i], EngineSynth::lfoValue(1, phases[i]), 1e-9) << i;
+        EXPECT_NEAR(saw[i], EngineSynth::lfoValue(2, phases[i]), 1e-9) << i;
+        EXPECT_NEAR(square[i], EngineSynth::lfoValue(3, phases[i]), 1e-9) << i;
+        // The integer part is the cycle; the shapes repeat.
+        EXPECT_NEAR(sine[i], EngineSynth::lfoValue(0, 7.0 + phases[i]), 1e-9) << i;
+    }
+    // Sample and hold: one value per cycle, the same value on re-evaluation,
+    // a different one the next cycle, always in range.
+    const double held = EngineSynth::lfoValue(4, 3.1);
+    EXPECT_DOUBLE_EQ(held, EngineSynth::lfoValue(4, 3.9));
+    EXPECT_NE(held, EngineSynth::lfoValue(4, 4.1));
+    EXPECT_GE(held, -1.0);
+    EXPECT_LE(held, 1.0);
+}
+
+TEST_F(EngineSynthTest, LfoOnCutoffChangesLevelWithinABuffer) {
+    // A bright note through a filter the LFO sweeps four octaves either way
+    // at 20 Hz: half a sweep fits in one buffer, so the level moves inside
+    // it. Without depth it does not.
+    setupClean();
+    set("cutoff", 0.5);
+    set("osc1_wave", 2);
+    set("osc_mix", 0.0);
+    set("lfo_sync", 0.0);
+    set("lfo_rate", 1.0);
+    set("lfo_shape", 0);
+    set("lfo_target", 2);
+    set("lfo_depth", 0.0);
+    set("note_on", 96);
+    render(3);
+    EXPECT_LT(blockPeakRatio(64), 1.15f);
+    set("lfo_depth", 1.0);
+    render(3);
+    EXPECT_GT(blockPeakRatio(64), 1.5f);
+}
+
+TEST_F(EngineSynthTest, LfoOnPitchShiftsFrequency) {
+    // Synced with a clock that is not moving, the LFO sits at phase 0, where
+    // a square is +1: full depth on pitch is then a steady octave up.
+    setupClean();
+    set("osc1_wave", 0);
+    set("osc_mix", 0.0);
+    set("lfo_sync", 1.0);
+    set("lfo_shape", 3);
+    set("lfo_target", 3);
+    set("lfo_depth", 0.0);
+    set("note_on", 69);
+    render(3);
+    const int plain = zeroCrossings();
+    set("lfo_depth", 1.0);
+    render(3);
+    const int shifted = zeroCrossings();
+    EXPECT_GT(plain, 10);
+    EXPECT_NEAR(2.0, static_cast<double>(shifted) / plain, 0.3);
+}
+
+TEST_F(EngineSynthTest, LfoSyncFollowsBeatClock) {
+    const ConfigKey beatDistance(QStringLiteral("[InternalClock]"), QStringLiteral("beat_distance"));
+    set("lfo_sync", 1.0);
+    set("lfo_rate", 4.0 / 7.0); // division 4: one beat
+    set("note_on", 60);
+    ControlObject::set(beatDistance, 0.25);
+    render(1);
+    EXPECT_NEAR(0.25, ControlObject::get(ConfigKey(kGroup, "lfo_phase")), 0.02);
+    ControlObject::set(beatDistance, 0.75);
+    render(1);
+    EXPECT_NEAR(0.75, ControlObject::get(ConfigKey(kGroup, "lfo_phase")), 0.02);
+    // A rollover is a beat; at one bar per cycle the phase is then a
+    // quarter plus the fraction.
+    ControlObject::set(beatDistance, 0.9);
+    render(1);
+    ControlObject::set(beatDistance, 0.1);
+    set("lfo_rate", 2.0 / 7.0); // division 2: one bar
+    render(1);
+    EXPECT_NEAR(1.1 / 4.0, ControlObject::get(ConfigKey(kGroup, "lfo_phase")), 0.02);
+    ControlObject::set(beatDistance, 0.0);
 }
 
 } // namespace

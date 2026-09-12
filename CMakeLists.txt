@@ -3058,13 +3058,6 @@ if(BUILD_TESTING)
     PUBLIC RESOURCE_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/res"
   )
 
-  if(HID)
-    target_sources(
-      mixxx-test
-      PRIVATE src/test/controller_hid_reportdescriptor_test.cpp
-    )
-  endif()
-
   if(QML)
     target_sources(
       mixxx-test
@@ -5448,6 +5441,16 @@ if(HID)
       src/controllers/hid/legacyhidcontrollermapping.cpp
       src/controllers/hid/legacyhidcontrollermappingfilehandler.cpp
   )
+  # Here rather than with the other tests: option(HID) is declared just
+  # above, and an if(HID) placed before it reads an undefined variable on a
+  # tree's first configure, so a fresh build used to ship without these
+  # tests until something triggered a re-configure.
+  if(BUILD_TESTING)
+    target_sources(
+      mixxx-test
+      PRIVATE src/test/controller_hid_reportdescriptor_test.cpp
+    )
+  endif()
 
   if(ANDROID)
     target_sources(mixxx-lib PRIVATE src/controllers/android.cpp)

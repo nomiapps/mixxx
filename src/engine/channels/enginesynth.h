@@ -6,6 +6,7 @@
 #include <optional>
 #include <vector>
 
+#include "control/pollingcontrolproxy.h"
 #include "engine/channels/enginechannel.h"
 #include "engine/channels/wavetable.h"
 #include "util/types.h"
@@ -29,6 +30,15 @@ class ControlPushButton;
 /// saw, so the channel is never silent by surprise. Unlike the PolyBLEP
 /// waves a table is not band-limited: a bright frame aliases in the top
 /// octaves. Per-octave mips are the follow-up.
+///
+/// One LFO per synth modulates the wavetable position, the cutoff or the
+/// pitch of every voice (lfo_target), with lfo_shape, lfo_depth and
+/// lfo_rate. With lfo_sync its phase is derived from the [InternalClock]
+/// beat position every buffer, so it locks to the mix and cannot drift;
+/// free-running, lfo_rate is 0.05 .. 20 Hz. The value is evaluated once
+/// per control-rate block, the same block that recomputes the filter, and
+/// is stateless in the voice: every voice reads the same LFO. lfo_phase
+/// (read-only) publishes the phase for a display cursor.
 ///
 /// It is played through controls in its group ("[Synth1]"):
 ///   note_on   set to a MIDI note number to start it (a fractional part
@@ -93,6 +103,12 @@ class EngineSynth : public EngineChannel {
         return m_pTable;
     }
 
+    /// The LFO's value, -1..1, for a shape (0 sine, 1 triangle, 2 saw down,
+    /// 3 square, 4 sample and hold) at an absolute phase whose integer part
+    /// counts cycles: sample and hold hashes the cycle number, so it needs no
+    /// state either. Static so the display draws the engine's own shapes.
+    static double lfoValue(int shape, double absolutePhase);
+
   private slots:
     void slotNoteOn(double v);
     void slotNoteOff(double v);
@@ -141,6 +157,16 @@ class EngineSynth : public EngineChannel {
         int wtFrameA = 0;
         int wtFrameB = 0;
         double wtBlend = 0.0;
+        // The unmodulated knob, 0..1, for the LFO to move.
+        double wtPosition = 0.0;
+        // The LFO for this buffer: shape and target, depth already applied
+        // to the value, and the absolute phase at frame 0 plus its
+        // increment per frame.
+        int lfoShape = 0;
+        int lfoTarget = 0;
+        double lfoDepth = 0.0;
+        double lfoPhase0 = 0.0;
+        double lfoInc = 0.0;
     };
 
     void readParams(Params* pParams) const;
@@ -149,8 +175,16 @@ class EngineSynth : public EngineChannel {
     void releaseVoicesFor(int note);
     Voice* findVoiceFor(int note);
     Voice* allocateVoice();
-    void renderVoice(Voice* pVoice, const Params& params, CSAMPLE* pMono, std::size_t frames);
+    /// bufferOffset is where pMono sits in the buffer, so a voice can place
+    /// itself on the LFO's timeline; scheduled events split a buffer into
+    /// segments that start anywhere.
+    void renderVoice(Voice* pVoice,
+            const Params& params,
+            CSAMPLE* pMono,
+            std::size_t bufferOffset,
+            std::size_t frames);
     void drainWavetableLane();
+    void advanceBeatClock();
 
     struct ScheduledEvent {
         uint32_t frame = 0;
@@ -174,6 +208,21 @@ class EngineSynth : public EngineChannel {
     // audio callback has stopped.
     Wavetable* m_pTable;
     std::optional<WavetableEnginePipe> m_wavetablePipe;
+    // The beat clock, read once per callback in updateActiveState() so
+    // bars are counted while the synth is silent too. beat_distance is
+    // only the phase inside a beat; the rollovers are counted here. With no
+    // clock in the process (a synth built without a mixer) the proxies
+    // read a default control: bpm falls back to 124 and the phase stays 0.
+    PollingControlProxy m_clockBpm;
+    PollingControlProxy m_clockBeatDistance;
+    bool m_clockPrimed;
+    double m_prevBeatPhase;
+    int64_t m_beatCount;
+    double m_beatsAtCallback;
+    double m_beatFrames;
+    // Free-running mode: absolute phase in cycles, advanced per buffer.
+    double m_lfoFreePhase;
+    double m_lastPublishedPhase;
 
     ControlObject* m_pNoteOn;
     ControlObject* m_pNoteOff;
@@ -192,4 +241,10 @@ class EngineSynth : public EngineChannel {
     ControlPotmeter* m_pResonance;
     ControlPotmeter* m_pEnvAmount;
     ControlAudioTaperPot* m_pPregain;
+    ControlObject* m_pLfoShape;
+    ControlPotmeter* m_pLfoRate;
+    ControlPushButton* m_pLfoSync;
+    ControlPotmeter* m_pLfoDepth;
+    ControlObject* m_pLfoTarget;
+    ControlObject* m_pLfoPhase;
 };

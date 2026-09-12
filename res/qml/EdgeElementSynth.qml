@@ -18,6 +18,9 @@ import "Theme"
 //             keys no wider than they need to be. The Edge panel stacks
 //             them instead and scales everything with its height
 //             (default false)
+// The space left beside the frame stack (Edge) or beside the keys (compact)
+// holds the extras: the LFO with its shape display, and what later
+// landings add there.
 // Keys write note_on / note_off with the MIDI note number; the engine keeps
 // the key state, so a MIDI keyboard mapped to the same group can play at the
 // same time.
@@ -32,9 +35,14 @@ Item {
     readonly property int baseNote: Math.round(baseNoteControl.value)
     // C# D# _ F# G# A# _ : which white keys have a black key to their right
     readonly property var blackAfterWhite: [true, true, false, true, true, true, false]
+    readonly property bool compact: spec.compact ?? false
     readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "[Synth1]") : (spec.group ?? "[Synth1]")
     // note -> true for every key currently down on THIS panel
     property var heldNotes: ({})
+    // The beat divisions lfo_rate picks when synced, in the engine's order.
+    readonly property var lfoDivisionNames: ["4 BAR", "2 BAR", "1 BAR", "1/2", "1/4", "1/8", "1/16", "1/32"]
+    readonly property var lfoShapeNames: ["SINE", "TRI", "SAW", "SQR", "S&H"]
+    readonly property var lfoTargetNames: ["OFF", "WT", "CUT", "PIT"]
     readonly property var noteNames: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
     readonly property int octaves: Math.max(1, spec.octaves ?? 2)
     // touch point id -> note, so each finger releases only its own key
@@ -68,7 +76,6 @@ Item {
             "degrees": [0, 3, 5, 6, 7, 10]
         }
     ]
-    readonly property bool compact: spec.compact ?? false
     readonly property bool showWavetable: (spec.wavetable ?? true) && root.height >= (compact ? 120 : 200)
     required property var spec
     property var surface: null
@@ -245,6 +252,30 @@ Item {
         group: root.groupResolved
         key: "wt_frames"
     }
+    Mixxx.ControlProxy {
+        id: lfoShapeControl
+
+        group: root.groupResolved
+        key: "lfo_shape"
+    }
+    Mixxx.ControlProxy {
+        id: lfoTargetControl
+
+        group: root.groupResolved
+        key: "lfo_target"
+    }
+    Mixxx.ControlProxy {
+        id: lfoRateControl
+
+        group: root.groupResolved
+        key: "lfo_rate"
+    }
+    Mixxx.ControlProxy {
+        id: lfoSyncControl
+
+        group: root.groupResolved
+        key: "lfo_sync"
+    }
     Connections {
         function onWavetableChanged(group) {
             if (group === root.groupResolved)
@@ -276,8 +307,8 @@ Item {
 
         Skin.ControlButton {
             activeColor: Theme.green
-            group: root.groupResolved
             fontPixelSize: controls.buttonFont
+            group: root.groupResolved
             height: controls.knobSize
             key: "main_mix"
             text: "ON"
@@ -415,33 +446,13 @@ Item {
                 }
             ]
 
-            Item {
+            KnobCell {
                 required property var modelData
 
-                height: controls.height
-                // A slot is the knob's width, unless its label is wider: with
-                // small knobs "DETUNE" and "CUTOFF" ran into their neighbours.
-                width: Math.max(controls.knobSize, knobLabel.implicitWidth + 4)
-
-                Text {
-                    id: knobLabel
-
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
-                    color: Theme.deckTextColor
-                    font.pixelSize: Math.max(10, controls.height * 0.14)
-                    text: parent.modelData.label
-                }
-                Skin.ControlKnob {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: knobLabel.bottom
-                    anchors.topMargin: 2
-                    color: parent.modelData.color
-                    group: root.groupResolved
-                    height: width
-                    key: parent.modelData.key
-                    width: Math.min(parent.width, controls.height * 0.72)
-                }
+                cell: controls.height
+                knobColor: modelData.color
+                knobKey: modelData.key
+                label: modelData.label
             }
         }
     }
@@ -531,6 +542,92 @@ Item {
                     frameColor: Theme.wavetableFrameColor
                     group: root.groupResolved
                     position: wtPositionControl.value
+                }
+            }
+        }
+    }
+    // The extras: the LFO now; unison, patches and the curves follow. On
+    // the Edge this is the part of the band to the right of the frame
+    // stack; in the compact row it is the space to the right of the keys.
+    Item {
+        id: extras
+
+        readonly property real buttonWidth: line * 0.72 * 1.8
+        readonly property int font: knob >= 72 ? 16 : (knob >= 52 ? 12 : 10)
+        readonly property real knob: line * 0.72
+        readonly property real line: (height - controls.spacing) / 2
+
+        anchors.bottom: root.compact ? parent.bottom : wavetableBand.bottom
+        anchors.left: root.compact ? keyboard.right : parent.left
+        anchors.leftMargin: root.compact ? controls.spacing * 2 : picker.width + wavetableBand.stackWidth + controls.spacing * 3
+        anchors.right: parent.right
+        anchors.top: root.compact ? controls.bottom : wavetableBand.top
+        anchors.topMargin: root.compact ? wavetableBand.anchors.topMargin : 0
+        clip: true
+        visible: root.showWavetable
+
+        Column {
+            anchors.fill: parent
+            spacing: controls.spacing
+
+            Row {
+                height: extras.line
+                spacing: controls.spacing
+
+                Skin.Button {
+                    activeColor: Theme.purple
+                    anchors.bottom: parent.bottom
+                    fontPixelSize: extras.font
+                    height: extras.knob
+                    highlight: true
+                    text: "LFO " + root.lfoShapeNames[Math.max(0, Math.min(4, Math.round(lfoShapeControl.value)))]
+                    width: extras.buttonWidth
+
+                    onClicked: lfoShapeControl.value = (Math.round(lfoShapeControl.value) + 1) % 5
+                }
+                KnobCell {
+                    cell: extras.line
+                    knobColor: Theme.purple
+                    knobKey: "lfo_rate"
+                    label: "RATE"
+                }
+                KnobCell {
+                    cell: extras.line
+                    knobColor: Theme.purple
+                    knobKey: "lfo_depth"
+                    label: "DEPTH"
+                }
+                Skin.Button {
+                    activeColor: Theme.purple
+                    anchors.bottom: parent.bottom
+                    fontPixelSize: extras.font
+                    height: extras.knob
+                    highlight: true
+                    text: "TO " + root.lfoTargetNames[Math.max(0, Math.min(3, Math.round(lfoTargetControl.value)))]
+                    width: extras.buttonWidth
+
+                    onClicked: lfoTargetControl.value = (Math.round(lfoTargetControl.value) + 1) % 4
+                }
+                // Lit when synced, reading the division lfo_rate picks; unlit
+                // it runs free and the knob is a frequency.
+                Skin.ControlButton {
+                    activeColor: Theme.purple
+                    anchors.bottom: parent.bottom
+                    fontPixelSize: extras.font
+                    group: root.groupResolved
+                    height: extras.knob
+                    key: "lfo_sync"
+                    text: lfoSyncControl.value > 0 ? root.lfoDivisionNames[Math.max(0, Math.min(7, Math.round(lfoRateControl.value * 7)))] : "FREE"
+                    toggleable: true
+                    width: extras.buttonWidth
+                }
+                Skin.SynthLfoShape {
+                    anchors.bottom: parent.bottom
+                    group: root.groupResolved
+                    height: extras.knob
+                    lineColor: Theme.purple
+                    shape: Math.max(0, Math.min(4, Math.round(lfoShapeControl.value)))
+                    width: extras.knob * 2.2
                 }
             }
         }
@@ -628,6 +725,40 @@ Item {
             onPressed: touchPoints => root.track(touchPoints, false)
             onReleased: touchPoints => root.track(touchPoints, true)
             onUpdated: touchPoints => root.track(touchPoints, false)
+        }
+    }
+
+    // A labelled knob: the label above, the knob below, the slot as wide
+    // as the wider of the two. Used by the control row and the extras.
+    component KnobCell: Item {
+        id: cellRoot
+
+        required property real cell
+        required property color knobColor
+        required property string knobKey
+        required property string label
+
+        height: cell
+        width: Math.max(cell * 0.72, cellLabel.implicitWidth + 4)
+
+        Text {
+            id: cellLabel
+
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            color: Theme.deckTextColor
+            font.pixelSize: Math.max(10, cellRoot.cell * 0.14)
+            text: cellRoot.label
+        }
+        Skin.ControlKnob {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: cellLabel.bottom
+            anchors.topMargin: 2
+            color: cellRoot.knobColor
+            group: root.groupResolved
+            height: width
+            key: cellRoot.knobKey
+            width: Math.min(parent.width, cellRoot.cell * 0.72)
         }
     }
 }

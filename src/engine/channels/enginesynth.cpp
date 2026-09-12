@@ -30,6 +30,38 @@ constexpr double kMaxAttackSeconds = 4.0;
 constexpr double kMaxDecaySeconds = 4.0;
 constexpr double kMaxReleaseSeconds = 8.0;
 constexpr double kFilterEnvelopeOctaves = 5.0;
+// The LFO. Free-running it spans this range exponentially; on cutoff it
+// swings this many octaves at full depth; on pitch this many semitones, but
+// scaled by depth squared so the bottom of the knob is a vibrato and only
+// the top an octave.
+constexpr double kLfoMinHz = 0.05;
+constexpr double kLfoMaxHz = 20.0;
+constexpr double kLfoCutoffOctaves = 4.0;
+constexpr double kLfoPitchSemitones = 12.0;
+// Synced, lfo_rate picks one of these divisions, in beats: four bars
+// down to a thirty-second.
+constexpr double kSyncBeats[8] = {16.0, 8.0, 4.0, 2.0, 1.0, 0.5, 0.25, 0.125};
+constexpr int kSyncDivisions = 8;
+// lfo_phase is published to the UI at most this often per cycle.
+constexpr double kLfoPhasePublishStep = 1.0 / 64.0;
+// The same sanitising as the sequencer's clock.
+constexpr double kDefaultBpm = 124.0;
+constexpr double kMinBpm = 1.0;
+constexpr double kMaxBpm = 400.0;
+// Free phase is kept absolute (cycles in the integer part, for sample and
+// hold); it wraps here to keep the fraction precise.
+constexpr double kLfoPhaseWrap = 1048576.0;
+
+// A small integer hash, so sample and hold is a function of the cycle
+// number rather than of any state.
+uint32_t hash32(uint32_t x) {
+    x ^= x >> 16;
+    x *= 0x7feb352dU;
+    x ^= x >> 15;
+    x *= 0x846ca68bU;
+    x ^= x >> 16;
+    return x;
+}
 
 // Two-sample polynomial band-limited step, subtracted from a naive saw or
 // square at each discontinuity to remove most of the aliasing.
@@ -102,6 +134,27 @@ double noteToHz(int note) {
 
 } // namespace
 
+// static
+double EngineSynth::lfoValue(int shape, double absolutePhase) {
+    const double cycle = std::floor(absolutePhase);
+    const double phase = absolutePhase - cycle;
+    switch (shape) {
+    case 1: // triangle, from the top like the oscillator's
+        return 4.0 * std::fabs(phase - 0.5) - 1.0;
+    case 2: // saw, falling
+        return 1.0 - 2.0 * phase;
+    case 3: // square
+        return phase < 0.5 ? 1.0 : -1.0;
+    case 4: { // sample and hold: one value per cycle
+        const uint32_t h = hash32(static_cast<uint32_t>(static_cast<int64_t>(cycle)));
+        return static_cast<double>(h) / 4294967295.0 * 2.0 - 1.0;
+    }
+    case 0: // sine
+    default:
+        return std::sin(kTwoPi * phase);
+    }
+}
+
 EngineSynth::EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManager* pEffectsManager)
         : EngineChannel(handleGroup,
                   EngineChannel::CENTER,
@@ -112,7 +165,20 @@ EngineSynth::EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManage
           m_voiceSequence(0),
           m_monoBuffer(kMaxEngineFrames, 0.0f),
           m_scheduledCount(0),
-          m_pTable(nullptr) {
+          m_pTable(nullptr),
+          m_clockBpm(QStringLiteral("[InternalClock]"),
+                  QStringLiteral("bpm"),
+                  ControlFlag::AllowMissingOrInvalid),
+          m_clockBeatDistance(QStringLiteral("[InternalClock]"),
+                  QStringLiteral("beat_distance"),
+                  ControlFlag::AllowMissingOrInvalid),
+          m_clockPrimed(false),
+          m_prevBeatPhase(0.0),
+          m_beatCount(0),
+          m_beatsAtCallback(0.0),
+          m_beatFrames(0.0),
+          m_lfoFreePhase(0.0),
+          m_lastPublishedPhase(-1.0) {
     for (auto& held : m_held) {
         held.store(0, std::memory_order_relaxed);
     }
@@ -195,6 +261,30 @@ EngineSynth::EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManage
 
     m_pPregain = new ControlAudioTaperPot(ConfigKey(getGroup(), "pregain"), -12, 12, 0.5);
 
+    // The LFO: shape 0 sine, 1 triangle, 2 saw, 3 square, 4 sample and
+    // hold; target 0 off, 1 wavetable position, 2 cutoff, 3 pitch. Depth
+    // defaults to 0, so a synth sounds as it did until the knob moves.
+    // lfo_rate is a free frequency unless lfo_sync, when it picks a beat
+    // division; synced by default, since that is what a DJ wants.
+    m_pLfoShape = new ControlObject(ConfigKey(getGroup(), "lfo_shape"));
+    m_pLfoShape->setDefaultValue(0.0);
+    m_pLfoShape->set(0.0);
+    m_pLfoRate = new ControlPotmeter(ConfigKey(getGroup(), "lfo_rate"), 0.0, 1.0);
+    m_pLfoRate->setDefaultValue(0.3);
+    m_pLfoRate->set(0.3);
+    m_pLfoSync = new ControlPushButton(ConfigKey(getGroup(), "lfo_sync"));
+    m_pLfoSync->setButtonMode(mixxx::control::ButtonMode::Toggle);
+    m_pLfoSync->setDefaultValue(1.0);
+    m_pLfoSync->set(1.0);
+    m_pLfoDepth = new ControlPotmeter(ConfigKey(getGroup(), "lfo_depth"), 0.0, 1.0);
+    m_pLfoDepth->setDefaultValue(0.0);
+    m_pLfoDepth->set(0.0);
+    m_pLfoTarget = new ControlObject(ConfigKey(getGroup(), "lfo_target"));
+    m_pLfoTarget->setDefaultValue(1.0);
+    m_pLfoTarget->set(1.0);
+    m_pLfoPhase = new ControlObject(ConfigKey(getGroup(), "lfo_phase"));
+    m_pLfoPhase->setReadOnly();
+
     // Unlike an aux input there is nothing to configure before this channel
     // can make sound, so it goes straight to the main mix; the ON button on
     // the surface toggles main_mix.
@@ -212,6 +302,12 @@ EngineSynth::~EngineSynth() {
             delete pQueued;
         }
     }
+    delete m_pLfoPhase;
+    delete m_pLfoTarget;
+    delete m_pLfoDepth;
+    delete m_pLfoSync;
+    delete m_pLfoRate;
+    delete m_pLfoShape;
     delete m_pPregain;
     delete m_pEnvAmount;
     delete m_pResonance;
@@ -306,7 +402,33 @@ void EngineSynth::slotAllNotesOff(double v) {
     }
 }
 
+void EngineSynth::advanceBeatClock() {
+    double bpm = m_clockBpm.get();
+    if (!(bpm >= kMinBpm && bpm <= kMaxBpm)) { // also catches NaN
+        bpm = kDefaultBpm;
+    }
+    double phase = m_clockBeatDistance.get();
+    if (!std::isfinite(phase)) {
+        phase = 0.0;
+    }
+    phase -= std::floor(phase);
+    if (m_clockPrimed && phase < m_prevBeatPhase - 0.5) {
+        ++m_beatCount;
+    }
+    m_clockPrimed = true;
+    m_prevBeatPhase = phase;
+    m_beatsAtCallback = static_cast<double>(m_beatCount) + phase;
+    double sampleRate = m_sampleRate.get();
+    if (sampleRate <= 0.0) {
+        sampleRate = 44100.0;
+    }
+    m_beatFrames = sampleRate * 60.0 / bpm;
+}
+
 EngineChannel::ActiveState EngineSynth::updateActiveState() {
+    // Every callback, whether or not process() follows: a silent synth
+    // still has to count bars for the synced LFO.
+    advanceBeatClock();
     const bool keysDown = (m_held[0].load(std::memory_order_acquire) |
                                   m_held[1].load(std::memory_order_acquire) |
                                   m_tapped[0].load(std::memory_order_acquire) |
@@ -364,6 +486,24 @@ void EngineSynth::readParams(Params* pParams) const {
     pParams->damping = 2.0 * (1.0 - 0.95 * std::clamp(m_pResonance->get(), 0.0, 1.0));
     pParams->envAmountOctaves = std::clamp(m_pEnvAmount->get(), -1.0, 1.0) * kFilterEnvelopeOctaves;
     pParams->gain = m_pPregain->get();
+
+    pParams->wtPosition = std::clamp(m_pWtPosition->get(), 0.0, 1.0);
+    pParams->lfoShape = std::clamp(static_cast<int>(std::lround(m_pLfoShape->get())), 0, 4);
+    pParams->lfoTarget = std::clamp(static_cast<int>(std::lround(m_pLfoTarget->get())), 0, 3);
+    pParams->lfoDepth = std::clamp(m_pLfoDepth->get(), 0.0, 1.0);
+    const double rate = std::clamp(m_pLfoRate->get(), 0.0, 1.0);
+    if (m_pLfoSync->toBool() && m_beatFrames > 0.0) {
+        // Derived from the clock every buffer, so it cannot drift from it.
+        const int division = std::clamp(
+                static_cast<int>(std::lround(rate * (kSyncDivisions - 1))), 0, kSyncDivisions - 1);
+        const double beats = kSyncBeats[division];
+        pParams->lfoPhase0 = m_beatsAtCallback / beats;
+        pParams->lfoInc = 1.0 / (beats * m_beatFrames);
+    } else {
+        const double hz = kLfoMinHz * std::pow(kLfoMaxHz / kLfoMinHz, rate);
+        pParams->lfoPhase0 = m_lfoFreePhase;
+        pParams->lfoInc = hz / sampleRate;
+    }
 }
 
 EngineSynth::Voice* EngineSynth::findVoiceFor(int note) {
@@ -486,9 +626,19 @@ void EngineSynth::applyKeyChanges() {
     }
 }
 
-void EngineSynth::renderVoice(Voice* pVoice, const Params& params, CSAMPLE* pMono, std::size_t frames) {
-    const double inc1 = noteToHz(pVoice->note) / params.sampleRate;
-    const double inc2 = inc1 * params.osc2Ratio;
+void EngineSynth::renderVoice(Voice* pVoice,
+        const Params& params,
+        CSAMPLE* pMono,
+        std::size_t bufferOffset,
+        std::size_t frames) {
+    const double baseInc1 = noteToHz(pVoice->note) / params.sampleRate;
+    // Per control-rate block when the LFO is on pitch.
+    double inc1 = baseInc1;
+    double inc2 = inc1 * params.osc2Ratio;
+    // Per control-rate block when the LFO is on the wavetable position.
+    int frameA = params.wtFrameA;
+    int frameB = params.wtFrameB;
+    double blend = params.wtBlend;
     const double mix2 = params.oscMix;
     const double mix1 = 1.0 - mix2;
     const double level = pVoice->velocity * kVoiceLevel;
@@ -544,7 +694,31 @@ void EngineSynth::renderVoice(Voice* pVoice, const Params& params, CSAMPLE* pMon
         }
 
         if (untilCoefficients == 0) {
-            double cutoff = params.cutoffHz * std::pow(2.0, params.envAmountOctaves * pVoice->env);
+            // The LFO is read on the buffer's timeline, not the segment's,
+            // so every voice and every segment agree on it.
+            const double lfo = params.lfoDepth > 0.0
+                    ? params.lfoDepth *
+                            lfoValue(params.lfoShape,
+                                    params.lfoPhase0 + (bufferOffset + i) * params.lfoInc)
+                    : 0.0;
+            double cutoffOctaves = params.envAmountOctaves * pVoice->env;
+            if (params.lfoTarget == 2) {
+                cutoffOctaves += lfo * kLfoCutoffOctaves;
+            }
+            if (params.lfoTarget == 3) {
+                // depth squared: lfo carries one factor of depth already.
+                inc1 = baseInc1 *
+                        std::pow(2.0, lfo * params.lfoDepth * kLfoPitchSemitones / 12.0);
+                inc2 = inc1 * params.osc2Ratio;
+            }
+            if (params.lfoTarget == 1 && params.pWavetable != nullptr) {
+                const int last = params.pWavetable->frameCount - 1;
+                const double position = std::clamp(params.wtPosition + lfo, 0.0, 1.0) * last;
+                frameA = static_cast<int>(position);
+                frameB = std::min(frameA + 1, last);
+                blend = position - frameA;
+            }
+            double cutoff = params.cutoffHz * std::pow(2.0, cutoffOctaves);
             cutoff = std::clamp(cutoff, kMinCutoffHz, maxCutoff);
             const double g = std::tan(kPi * cutoff / params.sampleRate);
             a1 = 1.0 / (1.0 + g * (g + params.damping));
@@ -555,18 +729,10 @@ void EngineSynth::renderVoice(Voice* pVoice, const Params& params, CSAMPLE* pMon
         --untilCoefficients;
 
         const double s1 = table1
-                ? wavetableSample(*params.pWavetable,
-                          params.wtFrameA,
-                          params.wtFrameB,
-                          params.wtBlend,
-                          pVoice->phase1)
+                ? wavetableSample(*params.pWavetable, frameA, frameB, blend, pVoice->phase1)
                 : oscillator(params.wave1, pVoice->phase1, inc1);
         const double s2 = table2
-                ? wavetableSample(*params.pWavetable,
-                          params.wtFrameA,
-                          params.wtFrameB,
-                          params.wtBlend,
-                          pVoice->phase2)
+                ? wavetableSample(*params.pWavetable, frameA, frameB, blend, pVoice->phase2)
                 : oscillator(params.wave2, pVoice->phase2, inc2);
         pVoice->phase1 += inc1;
         if (pVoice->phase1 >= 1.0) {
@@ -626,7 +792,7 @@ void EngineSynth::process(CSAMPLE* pOut, const std::size_t bufferSize) {
         if (segmentEnd > cursor) {
             for (Voice& voice : m_voices) {
                 if (voice.stage != Stage::Idle) {
-                    renderVoice(&voice, params, pMono + cursor, segmentEnd - cursor);
+                    renderVoice(&voice, params, pMono + cursor, cursor, segmentEnd - cursor);
                     sounding = true;
                 }
             }
@@ -643,6 +809,21 @@ void EngineSynth::process(CSAMPLE* pOut, const std::size_t bufferSize) {
         }
     }
     m_scheduledCount = 0;
+
+    // Advance the free-running LFO past this buffer, and tell the display
+    // where the LFO is, at most every 64th of a cycle.
+    if (!m_pLfoSync->toBool()) {
+        m_lfoFreePhase += static_cast<double>(frames) * params.lfoInc;
+        if (m_lfoFreePhase >= kLfoPhaseWrap) {
+            m_lfoFreePhase -= kLfoPhaseWrap;
+        }
+    }
+    const double phaseNow = params.lfoPhase0 - std::floor(params.lfoPhase0);
+    if (m_lastPublishedPhase < 0.0 ||
+            std::fabs(phaseNow - m_lastPublishedPhase) >= kLfoPhasePublishStep) {
+        m_pLfoPhase->setAndConfirm(phaseNow);
+        m_lastPublishedPhase = phaseNow;
+    }
 
     if (sounding) {
         const CSAMPLE gain = static_cast<CSAMPLE>(params.gain);
