@@ -12,11 +12,11 @@ import "Theme"
 // up. This hosts the same keyboard panel that surface uses, which keeps one
 // implementation of the key handling and the waveform and envelope controls.
 //
-// The panel is built for touch, so it is given a generous height here rather
-// than squeezed: on a mouse it is still played one note at a time, and on a
-// touchscreen the whole row is playable. The height is what the panel needs
-// to show its wavetable band (see EdgeElementSynth's showWavetable); the
-// keys take what is left, which on a mouse is plenty.
+// The panel is built for touch; here it is asked for its compact arrangement
+// (see EdgeElementSynth): a fixed control row, then the wavetable picker and
+// frame stack with the keyboard beside them, the keys no wider than a mouse
+// needs. That keeps the row to the height of the other rows under the mixer
+// while still showing everything the Edge panel shows.
 Item {
     id: root
 
@@ -25,7 +25,7 @@ Item {
     property string group: "[Synth1]"
     property int octaves: 3
 
-    implicitHeight: 260
+    implicitHeight: 170
 
     Skin.SectionBackground {
         anchors.fill: parent
@@ -39,7 +39,8 @@ Item {
         // here, so the group in the spec is used as it stands.
         spec: ({
                 "group": root.group,
-                "octaves": root.octaves
+                "octaves": root.octaves,
+                "compact": true
             })
     }
 }

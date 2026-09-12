@@ -12,7 +12,12 @@ import "Theme"
 //   wavetable the wavetable band between the controls and the keyboard:
 //             the table picker, its frame count and the stack of frames
 //             with the one WT POS is playing drawn bright (default true;
-//             hidden anyway below 200 px, where the band cannot fit)
+//             hidden anyway where the band cannot fit)
+//   compact   the main-window arrangement: a fixed-height control row,
+//             then the wavetable band and the keyboard SIDE BY SIDE, the
+//             keys no wider than they need to be. The Edge panel stacks
+//             them instead and scales everything with its height
+//             (default false)
 // Keys write note_on / note_off with the MIDI note number; the engine keeps
 // the key state, so a MIDI keyboard mapped to the same group can play at the
 // same time.
@@ -63,7 +68,8 @@ Item {
             "degrees": [0, 3, 5, 6, 7, 10]
         }
     ]
-    readonly property bool showWavetable: (spec.wavetable ?? true) && root.height >= 200
+    readonly property bool compact: spec.compact ?? false
+    readonly property bool showWavetable: (spec.wavetable ?? true) && root.height >= (compact ? 120 : 200)
     required property var spec
     property var surface: null
     readonly property var waveNames: ["SINE", "TRI", "SAW", "SQR", "WT"]
@@ -255,6 +261,9 @@ Item {
         // word ("1 SINE", "BLUES") that does not fit in a square; the key
         // button is 1.4, for two characters and a sharp. The octave buttons
         // are a single glyph and fit a square.
+        // Button text grows with the buttons: 16 px on the Edge, where they
+        // are the size of a fingertip, down to 10 px in the compact row.
+        readonly property int buttonFont: knobSize >= 72 ? 16 : (knobSize >= 52 ? 12 : 10)
         readonly property real keyWidth: knobSize * 1.4
         readonly property real knobSize: Math.min(height * 0.72, (root.width - spacing * 21) / 24.8)
         readonly property real waveWidth: knobSize * 1.8
@@ -262,12 +271,13 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        height: root.height * 0.32
+        height: root.compact ? 56 : root.height * 0.32
         spacing: Math.max(4, root.width * 0.006)
 
         Skin.ControlButton {
             activeColor: Theme.green
             group: root.groupResolved
+            fontPixelSize: controls.buttonFont
             height: controls.knobSize
             key: "main_mix"
             text: "ON"
@@ -276,6 +286,7 @@ Item {
         }
         Skin.Button {
             activeColor: Theme.blue
+            fontPixelSize: controls.buttonFont
             height: controls.knobSize
             highlight: true
             text: "−"
@@ -285,6 +296,7 @@ Item {
         }
         Skin.Button {
             activeColor: Theme.blue
+            fontPixelSize: controls.buttonFont
             height: controls.knobSize
             highlight: true
             text: "+"
@@ -296,6 +308,7 @@ Item {
         // controller playing the same synth relights itself from them.
         Skin.Button {
             activeColor: Theme.blue
+            fontPixelSize: controls.buttonFont
             height: controls.knobSize
             highlight: true
             text: root.noteNames[Math.round(scaleRootControl.value) % 12]
@@ -305,6 +318,7 @@ Item {
         }
         Skin.Button {
             activeColor: Theme.blue
+            fontPixelSize: controls.buttonFont
             height: controls.knobSize
             highlight: true
             text: root.scaleLabel()
@@ -314,6 +328,7 @@ Item {
         }
         Skin.Button {
             activeColor: Theme.amber
+            fontPixelSize: controls.buttonFont
             height: controls.knobSize
             highlight: true
             text: "1 " + root.waveNames[Math.max(0, Math.min(4, Math.round(osc1Wave.value)))]
@@ -323,6 +338,7 @@ Item {
         }
         Skin.Button {
             activeColor: Theme.amber
+            fontPixelSize: controls.buttonFont
             height: controls.knobSize
             highlight: true
             text: "2 " + root.waveNames[Math.max(0, Math.min(4, Math.round(osc2Wave.value)))]
@@ -430,17 +446,22 @@ Item {
         }
     }
     // The wavetable band: picker on the left, the stack of frames beside
-    // it. Only when there is room; a 150 px main-window row keeps WT POS
-    // and loses this.
+    // it. Only when there is room. Stacked above the keyboard on the Edge;
+    // in the compact row it takes the left of the space under the controls
+    // and the keyboard sits beside it.
     Item {
         id: wavetableBand
 
+        // The stack reads well at about 2.5:1; in the compact row it is
+        // given that width and the keys get the rest.
+        readonly property real stackWidth: root.compact ? 240 : width * 0.3
+
         anchors.left: parent.left
-        anchors.right: parent.right
         anchors.top: controls.bottom
         anchors.topMargin: root.showWavetable ? Math.max(4, root.height * 0.02) : 0
-        height: root.showWavetable ? root.height * 0.26 : 0
+        height: !root.showWavetable ? 0 : (root.compact ? root.height - controls.height - anchors.topMargin : root.height * 0.26)
         visible: root.showWavetable
+        width: root.compact ? picker.width + controls.spacing + stackWidth : root.width
 
         Row {
             anchors.fill: parent
@@ -501,7 +522,7 @@ Item {
                 color: Theme.sunkenBackgroundColor
                 height: wavetableBand.height
                 radius: 3
-                width: wavetableBand.width * 0.3
+                width: wavetableBand.stackWidth
 
                 Mixxx.WavetableView {
                     anchors.fill: parent
@@ -520,13 +541,17 @@ Item {
         readonly property real blackHeight: height * 0.6
         readonly property real blackWidth: whiteWidth * 0.58
         readonly property real gap: Math.max(1, whiteWidth * 0.03)
+        // On a mouse a white key needs no more than this; the Edge, sized
+        // for fingers, spreads its keys over the full width instead.
+        readonly property real maxWhiteWidth: 26
         readonly property real whiteWidth: width / root.whiteKeyCount
 
         anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: wavetableBand.bottom
+        anchors.left: root.compact && root.showWavetable ? wavetableBand.right : parent.left
+        anchors.leftMargin: root.compact && root.showWavetable ? controls.spacing * 2 : 0
+        anchors.top: root.compact ? controls.bottom : wavetableBand.bottom
         anchors.topMargin: Math.max(4, root.height * 0.02)
+        width: root.compact ? Math.min(root.width - anchors.leftMargin - (root.showWavetable ? wavetableBand.width : 0), root.whiteKeyCount * maxWhiteWidth) : root.width
 
         Repeater {
             model: root.whiteKeyCount
