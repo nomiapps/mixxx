@@ -9,6 +9,10 @@ import "Theme"
 // multi-touch keyboard. spec fields:
 //   group     the synth group (default "[Synth1]")
 //   octaves   keyboard span (default 2)
+//   wavetable the wavetable band between the controls and the keyboard:
+//             the table picker, its frame count and the stack of frames
+//             with the one WT POS is playing drawn bright (default true;
+//             hidden anyway below 320 px, where a main-window row is)
 // Keys write note_on / note_off with the MIDI note number; the engine keeps
 // the key state, so a MIDI keyboard mapped to the same group can play at the
 // same time.
@@ -59,9 +63,14 @@ Item {
             "degrees": [0, 3, 5, 6, 7, 10]
         }
     ]
+    readonly property bool showWavetable: (spec.wavetable ?? true) && root.height >= 320
     required property var spec
     property var surface: null
-    readonly property var waveNames: ["SINE", "TRI", "SAW", "SQR"]
+    readonly property var waveNames: ["SINE", "TRI", "SAW", "SQR", "WT"]
+    // Bumped whenever the synth reports a table change, so the name below
+    // re-reads; the singleton has no per-group property to bind to.
+    property int wavetableEpoch: 0
+    readonly property string wavetableName: root.wavetableEpoch >= 0 ? Mixxx.Synth.wavetableName(root.groupResolved) : ""
     readonly property int whiteKeyCount: octaves * 7 + 1
     readonly property var whiteOffsets: [0, 2, 4, 5, 7, 9, 11]
 
@@ -218,16 +227,36 @@ Item {
         group: root.groupResolved
         key: "scale_root"
     }
+    Mixxx.ControlProxy {
+        id: wtPositionControl
+
+        group: root.groupResolved
+        key: "wt_position"
+    }
+    Mixxx.ControlProxy {
+        id: wtFramesControl
+
+        group: root.groupResolved
+        key: "wt_frames"
+    }
+    Connections {
+        function onWavetableChanged(group) {
+            if (group === root.groupResolved)
+                root.wavetableEpoch += 1;
+        }
+
+        target: Mixxx.Synth
+    }
     Row {
         id: controls
 
-        // 21 controls of three widths. A knob is one slot; the two oscillator
+        // 22 controls of three widths. A knob is one slot; the two oscillator
         // buttons and the scale button are 1.8, because their label carries a
         // word ("1 SINE", "BLUES") that does not fit in a square; the key
         // button is 1.4, for two characters and a sharp. The octave buttons
         // are a single glyph and fit a square.
         readonly property real keyWidth: knobSize * 1.4
-        readonly property real knobSize: Math.min(height * 0.72, (root.width - spacing * 20) / 23.8)
+        readonly property real knobSize: Math.min(height * 0.72, (root.width - spacing * 21) / 24.8)
         readonly property real waveWidth: knobSize * 1.8
 
         anchors.left: parent.left
@@ -287,25 +316,30 @@ Item {
             activeColor: Theme.amber
             height: controls.knobSize
             highlight: true
-            text: "1 " + root.waveNames[Math.max(0, Math.min(3, Math.round(osc1Wave.value)))]
+            text: "1 " + root.waveNames[Math.max(0, Math.min(4, Math.round(osc1Wave.value)))]
             width: controls.waveWidth
 
-            onClicked: osc1Wave.value = (Math.round(osc1Wave.value) + 1) % 4
+            onClicked: osc1Wave.value = (Math.round(osc1Wave.value) + 1) % 5
         }
         Skin.Button {
             activeColor: Theme.amber
             height: controls.knobSize
             highlight: true
-            text: "2 " + root.waveNames[Math.max(0, Math.min(3, Math.round(osc2Wave.value)))]
+            text: "2 " + root.waveNames[Math.max(0, Math.min(4, Math.round(osc2Wave.value)))]
             width: controls.waveWidth
 
-            onClicked: osc2Wave.value = (Math.round(osc2Wave.value) + 1) % 4
+            onClicked: osc2Wave.value = (Math.round(osc2Wave.value) + 1) % 5
         }
         Repeater {
             model: [
                 {
                     "key": "osc_mix",
                     "label": "MIX",
+                    "color": Theme.amber
+                },
+                {
+                    "key": "wt_position",
+                    "label": "WT POS",
                     "color": Theme.amber
                 },
                 {
@@ -393,6 +427,89 @@ Item {
             }
         }
     }
+    // The wavetable band: picker on the left, the stack of frames beside
+    // it. Only when there is room; a 150 px main-window row keeps WT POS
+    // and loses this.
+    Item {
+        id: wavetableBand
+
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: controls.bottom
+        anchors.topMargin: root.showWavetable ? Math.max(4, root.height * 0.02) : 0
+        height: root.showWavetable ? root.height * 0.26 : 0
+        visible: root.showWavetable
+
+        Row {
+            anchors.fill: parent
+            spacing: controls.spacing
+
+            Column {
+                id: picker
+
+                readonly property real buttonHeight: Math.max(44, (wavetableBand.height - spacing * 2 - framesLabel.height) / 2)
+
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 4
+                width: controls.waveWidth * 1.6
+
+                Skin.Button {
+                    activeColor: Theme.amber
+                    fontPixelSize: 14
+                    height: picker.buttonHeight
+                    highlight: true
+                    text: root.wavetableName
+                    width: parent.width
+
+                    onClicked: Mixxx.Synth.stepWavetable(root.groupResolved, 1)
+                }
+                Row {
+                    spacing: 4
+
+                    Skin.Button {
+                        fontPixelSize: 16
+                        height: picker.buttonHeight
+                        text: "\u2039"
+                        width: (picker.width - parent.spacing) / 2
+
+                        onClicked: Mixxx.Synth.stepWavetable(root.groupResolved, -1)
+                    }
+                    Skin.Button {
+                        fontPixelSize: 16
+                        height: picker.buttonHeight
+                        text: "\u203a"
+                        width: (picker.width - parent.spacing) / 2
+
+                        onClicked: Mixxx.Synth.stepWavetable(root.groupResolved, 1)
+                    }
+                }
+                Text {
+                    id: framesLabel
+
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    color: Theme.deckTextColor
+                    font.pixelSize: 12
+                    text: Math.round(wtFramesControl.value) + " FRAMES"
+                }
+            }
+            Rectangle {
+                border.color: Theme.panelBorderColor
+                color: Theme.sunkenBackgroundColor
+                height: wavetableBand.height
+                radius: 3
+                width: wavetableBand.width * 0.3
+
+                Mixxx.WavetableView {
+                    anchors.fill: parent
+                    anchors.margins: 6
+                    currentColor: Theme.wavetableCurrentColor
+                    frameColor: Theme.wavetableFrameColor
+                    group: root.groupResolved
+                    position: wtPositionControl.value
+                }
+            }
+        }
+    }
     Item {
         id: keyboard
 
@@ -404,7 +521,7 @@ Item {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.top: controls.bottom
+        anchors.top: wavetableBand.bottom
         anchors.topMargin: Math.max(4, root.height * 0.02)
 
         Repeater {

@@ -163,4 +163,7 @@ QtObject {
     property color edgeEffectColor: effectColor
     property color edgeEffectUnitColor: effectUnitColor
     property color edgeQuickFxColor: eqFxColor
+    // The synth's wavetable display: the stacked frames, and the one playing.
+    property color wavetableFrameColor: midGray3
+    property color wavetableCurrentColor: amber
 }

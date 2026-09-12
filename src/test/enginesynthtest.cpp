@@ -1,9 +1,11 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <functional>
 
 #include "control/controlobject.h"
 #include "engine/channels/enginesynth.h"
+#include "engine/channels/wavetable.h"
 #include "test/signalpathtest.h"
 #include "util/defs.h"
 #include "util/sample.h"
@@ -44,6 +46,34 @@ class EngineSynthTest : public SignalPathTest {
 
     void set(const char* key, double value) {
         ControlObject::set(ConfigKey(kGroup, key), value);
+    }
+
+    // A table whose sample i of frame f is fn(f, i), guards filled. The
+    // synth takes ownership through adoptWavetable.
+    static Wavetable* makeTable(int frames, const std::function<float(int, int)>& fn) {
+        Wavetable* pTable = Wavetable::create(frames).release();
+        for (int f = 0; f < frames; ++f) {
+            for (int i = 0; i < kWavetableFrameSize; ++i) {
+                pTable->frame(f)[i] = fn(f, i);
+            }
+        }
+        pTable->fillGuards();
+        return pTable;
+    }
+
+    static float sine(int i) {
+        return static_cast<float>(std::sin(2.0 * M_PI * i / kWavetableFrameSize));
+    }
+
+    // Instant envelope, open filter: the output is the oscillator itself.
+    void setupClean() {
+        set("attack", 0.0);
+        set("decay", 0.0);
+        set("sustain", 1.0);
+        set("release", 0.0);
+        set("env_amount", 0.0);
+        set("cutoff", 1.0);
+        set("resonance", 0.0);
     }
 
     CSAMPLE* m_pOutput;
@@ -182,6 +212,118 @@ TEST_F(EngineSynthTest, ScheduledOffAfterOnInSameBuffer) {
     // the buffer's last frame.
     EXPECT_EQ(0, m_pSynth->activeVoiceCount());
     EXPECT_FLOAT_EQ(0.0f, m_pOutput[2 * (kBufferSize / 2 - 1)]);
+}
+
+TEST_F(EngineSynthTest, WavetableBlendsAdjacentFrames) {
+    setupClean();
+    set("osc1_wave", 4);
+    set("osc_mix", 0.0);
+    // Frame 0 is a sine, frame 1 its inverse: halfway between them is
+    // exactly nothing, either end is the sine.
+    EXPECT_EQ(nullptr,
+            m_pSynth->adoptWavetable(makeTable(2, [](int f, int i) {
+                return f == 0 ? sine(i) : -sine(i);
+            })));
+
+    set("wt_position", 0.0);
+    set("note_on", 60);
+    EXPECT_GT(render(4), 0.01f);
+    set("all_notes_off", 1);
+    set("all_notes_off", 0);
+    render(10);
+
+    set("wt_position", 1.0);
+    set("note_on", 60);
+    EXPECT_GT(render(4), 0.01f);
+    set("all_notes_off", 1);
+    set("all_notes_off", 0);
+    render(10);
+
+    set("wt_position", 0.5);
+    set("note_on", 60);
+    EXPECT_LT(render(4), 1e-4f);
+    EXPECT_EQ(1, m_pSynth->activeVoiceCount());
+}
+
+TEST_F(EngineSynthTest, WavetableOnOsc2) {
+    setupClean();
+    m_pSynth->adoptWavetable(makeTable(1, [](int, int i) { return sine(i); }));
+    set("osc_mix", 1.0);
+    set("osc2_wave", 4);
+    set("osc2_semitones", 0.0);
+    set("osc2_detune", 0.0);
+    set("note_on", 60);
+    EXPECT_GT(render(4), 0.01f);
+}
+
+TEST_F(EngineSynthTest, WavetableWithoutTableFallsBackToSaw) {
+    set("osc1_wave", 4);
+    set("osc2_wave", 4);
+    set("note_on", 60);
+    EXPECT_GT(render(4), 0.01f);
+}
+
+TEST_F(EngineSynthTest, AdoptWavetableReturnsThePreviousTable) {
+    Wavetable* pA = makeTable(1, [](int, int i) { return sine(i); });
+    Wavetable* pB = makeTable(1, [](int, int i) { return -sine(i); });
+    EXPECT_EQ(nullptr, m_pSynth->adoptWavetable(pA));
+    EXPECT_EQ(pA, m_pSynth->wavetable());
+    EXPECT_EQ(pA, m_pSynth->adoptWavetable(pB));
+    EXPECT_EQ(pB, m_pSynth->wavetable());
+    delete pA;
+    // pB is the synth's now; its destructor frees it.
+}
+
+TEST_F(EngineSynthTest, WavetablePipeDeliversAndReturns) {
+    auto pipes = makeTwoWayMessagePipe<Wavetable*, Wavetable*>(
+            kWavetableLaneDepth, kWavetableLaneDepth);
+    WavetableMainPipe mainSide = std::move(pipes.first);
+    m_pSynth->setWavetablePipe(std::move(pipes.second));
+
+    Wavetable* pA = makeTable(1, [](int, int i) { return sine(i); });
+    Wavetable* pB = makeTable(1, [](int, int i) { return -sine(i); });
+    ASSERT_TRUE(mainSide.writeMessage(pA));
+    EXPECT_EQ(nullptr, m_pSynth->wavetable()); // not before the next process()
+    render(1);
+    EXPECT_EQ(pA, m_pSynth->wavetable());
+    Wavetable* pReturned = nullptr;
+    EXPECT_FALSE(mainSide.readMessage(&pReturned)); // nothing to give back yet
+
+    ASSERT_TRUE(mainSide.writeMessage(pB));
+    render(1);
+    EXPECT_EQ(pB, m_pSynth->wavetable());
+    ASSERT_TRUE(mainSide.readMessage(&pReturned));
+    EXPECT_EQ(pA, pReturned);
+    delete pReturned;
+}
+
+TEST_F(EngineSynthTest, RetriggerKeepsWavetablePhase) {
+    m_pSynth->adoptWavetable(makeTable(1, [](int, int i) { return sine(i); }));
+    set("osc1_wave", 4);
+    set("note_on", 60);
+    render(2);
+    set("note_on", 60);
+    render(2);
+    EXPECT_EQ(1, m_pSynth->activeVoiceCount());
+    EXPECT_GT(render(1), 0.01f);
+}
+
+TEST_F(EngineSynthTest, WavetableOutputStaysBounded) {
+    // A full-scale square is the harshest frame a table can hold.
+    m_pSynth->adoptWavetable(makeTable(1, [](int, int i) {
+        return i < kWavetableFrameSize / 2 ? 1.0f : -1.0f;
+    }));
+    set("osc1_wave", 4);
+    set("osc2_wave", 4);
+    set("resonance", 1.0);
+    set("cutoff", 0.5);
+    set("env_amount", 1.0);
+    for (int note = 36; note < 36 + EngineSynth::kVoices; ++note) {
+        m_pSynth->noteOn(note);
+    }
+    for (int i = 0; i < 20; ++i) {
+        EXPECT_LT(render(1), 1.5f);
+    }
 }
 
 } // namespace

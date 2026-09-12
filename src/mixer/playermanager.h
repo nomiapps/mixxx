@@ -101,6 +101,9 @@ class PlayerManager : public PlayerManagerInterface {
     // Returns true if the group is a sampler group. If index is non-NULL,
     // populates it with the deck number (1-indexed).
     static bool isSamplerGroup(const QString& group, int* number = nullptr);
+    // Returns true if the group is a synth group ("[SynthN]"). If number is
+    // provided, the synth number is written to it.
+    static bool isSynthGroup(const QString& group, int* number = nullptr);
 
     // Returns true if the group is a preview deck group. If index is non-NULL,
     // populates it with the deck number (1-indexed).

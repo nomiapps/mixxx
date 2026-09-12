@@ -67,6 +67,28 @@ double oscillator(int wave, double phase, double inc) {
     }
 }
 
+// One sample of a wavetable voice: linear interpolation within the frame
+// (the guard sample makes index i + 1 valid for every phase below 1) and a
+// linear crossfade between the two frames either side of wt_position.
+// Interpolating rather than truncating matters: at 2048 points truncation
+// leaves a broadband noise floor around -60 dB, audible as hiss on a clean
+// sine frame at low notes where many output samples read the same entry;
+// the lerp pushes it to around -120 dB for two multiply-adds.
+double wavetableSample(const Wavetable& table,
+        int frameA,
+        int frameB,
+        double blend,
+        double phase) {
+    const double x = phase * kWavetableFrameSize;
+    const int i = static_cast<int>(x);
+    const double f = x - i;
+    const float* a = table.frame(frameA);
+    const float* b = table.frame(frameB);
+    const double sa = a[i] + (a[i + 1] - a[i]) * f;
+    const double sb = b[i] + (b[i + 1] - b[i]) * f;
+    return sa + (sb - sa) * blend;
+}
+
 // 0..1 -> 1 ms .. maxSeconds, exponentially, so the bottom of the knob is
 // usable for percussive settings.
 double envelopeSeconds(double param, double maxSeconds) {
@@ -89,7 +111,8 @@ EngineSynth::EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManage
           m_lastHeld{0, 0},
           m_voiceSequence(0),
           m_monoBuffer(kMaxEngineFrames, 0.0f),
-          m_scheduledCount(0) {
+          m_scheduledCount(0),
+          m_pTable(nullptr) {
     for (auto& held : m_held) {
         held.store(0, std::memory_order_relaxed);
     }
@@ -121,8 +144,9 @@ EngineSynth::EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManage
             &EngineSynth::slotAllNotesOff,
             Qt::DirectConnection);
 
-    // Oscillators: 0 sine, 1 triangle, 2 saw, 3 square. Plain values rather
-    // than push buttons so a surface or a mapping can set them directly.
+    // Oscillators: 0 sine, 1 triangle, 2 saw, 3 square, 4 wavetable. Plain
+    // values rather than push buttons so a surface or a mapping can set them
+    // directly.
     m_pOsc1Wave = new ControlObject(ConfigKey(getGroup(), "osc1_wave"));
     m_pOsc1Wave->setDefaultValue(2.0);
     m_pOsc1Wave->set(2.0);
@@ -132,6 +156,10 @@ EngineSynth::EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManage
     m_pOscMix = new ControlPotmeter(ConfigKey(getGroup(), "osc_mix"), 0.0, 1.0);
     m_pOscMix->setDefaultValue(0.5);
     m_pOscMix->set(0.5);
+    // Where in the wavetable wave 4 reads: 0 the first frame, 1 the last.
+    m_pWtPosition = new ControlPotmeter(ConfigKey(getGroup(), "wt_position"), 0.0, 1.0);
+    m_pWtPosition->setDefaultValue(0.0);
+    m_pWtPosition->set(0.0);
     m_pOsc2Semitones = new ControlPotmeter(ConfigKey(getGroup(), "osc2_semitones"), -24.0, 24.0);
     m_pOsc2Semitones->setDefaultValue(0.0);
     m_pOsc2Semitones->set(0.0);
@@ -174,6 +202,16 @@ EngineSynth::EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManage
 }
 
 EngineSynth::~EngineSynth() {
+    // The callback has stopped, so this is the one place the engine's own
+    // table, and anything still queued for it, may be freed.
+    delete m_pTable;
+    m_pTable = nullptr;
+    if (m_wavetablePipe) {
+        Wavetable* pQueued = nullptr;
+        while (m_wavetablePipe->readMessage(&pQueued)) {
+            delete pQueued;
+        }
+    }
     delete m_pPregain;
     delete m_pEnvAmount;
     delete m_pResonance;
@@ -184,6 +222,7 @@ EngineSynth::~EngineSynth() {
     delete m_pAttack;
     delete m_pOsc2Detune;
     delete m_pOsc2Semitones;
+    delete m_pWtPosition;
     delete m_pOscMix;
     delete m_pOsc2Wave;
     delete m_pOsc1Wave;
@@ -292,8 +331,25 @@ void EngineSynth::readParams(Params* pParams) const {
         sampleRate = 44100.0;
     }
     pParams->sampleRate = sampleRate;
-    pParams->wave1 = std::clamp(static_cast<int>(std::lround(m_pOsc1Wave->get())), 0, 3);
-    pParams->wave2 = std::clamp(static_cast<int>(std::lround(m_pOsc2Wave->get())), 0, 3);
+    pParams->wave1 = std::clamp(static_cast<int>(std::lround(m_pOsc1Wave->get())), 0, 4);
+    pParams->wave2 = std::clamp(static_cast<int>(std::lround(m_pOsc2Wave->get())), 0, 4);
+    pParams->pWavetable = m_pTable;
+    if (m_pTable != nullptr && m_pTable->frameCount > 0) {
+        const double position = std::clamp(m_pWtPosition->get(), 0.0, 1.0) *
+                (m_pTable->frameCount - 1);
+        pParams->wtFrameA = static_cast<int>(position);
+        pParams->wtFrameB = std::min(pParams->wtFrameA + 1, m_pTable->frameCount - 1);
+        pParams->wtBlend = position - pParams->wtFrameA;
+    } else {
+        // No table yet: wave 4 plays the saw rather than nothing.
+        pParams->pWavetable = nullptr;
+        if (pParams->wave1 == 4) {
+            pParams->wave1 = 2;
+        }
+        if (pParams->wave2 == 4) {
+            pParams->wave2 = 2;
+        }
+    }
     pParams->oscMix = std::clamp(m_pOscMix->get(), 0.0, 1.0);
     const double semitones = std::round(std::clamp(m_pOsc2Semitones->get(), -24.0, 24.0));
     const double cents = std::clamp(m_pOsc2Detune->get(), -100.0, 100.0);
@@ -437,6 +493,8 @@ void EngineSynth::renderVoice(Voice* pVoice, const Params& params, CSAMPLE* pMon
     const double mix1 = 1.0 - mix2;
     const double level = pVoice->velocity * kVoiceLevel;
     const double maxCutoff = std::min(kMaxCutoffHz, params.sampleRate * 0.45);
+    const bool table1 = params.wave1 == 4;
+    const bool table2 = params.wave2 == 4;
     double a1 = 0.0;
     double a2 = 0.0;
     double a3 = 0.0;
@@ -496,8 +554,20 @@ void EngineSynth::renderVoice(Voice* pVoice, const Params& params, CSAMPLE* pMon
         }
         --untilCoefficients;
 
-        const double s1 = oscillator(params.wave1, pVoice->phase1, inc1);
-        const double s2 = oscillator(params.wave2, pVoice->phase2, inc2);
+        const double s1 = table1
+                ? wavetableSample(*params.pWavetable,
+                          params.wtFrameA,
+                          params.wtFrameB,
+                          params.wtBlend,
+                          pVoice->phase1)
+                : oscillator(params.wave1, pVoice->phase1, inc1);
+        const double s2 = table2
+                ? wavetableSample(*params.pWavetable,
+                          params.wtFrameA,
+                          params.wtFrameB,
+                          params.wtBlend,
+                          pVoice->phase2)
+                : oscillator(params.wave2, pVoice->phase2, inc2);
         pVoice->phase1 += inc1;
         if (pVoice->phase1 >= 1.0) {
             pVoice->phase1 -= 1.0;
@@ -526,6 +596,7 @@ void EngineSynth::process(CSAMPLE* pOut, const std::size_t bufferSize) {
         frames = m_monoBuffer.size();
     }
 
+    drainWavetableLane();
     Params params;
     readParams(&params);
     applyKeyChanges();
@@ -595,6 +666,33 @@ void EngineSynth::process(CSAMPLE* pOut, const std::size_t bufferSize) {
     }
 
     m_vuMeter.process(pOut, bufferSize);
+}
+
+void EngineSynth::setWavetablePipe(WavetableEnginePipe&& pipe) {
+    m_wavetablePipe.emplace(std::move(pipe));
+}
+
+Wavetable* EngineSynth::adoptWavetable(Wavetable* pTable) {
+    Wavetable* pPrevious = m_pTable;
+    m_pTable = pTable;
+    return pPrevious;
+}
+
+void EngineSynth::drainWavetableLane() {
+    if (!m_wavetablePipe) {
+        return;
+    }
+    Wavetable* pNew = nullptr;
+    while (m_wavetablePipe->readMessage(&pNew)) {
+        Wavetable* pOld = adoptWavetable(pNew);
+        if (pOld != nullptr) {
+            // The main side drains its returns before every send, so the
+            // return lane never holds more than the send lane can.
+            const bool returned = m_wavetablePipe->writeMessage(pOld);
+            DEBUG_ASSERT(returned);
+            Q_UNUSED(returned);
+        }
+    }
 }
 
 void EngineSynth::collectFeatures(GroupFeatureState* pGroupFeatures) const {

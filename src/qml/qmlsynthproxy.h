@@ -1,0 +1,61 @@
+#pragma once
+
+#include <QObject>
+#include <QQmlEngine>
+#include <QString>
+#include <QStringList>
+#include <memory>
+
+#include "mixer/playermanager.h"
+
+class Synth;
+
+namespace mixxx {
+namespace qml {
+
+/// The synths' non-audio state for QML, by group: today the wavetable list
+/// and selection (see Synth). A singleton like PlayerManager, because a panel
+/// only knows its group string and the synth behind it lives in
+/// PlayerManager.
+class QmlSynthProxy : public QObject {
+    Q_OBJECT
+    QML_NAMED_ELEMENT(Synth)
+    QML_SINGLETON
+
+  public:
+    explicit QmlSynthProxy(std::shared_ptr<PlayerManager> pPlayerManager,
+            QObject* parent = nullptr);
+
+    Q_INVOKABLE QStringList wavetableNames(const QString& group) const;
+    /// The selected table's name, empty when the group is not a synth.
+    Q_INVOKABLE QString wavetableName(const QString& group) const;
+    Q_INVOKABLE int wavetableCount(const QString& group) const;
+    /// Frames in the loaded table; 0 while none is loaded.
+    Q_INVOKABLE int wavetableFrames(const QString& group) const;
+    Q_INVOKABLE void selectWavetable(const QString& group, int index);
+    /// Moves the selection by delta, wrapping at either end.
+    Q_INVOKABLE void stepWavetable(const QString& group, int delta);
+    Q_INVOKABLE void rescanWavetables(const QString& group);
+
+    /// The Synth behind a "[SynthN]" group, nullptr for anything else. For
+    /// the QML items that watch one synth directly.
+    static Synth* synthForGroup(const QString& group);
+
+    static QmlSynthProxy* create(QQmlEngine* pQmlEngine, QJSEngine* pJsEngine);
+    static void registerPlayerManager(std::shared_ptr<PlayerManager> pPlayerManager) {
+        s_pPlayerManager = std::move(pPlayerManager);
+    }
+
+  signals:
+    /// The table shown for group changed: loaded, or failed and now empty.
+    void wavetableChanged(const QString& group);
+    void wavetableNamesChanged(const QString& group);
+
+  private:
+    static inline std::shared_ptr<PlayerManager> s_pPlayerManager;
+
+    const std::shared_ptr<PlayerManager> m_pPlayerManager;
+};
+
+} // namespace qml
+} // namespace mixxx

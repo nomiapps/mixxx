@@ -52,6 +52,7 @@
 #include "qml/qmlplayermanagerproxy.h"
 #include "qml/qmlpreferencesproxy.h"
 #include "qml/qmlsoundmanagerproxy.h"
+#include "qml/qmlsynthproxy.h"
 #endif
 #include "soundio/soundmanager.h"
 #include "sources/soundsourceproxy.h"
@@ -832,6 +833,7 @@ void CoreServices::initializeQMLSingletons() {
     mixxx::qml::QmlApplicationProxy::registerUserSettings(getSettings());
     mixxx::qml::QmlApplicationProxy::registerKeyboardEventFilter(getKeyboardEventFilter());
     mixxx::qml::QmlPlayerManagerProxy::registerPlayerManager(getPlayerManager());
+    mixxx::qml::QmlSynthProxy::registerPlayerManager(getPlayerManager());
     mixxx::qml::QmlConfigProxy::registerUserSettings(getSettings());
     mixxx::qml::QmlLibraryProxy::registerLibrary(getLibrary());
     mixxx::qml::QmlLibraryProxy::registerKeyboardEventFilter(getKeyboardEventFilter());
@@ -931,6 +933,7 @@ void CoreServices::finalize() {
     mixxx::qml::QmlApplicationProxy::registerUserSettings(nullptr);
     mixxx::qml::QmlApplicationProxy::registerKeyboardEventFilter(nullptr);
     mixxx::qml::QmlPlayerManagerProxy::registerPlayerManager(nullptr);
+    mixxx::qml::QmlSynthProxy::registerPlayerManager(nullptr);
     mixxx::qml::QmlConfigProxy::registerUserSettings(nullptr);
     mixxx::qml::QmlLibraryProxy::registerLibrary(nullptr);
     mixxx::qml::QmlLibraryProxy::registerKeyboardEventFilter(nullptr);

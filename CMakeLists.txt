@@ -1510,6 +1510,7 @@ add_library(
   src/mixer/sampler.cpp
   src/mixer/samplerbank.cpp
   src/mixer/synth.cpp
+  src/mixer/wavetablelibrary.cpp
   src/mixxxapplication.cpp
   src/mixxxmainwindow.cpp
   src/musicbrainz/chromaprinter.cpp
@@ -2949,6 +2950,8 @@ if(BUILD_TESTING)
     src/test/enginesequencertest.cpp
     src/test/sequencerpatternbanktest.cpp
     src/test/enginesynthtest.cpp
+    src/test/synthtest.cpp
+    src/test/wavetabletest.cpp
     src/test/enginesynctest.cpp
     src/test/fileinfo_test.cpp
     src/test/frametest.cpp
@@ -4124,6 +4127,8 @@ if(QML)
       src/qml/qmlwaveformdisplay.cpp
       src/waveform/renderers/scenegraph/waveformrendererfilteredcached.cpp
       src/qml/qmlwaveformoverview.cpp
+      src/qml/qmlsynthproxy.cpp
+      src/qml/qmlwavetableview.cpp
       src/qml/qmlwaveformrenderer.cpp
       src/qml/qmlsettingparameter.cpp
       src/qml/qmlskincontrolcreator.cpp

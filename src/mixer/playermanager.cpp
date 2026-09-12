@@ -36,6 +36,7 @@ const int kNumberOfAnalyzerThreads = math_max(1, QThread::idealThreadCount() / 2
 
 const QRegularExpression kDeckRegex(QStringLiteral("^\\[Channel(\\d+)\\]$"));
 const QRegularExpression kSamplerRegex(QStringLiteral("^\\[Sampler(\\d+)\\]$"));
+const QRegularExpression kSynthRegex(QStringLiteral("^\\[Synth(\\d+)\\]$"));
 const QRegularExpression kPreviewDeckRegex(QStringLiteral("^\\[PreviewDeck(\\d+)\\]$"));
 
 bool extractIntFromRegex(const QRegularExpression& regex, const QString& group, int* number) {
@@ -229,6 +230,11 @@ bool PlayerManager::isDeckGroup(const QString& group, int* number) {
 // static
 bool PlayerManager::isSamplerGroup(const QString& group, int* number) {
     return extractIntFromRegex(kSamplerRegex, group, number);
+}
+
+// static
+bool PlayerManager::isSynthGroup(const QString& group, int* number) {
+    return extractIntFromRegex(kSynthRegex, group, number);
 }
 
 // static
@@ -546,7 +552,7 @@ void PlayerManager::addSynthInner() {
     int index = m_synths.count();
     QString group = groupForSynth(index);
 
-    auto* pSynth = new Synth(this, group, m_pEngine, m_pEffectsManager);
+    auto* pSynth = new Synth(this, group, m_pConfig, m_pEngine, m_pEffectsManager);
     m_synths.append(pSynth);
 }
 

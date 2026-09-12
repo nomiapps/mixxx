@@ -3,9 +3,11 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include "engine/channels/enginechannel.h"
+#include "engine/channels/wavetable.h"
 #include "util/types.h"
 
 class ControlAudioTaperPot;
@@ -16,8 +18,17 @@ class ControlPushButton;
 /// EngineSynth is an EngineChannel that generates its own audio instead of
 /// reading it from a soundcard input or a track: a small polyphonic
 /// subtractive synthesizer. Two oscillators per voice (sine / triangle /
-/// PolyBLEP saw / PolyBLEP square), a linear ADSR, and a state-variable
-/// low-pass filter whose cutoff the envelope can modulate.
+/// PolyBLEP saw / PolyBLEP square, or a frame of a wavetable), a linear
+/// ADSR, and a state-variable low-pass filter whose cutoff the envelope
+/// can modulate.
+///
+/// Wave 4 of either oscillator reads the wavetable: wt_position picks the
+/// frame, crossfading between neighbours, and the frame is read with linear
+/// interpolation. The table itself arrives from the main thread down a
+/// lock-free lane (see wavetable.h); until one has arrived wave 4 plays the
+/// saw, so the channel is never silent by surprise. Unlike the PolyBLEP
+/// waves a table is not band-limited: a bright frame aliases in the top
+/// octaves. Per-octave mips are the follow-up.
 ///
 /// It is played through controls in its group ("[Synth1]"):
 ///   note_on   set to a MIDI note number to start it (a fractional part
@@ -68,6 +79,20 @@ class EngineSynth : public EngineChannel {
     /// Events queued for the next process() (tests and diagnostics).
     int scheduledEventCount() const;
 
+    /// Main-thread setup, before the channel is handed to EngineMixer: the
+    /// engine end of the lane new wavetables come down.
+    void setWavetablePipe(WavetableEnginePipe&& pipe);
+    /// Engine thread only (process() calls it for the lane; tests call it
+    /// directly). Takes ownership of pTable, nullptr clearing the table, and
+    /// returns the previous one, which the caller now owns and must free
+    /// somewhere other than the engine thread.
+    Wavetable* adoptWavetable(Wavetable* pTable);
+    /// The table the engine is playing, from the engine thread's point of
+    /// view (tests and diagnostics).
+    const Wavetable* wavetable() const {
+        return m_pTable;
+    }
+
   private slots:
     void slotNoteOn(double v);
     void slotNoteOff(double v);
@@ -110,6 +135,12 @@ class EngineSynth : public EngineChannel {
         double damping = 1.0;
         double envAmountOctaves = 0.0;
         double gain = 1.0;
+        // Wave 4 reads frames wtFrameA and wtFrameB of pWavetable, blended
+        // wtBlend of the way from A to B. Never wave 4 with no table.
+        const Wavetable* pWavetable = nullptr;
+        int wtFrameA = 0;
+        int wtFrameB = 0;
+        double wtBlend = 0.0;
     };
 
     void readParams(Params* pParams) const;
@@ -119,6 +150,7 @@ class EngineSynth : public EngineChannel {
     Voice* findVoiceFor(int note);
     Voice* allocateVoice();
     void renderVoice(Voice* pVoice, const Params& params, CSAMPLE* pMono, std::size_t frames);
+    void drainWavetableLane();
 
     struct ScheduledEvent {
         uint32_t frame = 0;
@@ -138,6 +170,10 @@ class EngineSynth : public EngineChannel {
     // by process(). Sorted by frame there, so callers need not order them.
     std::array<ScheduledEvent, kMaxScheduledEvents> m_scheduled;
     int m_scheduledCount;
+    // Engine thread only, apart from the destructor, which runs after the
+    // audio callback has stopped.
+    Wavetable* m_pTable;
+    std::optional<WavetableEnginePipe> m_wavetablePipe;
 
     ControlObject* m_pNoteOn;
     ControlObject* m_pNoteOff;
@@ -145,6 +181,7 @@ class EngineSynth : public EngineChannel {
     ControlObject* m_pOsc1Wave;
     ControlObject* m_pOsc2Wave;
     ControlPotmeter* m_pOscMix;
+    ControlPotmeter* m_pWtPosition;
     ControlPotmeter* m_pOsc2Semitones;
     ControlPotmeter* m_pOsc2Detune;
     ControlPotmeter* m_pAttack;
