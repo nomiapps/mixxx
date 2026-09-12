@@ -44,6 +44,11 @@ class QmlSynthProxy : public QObject {
     Q_INVOKABLE double cutoffHz(double param) const;
     /// The low-pass filter's gain in dB at hz for the two knob settings.
     Q_INVOKABLE double filterResponseDb(double cutoffParam, double resonanceParam, double hz) const;
+    /// The shipped patches: how many, the name of one, and applying one to
+    /// the live sound (the user's slots are untouched).
+    Q_INVOKABLE int factoryPatchCount(const QString& group) const;
+    Q_INVOKABLE QString factoryPatchName(const QString& group, int index) const;
+    Q_INVOKABLE void applyFactoryPatch(const QString& group, int index);
 
     /// The Synth behind a "[SynthN]" group, nullptr for anything else. For
     /// the QML items that watch one synth directly.

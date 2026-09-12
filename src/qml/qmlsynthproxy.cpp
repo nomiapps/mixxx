@@ -6,6 +6,7 @@
 #include "control/controlobject.h"
 #include "engine/channels/enginesynth.h"
 #include "mixer/synth.h"
+#include "mixer/synthpatchbank.h"
 #include "moc_qmlsynthproxy.cpp"
 #include "util/assert.h"
 
@@ -112,6 +113,23 @@ double QmlSynthProxy::cutoffHz(double param) const {
 double QmlSynthProxy::filterResponseDb(
         double cutoffParam, double resonanceParam, double hz) const {
     return EngineSynth::filterResponseDb(cutoffParam, resonanceParam, hz);
+}
+
+int QmlSynthProxy::factoryPatchCount(const QString& group) const {
+    Synth* pSynth = synthForGroup(group);
+    return pSynth && pSynth->patchBank() ? pSynth->patchBank()->factoryCount() : 0;
+}
+
+QString QmlSynthProxy::factoryPatchName(const QString& group, int index) const {
+    Synth* pSynth = synthForGroup(group);
+    return pSynth && pSynth->patchBank() ? pSynth->patchBank()->factoryName(index) : QString();
+}
+
+void QmlSynthProxy::applyFactoryPatch(const QString& group, int index) {
+    Synth* pSynth = synthForGroup(group);
+    if (pSynth && pSynth->patchBank()) {
+        pSynth->patchBank()->applyFactory(index);
+    }
 }
 
 void QmlSynthProxy::rescanWavetables(const QString& group) {

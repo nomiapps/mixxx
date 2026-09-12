@@ -2,6 +2,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QtDebug>
@@ -15,6 +16,10 @@
 namespace {
 
 const QString kFileName = QStringLiteral("synth-patches.json");
+const QString kFactoryFile = QStringLiteral("synth/patches.json");
+const QString kPatchesKey = QStringLiteral("patches");
+const QString kNameKey = QStringLiteral("name");
+const QString kControlsKey = QStringLiteral("controls");
 const QString kVersionKey = QStringLiteral("version");
 const QString kGroupKey = QStringLiteral("group");
 const QString kSlotsKey = QStringLiteral("slots");
@@ -86,7 +91,17 @@ SynthPatchBank::SynthPatchBank(const QString& group,
         m_filled[i]->setReadOnly();
     }
 
+    readFactory(pConfig->getResourcePath());
+    const bool freshProfile = !QFile::exists(m_filePath);
     readFile();
+    if (freshProfile && !m_factory.isEmpty()) {
+        // First run: the slots start as the first factory patches rather
+        // than empty. Slot 1 is Init, so the default sound is unchanged.
+        for (int i = 0; i < std::min<int>(kSlots, static_cast<int>(m_factory.size())); ++i) {
+            m_slots[i] = m_factory[i].second;
+        }
+        writeFile();
+    }
     m_currentSlot = clampSlot(m_pPatch->get());
     publishFilled();
     // The timbre controls do not persist on their own (see the class
@@ -183,6 +198,44 @@ void SynthPatchBank::applyToLive(const QJsonObject& slot) {
             value = std::max(0.0, std::round(value)); // the Synth clamps the top
         }
         ControlObject::set(key, value);
+    }
+}
+
+QString SynthPatchBank::factoryName(int index) const {
+    return index >= 0 && index < m_factory.size() ? m_factory[index].first : QString();
+}
+
+bool SynthPatchBank::applyFactory(int index) {
+    if (index < 0 || index >= m_factory.size()) {
+        return false;
+    }
+    applyToLive(m_factory[index].second);
+    return true;
+}
+
+void SynthPatchBank::readFactory(const QString& resourcePath) {
+    QFile file(QDir(resourcePath).filePath(kFactoryFile));
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "No factory synth patches at" << file.fileName();
+        return;
+    }
+    QJsonParseError error;
+    const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &error);
+    if (error.error != QJsonParseError::NoError || !document.isObject() ||
+            document.object().value(kVersionKey).toInt() != kFileVersion) {
+        qWarning() << "Ignoring factory synth patches in" << file.fileName() << ":"
+                   << error.errorString();
+        return;
+    }
+    const QJsonArray patches = document.object().value(kPatchesKey).toArray();
+    for (const QJsonValue& value : patches) {
+        const QJsonObject patch = value.toObject();
+        const QString name = patch.value(kNameKey).toString();
+        const QJsonObject controls = patch.value(kControlsKey).toObject();
+        if (name.isEmpty() || controls.isEmpty()) {
+            continue;
+        }
+        m_factory.append(qMakePair(name, controls));
     }
 }
 

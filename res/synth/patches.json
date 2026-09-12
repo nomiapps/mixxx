@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "patches": [
+    {
+      "name": "Init",
+      "controls": {
+        "osc1_wave": 2, "osc2_wave": 2, "osc_mix": 0.5, "osc2_semitones": 0, "osc2_detune": 7,
+        "wavetable": 0, "wt_position": 0, "wt_env_amount": 0,
+        "attack": 0.3, "decay": 0.6, "sustain": 0.7, "release": 0.55,
+        "cutoff": 0.8, "resonance": 0.2, "env_amount": 0.3, "pregain": 1,
+        "lfo_shape": 0, "lfo_rate": 0.3, "lfo_sync": 1, "lfo_depth": 0, "lfo_target": 1,
+        "unison_voices": 1, "unison_detune": 0.3, "unison_spread": 0.5
+      }
+    },
+    {
+      "name": "Warm Pad",
+      "controls": {
+        "osc1_wave": 2, "osc2_wave": 2, "osc_mix": 0.5, "osc2_semitones": 0, "osc2_detune": 12,
+        "wavetable": 0, "wt_position": 0, "wt_env_amount": 0,
+        "attack": 0.65, "decay": 0.5, "sustain": 0.8, "release": 0.75,
+        "cutoff": 0.55, "resonance": 0.15, "env_amount": 0.2, "pregain": 1,
+        "lfo_shape": 0, "lfo_rate": 0.28, "lfo_sync": 1, "lfo_depth": 0.15, "lfo_target": 2,
+        "unison_voices": 3, "unison_detune": 0.5, "unison_spread": 0.8
+      }
+    },
+    {
+      "name": "Pluck",
+      "controls": {
+        "osc1_wave": 2, "osc2_wave": 3, "osc_mix": 0.3, "osc2_semitones": 0, "osc2_detune": 4,
+        "wavetable": 0, "wt_position": 0, "wt_env_amount": 0,
+        "attack": 0, "decay": 0.35, "sustain": 0, "release": 0.3,
+        "cutoff": 0.35, "resonance": 0.3, "env_amount": 0.8, "pregain": 1,
+        "lfo_shape": 0, "lfo_rate": 0.3, "lfo_sync": 1, "lfo_depth": 0, "lfo_target": 1,
+        "unison_voices": 1, "unison_detune": 0.3, "unison_spread": 0.5
+      }
+    },
+    {
+      "name": "Sub Bass",
+      "controls": {
+        "osc1_wave": 0, "osc2_wave": 0, "osc_mix": 0.4, "osc2_semitones": -12, "osc2_detune": 0,
+        "wavetable": 0, "wt_position": 0, "wt_env_amount": 0,
+        "attack": 0.05, "decay": 0.4, "sustain": 0.9, "release": 0.25,
+        "cutoff": 0.45, "resonance": 0.1, "env_amount": 0.1, "pregain": 1,
+        "lfo_shape": 0, "lfo_rate": 0.3, "lfo_sync": 1, "lfo_depth": 0, "lfo_target": 1,
+        "unison_voices": 1, "unison_detune": 0.3, "unison_spread": 0.5
+      }
+    },
+    {
+      "name": "Reese",
+      "controls": {
+        "osc1_wave": 2, "osc2_wave": 2, "osc_mix": 0.5, "osc2_semitones": 0, "osc2_detune": 30,
+        "wavetable": 0, "wt_position": 0, "wt_env_amount": 0,
+        "attack": 0.1, "decay": 0.5, "sustain": 1, "release": 0.3,
+        "cutoff": 0.35, "resonance": 0.25, "env_amount": 0.2, "pregain": 1,
+        "lfo_shape": 0, "lfo_rate": 0.3, "lfo_sync": 1, "lfo_depth": 0, "lfo_target": 1,
+        "unison_voices": 4, "unison_detune": 0.8, "unison_spread": 0.6
+      }
+    },
+    {
+      "name": "Wobble",
+      "controls": {
+        "osc1_wave": 4, "osc2_wave": 2, "osc_mix": 0.3, "osc2_semitones": 0, "osc2_detune": 6,
+        "wavetable": 0, "wt_position": 0.6, "wt_env_amount": 0,
+        "attack": 0.02, "decay": 0.4, "sustain": 1, "release": 0.2,
+        "cutoff": 0.35, "resonance": 0.45, "env_amount": 0, "pregain": 1,
+        "lfo_shape": 0, "lfo_rate": 0.571, "lfo_sync": 1, "lfo_depth": 0.8, "lfo_target": 2,
+        "unison_voices": 1, "unison_detune": 0.3, "unison_spread": 0.5
+      }
+    },
+    {
+      "name": "WT Sweep",
+      "controls": {
+        "osc1_wave": 4, "osc2_wave": 4, "osc_mix": 0.5, "osc2_semitones": 0, "osc2_detune": 9,
+        "wavetable": 2, "wt_position": 0.1, "wt_env_amount": 0.9,
+        "attack": 0.35, "decay": 0.6, "sustain": 0.6, "release": 0.5,
+        "cutoff": 0.7, "resonance": 0.1, "env_amount": 0, "pregain": 1,
+        "lfo_shape": 0, "lfo_rate": 0.3, "lfo_sync": 1, "lfo_depth": 0, "lfo_target": 1,
+        "unison_voices": 2, "unison_detune": 0.3, "unison_spread": 0.7
+      }
+    },
+    {
+      "name": "Acid",
+      "controls": {
+        "osc1_wave": 2, "osc2_wave": 2, "osc_mix": 0, "osc2_semitones": 0, "osc2_detune": 0,
+        "wavetable": 0, "wt_position": 0, "wt_env_amount": 0,
+        "attack": 0, "decay": 0.45, "sustain": 0.15, "release": 0.2,
+        "cutoff": 0.3, "resonance": 0.85, "env_amount": 0.9, "pregain": 1,
+        "lfo_shape": 0, "lfo_rate": 0.3, "lfo_sync": 1, "lfo_depth": 0, "lfo_target": 1,
+        "unison_voices": 1, "unison_detune": 0.3, "unison_spread": 0.5
+      }
+    },
+    {
+      "name": "Organ",
+      "controls": {
+        "osc1_wave": 0, "osc2_wave": 0, "osc_mix": 0.35, "osc2_semitones": 12, "osc2_detune": 0,
+        "wavetable": 0, "wt_position": 0, "wt_env_amount": 0,
+        "attack": 0.02, "decay": 0.2, "sustain": 1, "release": 0.1,
+        "cutoff": 0.9, "resonance": 0, "env_amount": 0, "pregain": 1,
+        "lfo_shape": 0, "lfo_rate": 0.8, "lfo_sync": 0, "lfo_depth": 0.15, "lfo_target": 3,
+        "unison_voices": 1, "unison_detune": 0.3, "unison_spread": 0.5
+      }
+    },
+    {
+      "name": "Strings",
+      "controls": {
+        "osc1_wave": 2, "osc2_wave": 2, "osc_mix": 0.5, "osc2_semitones": 0, "osc2_detune": -10,
+        "wavetable": 0, "wt_position": 0, "wt_env_amount": 0,
+        "attack": 0.55, "decay": 0.5, "sustain": 0.9, "release": 0.65,
+        "cutoff": 0.6, "resonance": 0.1, "env_amount": 0.15, "pregain": 1,
+        "lfo_shape": 0, "lfo_rate": 0.3, "lfo_sync": 1, "lfo_depth": 0, "lfo_target": 1,
+        "unison_voices": 4, "unison_detune": 0.6, "unison_spread": 1
+      }
+    },
+    {
+      "name": "Bell",
+      "controls": {
+        "osc1_wave": 4, "osc2_wave": 0, "osc_mix": 0.35, "osc2_semitones": 19, "osc2_detune": 0,
+        "wavetable": 2, "wt_position": 0.3, "wt_env_amount": 0,
+        "attack": 0, "decay": 0.75, "sustain": 0, "release": 0.8,
+        "cutoff": 0.85, "resonance": 0.05, "env_amount": 0.3, "pregain": 1,
+        "lfo_shape": 0, "lfo_rate": 0.3, "lfo_sync": 1, "lfo_depth": 0, "lfo_target": 1,
+        "unison_voices": 1, "unison_detune": 0.3, "unison_spread": 0.5
+      }
+    },
+    {
+      "name": "Chip Lead",
+      "controls": {
+        "osc1_wave": 3, "osc2_wave": 3, "osc_mix": 0.3, "osc2_semitones": -12, "osc2_detune": 0,
+        "wavetable": 0, "wt_position": 0, "wt_env_amount": 0,
+        "attack": 0, "decay": 0.3, "sustain": 0.7, "release": 0.15,
+        "cutoff": 0.9, "resonance": 0, "env_amount": 0, "pregain": 1,
+        "lfo_shape": 4, "lfo_rate": 0.714, "lfo_sync": 1, "lfo_depth": 0.12, "lfo_target": 3,
+        "unison_voices": 1, "unison_detune": 0.3, "unison_spread": 0.5
+      }
+    }
+  ]
+}

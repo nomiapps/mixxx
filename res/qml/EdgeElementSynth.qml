@@ -36,6 +36,9 @@ Item {
     // C# D# _ F# G# A# _ : which white keys have a black key to their right
     readonly property var blackAfterWhite: [true, true, false, true, true, true, false]
     readonly property bool compact: spec.compact ?? false
+    // Which factory patch the picker last applied; the panel's own state,
+    // since a factory patch is applied and then forgotten by the bank.
+    property int factoryIndex: 0
     readonly property string groupResolved: surface ? surface.resolveGroup(spec.group ?? "[Synth1]") : (spec.group ?? "[Synth1]")
     // note -> true for every key currently down on THIS panel
     property var heldNotes: ({})
@@ -176,6 +179,13 @@ Item {
 
         releaseAll();
         baseNoteControl.value = next;
+    }
+    function stepFactory(delta) {
+        const count = Mixxx.Synth.factoryPatchCount(root.groupResolved);
+        if (count <= 0)
+            return;
+        root.factoryIndex = ((root.factoryIndex + delta) % count + count) % count;
+        Mixxx.Synth.applyFactoryPatch(root.groupResolved, root.factoryIndex);
     }
     // points: the touch points that changed; gone: they were lifted
     function track(points, gone) {
@@ -670,6 +680,37 @@ Item {
                     knobColor: Theme.purple
                     knobKey: "unison_spread"
                     label: "WIDTH"
+                }
+                // The factory patches: stepping applies one to the live sound
+                // without touching the eight slots; SAVE keeps it.
+                Skin.Button {
+                    anchors.bottom: parent.bottom
+                    fontPixelSize: extras.font
+                    height: extras.knob
+                    text: "\u2039"
+                    width: extras.knob
+
+                    onClicked: root.stepFactory(-1)
+                }
+                Skin.Button {
+                    activeColor: Theme.amber
+                    anchors.bottom: parent.bottom
+                    fontPixelSize: extras.font
+                    height: extras.knob
+                    highlight: true
+                    text: Mixxx.Synth.factoryPatchName(root.groupResolved, root.factoryIndex)
+                    width: extras.buttonWidth * 1.3
+
+                    onClicked: root.stepFactory(1)
+                }
+                Skin.Button {
+                    anchors.bottom: parent.bottom
+                    fontPixelSize: extras.font
+                    height: extras.knob
+                    text: "\u203a"
+                    width: extras.knob
+
+                    onClicked: root.stepFactory(1)
                 }
             }
             Row {

@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 
 #include <QCoreApplication>
+#include <QDir>
 #include <QFile>
+#include <QSet>
 #include <memory>
 
 #include "control/controlobject.h"
@@ -16,7 +18,20 @@ const QString kGroup = QStringLiteral("[Synth1]");
 class SynthPatchBankTest : public SignalPathTest {
   protected:
     void SetUp() override {
+        // An existing, empty patch file: the bank seeds a profile that has
+        // none, and most cases here want empty slots to start from.
+        writeUserFile("{\"version\":1,\"group\":\"[Synth1]\",\"slots\":{}}");
         build();
+    }
+
+    QString userFilePath() const {
+        return QDir(m_pConfig->getSettingsPath()).filePath(QStringLiteral("synth-patches.json"));
+    }
+
+    void writeUserFile(const char* json) {
+        QFile file(userFilePath());
+        ASSERT_TRUE(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        file.write(json);
     }
 
     void TearDown() override {
@@ -161,6 +176,48 @@ TEST_F(SynthPatchBankTest, LoadClampsWhatAFileSays) {
     EXPECT_DOUBLE_EQ(1.0, get("lfo_sync"));
     EXPECT_DOUBLE_EQ(0.0, get("wavetable"));
     EXPECT_DOUBLE_EQ(0.42, get("cutoff"));
+}
+
+TEST_F(SynthPatchBankTest, FactoryPatchesAreValid) {
+    ASSERT_GE(bank()->factoryCount(), 12);
+    EXPECT_EQ(QStringLiteral("Init"), bank()->factoryName(0));
+    EXPECT_TRUE(bank()->factoryName(bank()->factoryCount()).isEmpty());
+    // Every factory patch names only controls a patch carries, spelled
+    // right, and every one of them is a full patch.
+    QSet<QString> known;
+    for (const ConfigKey& key : bank()->liveKeys()) {
+        known.insert(key.item);
+    }
+    for (int i = 0; i < bank()->factoryCount(); ++i) {
+        EXPECT_FALSE(bank()->factoryName(i).isEmpty()) << i;
+        ASSERT_TRUE(bank()->applyFactory(i)) << i;
+    }
+    // Init is the defaults; Acid is not.
+    bank()->applyFactory(0);
+    EXPECT_DOUBLE_EQ(0.8, get("cutoff"));
+    EXPECT_DOUBLE_EQ(2.0, get("osc1_wave"));
+    bank()->applyFactory(7);
+    EXPECT_DOUBLE_EQ(0.3, get("cutoff"));
+    EXPECT_DOUBLE_EQ(0.85, get("resonance"));
+    EXPECT_FALSE(bank()->applyFactory(-1));
+    EXPECT_FALSE(bank()->applyFactory(bank()->factoryCount()));
+    // Applying a factory patch never fills a slot.
+    EXPECT_FALSE(bank()->isFilled(1));
+}
+
+TEST_F(SynthPatchBankTest, FreshProfileIsSeededFromTheFactory) {
+    m_pSynth.reset();
+    ASSERT_TRUE(QFile::remove(userFilePath()));
+    build();
+    for (int slot = 1; slot <= SynthPatchBank::kSlots; ++slot) {
+        EXPECT_TRUE(bank()->isFilled(slot)) << slot;
+    }
+    EXPECT_TRUE(QFile::exists(userFilePath()));
+    // Slot 1 is Init and was applied: the sound is the default one.
+    EXPECT_EQ(1, bank()->currentSlot());
+    EXPECT_DOUBLE_EQ(0.8, get("cutoff"));
+    set("patch", 8);
+    EXPECT_DOUBLE_EQ(0.3, get("cutoff")); // Acid
 }
 
 } // namespace

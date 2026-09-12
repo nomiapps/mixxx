@@ -2,6 +2,7 @@
 
 #include <QJsonObject>
 #include <QObject>
+#include <QPair>
 #include <QString>
 #include <QVector>
 #include <array>
@@ -28,6 +29,12 @@ class ControlPushButton;
 ///
 /// Selecting a filled slot applies it; selecting an empty one leaves the
 /// live sound alone, so "select an empty slot, SAVE" copies a patch.
+///
+/// A factory set ships in <resourcePath>/synth/patches.json, the first
+/// of them "Init" (the controls' defaults). It is read-only: applying
+/// one changes the live sound and nothing else, and a profile whose
+/// patch file does not exist yet gets its eight slots seeded from the
+/// first eight, so nobody starts from empty slots.
 ///
 /// Unlike the sequencer's pattern bank, whose live controls persist on
 /// their own, the synth's timbre controls do not: so on construction the
@@ -67,6 +74,13 @@ class SynthPatchBank : public QObject {
         return m_liveKeys;
     }
 
+    /// The shipped patches, 0-based; applying one sets the live sound.
+    int factoryCount() const {
+        return m_factory.size();
+    }
+    QString factoryName(int index) const;
+    bool applyFactory(int index);
+
   private slots:
     void slotPatchChanged(double v);
     void slotSave(double v);
@@ -78,6 +92,7 @@ class SynthPatchBank : public QObject {
     void readFile();
     bool writeFile() const;
     void publishFilled();
+    void readFactory(const QString& resourcePath);
 
     const QString m_group;
     const QString m_filePath;
@@ -88,4 +103,5 @@ class SynthPatchBank : public QObject {
     QVector<ConfigKey> m_liveKeys;
     std::array<QJsonObject, kSlots> m_slots; // isEmpty() == empty slot
     int m_currentSlot;
+    QVector<QPair<QString, QJsonObject>> m_factory;
 };
