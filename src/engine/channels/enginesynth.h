@@ -28,8 +28,9 @@ class ControlPushButton;
 /// interpolation. The table itself arrives from the main thread down a
 /// lock-free lane (see wavetable.h); until one has arrived wave 4 plays the
 /// saw, so the channel is never silent by surprise. Unlike the PolyBLEP
-/// waves a table is not band-limited: a bright frame aliases in the top
-/// octaves. Per-octave mips are the follow-up.
+/// waves a table is not band-limited by nature, so each frame comes in
+/// mips (see wavetable.h) and a voice reads the first one whose partials
+/// all sit below Nyquist for its pitch, chosen per control-rate block.
 ///
 /// One LFO per synth modulates the wavetable position, the cutoff or the
 /// pitch of every voice (lfo_target), with lfo_shape, lfo_depth and
@@ -135,6 +136,10 @@ class EngineSynth : public EngineChannel {
     /// counts cycles: sample and hold hashes the cycle number, so it needs no
     /// state either. Static so the display draws the engine's own shapes.
     static double lfoValue(int shape, double absolutePhase);
+    /// The mip a voice at this phase increment (cycles per sample) reads:
+    /// the first whose partials all fit below Nyquist, clamped to what the
+    /// table has.
+    static int mipForIncrement(double inc, int mipCount);
 
   private slots:
     void slotNoteOn(double v);

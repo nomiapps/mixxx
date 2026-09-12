@@ -110,17 +110,17 @@ double wavetableSample(const Wavetable& table,
         int frameA,
         int frameB,
         double blend,
+        int mip,
         double phase) {
     const double x = phase * kWavetableFrameSize;
     const int i = static_cast<int>(x);
     const double f = x - i;
-    const float* a = table.frame(frameA);
-    const float* b = table.frame(frameB);
+    const float* a = table.frame(frameA, mip);
+    const float* b = table.frame(frameB, mip);
     const double sa = a[i] + (a[i + 1] - a[i]) * f;
     const double sb = b[i] + (b[i + 1] - b[i]) * f;
     return sa + (sb - sa) * blend;
 }
-
 
 double noteToHz(int note) {
     return 440.0 * std::pow(2.0, (note - 69) / 12.0);
@@ -147,6 +147,17 @@ double EngineSynth::filterResponseDb(double cutoffParam, double resonanceParam, 
     const double k = 2.0 * (1.0 - 0.95 * std::clamp(resonanceParam, 0.0, 1.0));
     const double denominator = std::sqrt((1.0 - w * w) * (1.0 - w * w) + k * k * w * w);
     return 20.0 * std::log10(1.0 / std::max(1e-9, denominator));
+}
+
+// static
+int EngineSynth::mipForIncrement(double inc, int mipCount) {
+    if (mipCount <= 1 || inc <= 0.0) {
+        return 0;
+    }
+    // Partial n sits at n * inc cycles per sample; it aliases from 0.5.
+    const double partials = std::floor(0.5 / inc);
+    const double needed = std::ceil(std::log2((kWavetableFrameSize / 2) / std::max(1.0, partials)));
+    return std::clamp(static_cast<int>(needed), 0, mipCount - 1);
 }
 
 // static
@@ -704,6 +715,10 @@ void EngineSynth::renderVoice(Voice* pVoice,
     int frameA = params.wtFrameA;
     int frameB = params.wtFrameB;
     double blend = params.wtBlend;
+    // Per control-rate block too: pitch moves with the LFO and unison.
+    const int mipCount = params.pWavetable != nullptr ? params.pWavetable->mipCount : 1;
+    int mip1 = mipForIncrement(inc1, mipCount);
+    int mip2 = mipForIncrement(inc2, mipCount);
     const double mix2 = params.oscMix;
     const double mix1 = 1.0 - mix2;
     const double level = pVoice->velocity * kVoiceLevel / std::sqrt(static_cast<double>(unisonCount));
@@ -775,6 +790,8 @@ void EngineSynth::renderVoice(Voice* pVoice,
                 inc1 = baseInc1 *
                         std::pow(2.0, lfo * params.lfoDepth * kLfoPitchSemitones / 12.0);
                 inc2 = inc1 * params.osc2Ratio;
+                mip1 = mipForIncrement(inc1, mipCount);
+                mip2 = mipForIncrement(inc2, mipCount);
             }
             if (params.lfoTarget == 1 && params.pWavetable != nullptr) {
                 const int last = params.pWavetable->frameCount - 1;
@@ -794,10 +811,10 @@ void EngineSynth::renderVoice(Voice* pVoice,
         --untilCoefficients;
 
         const double s1 = table1
-                ? wavetableSample(*params.pWavetable, frameA, frameB, blend, pVoice->phase1)
+                ? wavetableSample(*params.pWavetable, frameA, frameB, blend, mip1, pVoice->phase1)
                 : oscillator(params.wave1, pVoice->phase1, inc1);
         const double s2 = table2
-                ? wavetableSample(*params.pWavetable, frameA, frameB, blend, pVoice->phase2)
+                ? wavetableSample(*params.pWavetable, frameA, frameB, blend, mip2, pVoice->phase2)
                 : oscillator(params.wave2, pVoice->phase2, inc2);
         pVoice->phase1 += inc1;
         if (pVoice->phase1 >= 1.0) {

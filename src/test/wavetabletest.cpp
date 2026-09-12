@@ -61,9 +61,24 @@ class WavetableTest : public MixxxTest, SoundSourceProviderRegistration {
         return writeWav(name, channels, samples);
     }
 
+    // Magnitude of one bin of a frame's spectrum, by the definition, so the
+    // test does not depend on the FFT the library uses.
+    static double binMagnitude(const float* pFrame, int bin) {
+        double re = 0.0;
+        double im = 0.0;
+        for (int i = 0; i < kWavetableFrameSize; ++i) {
+            const double angle = kTwoPi * bin * i / kWavetableFrameSize;
+            re += pFrame[i] * std::cos(angle);
+            im -= pFrame[i] * std::sin(angle);
+        }
+        return std::sqrt(re * re + im * im);
+    }
+
     static void expectFinalised(const Wavetable& table) {
-        ASSERT_EQ(static_cast<std::size_t>(table.frameCount) * kWavetableFrameStride,
+        ASSERT_EQ(static_cast<std::size_t>(table.mipCount) * table.frameCount *
+                        kWavetableFrameStride,
                 table.samples.size());
+        EXPECT_EQ(kWavetableMipLevels, table.mipCount);
         float peak = 0.0f;
         for (int f = 0; f < table.frameCount; ++f) {
             const float* pFrame = table.frame(f);
@@ -124,6 +139,28 @@ TEST_F(WavetableTest, HarmonicsStartsAsASine) {
     EXPECT_GT(scale, 0.1f);
     for (int i = 0; i < kWavetableFrameSize; ++i) {
         EXPECT_NEAR(sine(i) * scale, pFirst[i], 1e-4) << "sample " << i;
+    }
+}
+
+TEST_F(WavetableTest, MipsRemovePartialsAboveTheirLimit) {
+    // The pulse is the brightest built-in: every partial present.
+    const auto pTable = wavetable::generatePulse();
+    ASSERT_EQ(kWavetableMipLevels, pTable->mipCount);
+    const int frame = wavetable::kBuiltinFrames - 1;
+    const float* pFull = pTable->frame(frame, 0);
+    const double fundamental = binMagnitude(pFull, 1);
+    ASSERT_GT(fundamental, 1.0);
+    for (int mip = 1; mip < pTable->mipCount; ++mip) {
+        const float* pMip = pTable->frame(frame, mip);
+        const int limit = kWavetableMipPartials(mip);
+        // Kept partials match the full frame; removed ones are gone.
+        EXPECT_NEAR(fundamental, binMagnitude(pMip, 1), fundamental * 1e-3) << "mip " << mip;
+        EXPECT_NEAR(binMagnitude(pFull, limit), binMagnitude(pMip, limit), fundamental * 1e-3)
+                << "mip " << mip;
+        EXPECT_LT(binMagnitude(pMip, limit + 1), fundamental * 1e-3) << "mip " << mip;
+        EXPECT_LT(binMagnitude(pMip, std::min(1023, limit * 2)), fundamental * 1e-3)
+                << "mip " << mip;
+        EXPECT_FLOAT_EQ(pMip[0], pMip[kWavetableFrameSize]) << "guard of mip " << mip;
     }
 }
 

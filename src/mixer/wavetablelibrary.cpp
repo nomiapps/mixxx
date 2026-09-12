@@ -1,5 +1,7 @@
 #include "mixer/wavetablelibrary.h"
 
+#include <dsp/transforms/FFT.h>
+
 #include <QDir>
 #include <QFileInfo>
 #include <QFutureWatcher>
@@ -121,7 +123,49 @@ void finalise(Wavetable* pTable) {
             }
         }
     }
+    buildMips(pTable);
     pTable->fillGuards();
+}
+
+void buildMips(Wavetable* pTable, int levels) {
+    if (pTable->mipCount != 1 || levels <= 1 || pTable->frameCount <= 0) {
+        return;
+    }
+    // Mip 0 keeps its place at the front, so growing the vector in place
+    // leaves it where frame(i) already finds it.
+    pTable->samples.resize(static_cast<std::size_t>(levels) * pTable->frameCount *
+            kWavetableFrameStride);
+    pTable->mipCount = levels;
+
+    FFTReal fft(kWavetableFrameSize);
+    std::vector<double> in(kWavetableFrameSize);
+    std::vector<double> re(kWavetableFrameSize);
+    std::vector<double> im(kWavetableFrameSize);
+    std::vector<double> reCut(kWavetableFrameSize);
+    std::vector<double> imCut(kWavetableFrameSize);
+    std::vector<double> out(kWavetableFrameSize);
+    for (int f = 0; f < pTable->frameCount; ++f) {
+        const float* pFull = pTable->frame(f, 0);
+        for (int i = 0; i < kWavetableFrameSize; ++i) {
+            in[i] = pFull[i];
+        }
+        fft.forward(in.data(), re.data(), im.data());
+        for (int mip = 1; mip < levels; ++mip) {
+            // inverse() reads bins 0 .. N/2; everything from the limit up
+            // is silenced.
+            const int limit = kWavetableMipPartials(mip);
+            for (int b = 0; b <= kWavetableFrameSize / 2; ++b) {
+                const bool keep = b <= limit;
+                reCut[b] = keep ? re[b] : 0.0;
+                imCut[b] = keep ? im[b] : 0.0;
+            }
+            fft.inverse(reCut.data(), imCut.data(), out.data());
+            float* pMip = pTable->frame(f, mip);
+            for (int i = 0; i < kWavetableFrameSize; ++i) {
+                pMip[i] = static_cast<float>(out[i]);
+            }
+        }
+    }
 }
 
 std::unique_ptr<Wavetable> decodeSerumWav(const QString& path, QString* pReason) {

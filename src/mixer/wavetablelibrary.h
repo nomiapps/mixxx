@@ -28,8 +28,14 @@ std::unique_ptr<Wavetable> generateHarmonics();
 /// What every table gets before anyone plays or draws it: each frame's DC
 /// removed (a pulse's mean would thump through the filter on every note),
 /// the whole table peak-normalised to 1.0 (the PolyBLEP waves peak at 1, so
-/// a table voice is as loud as a saw voice), and the guard samples filled.
+/// a table voice is as loud as a saw voice), its mips built, and the guard
+/// samples filled.
 void finalise(Wavetable* pTable);
+
+/// Grows a one-mip table to levels mips: mip k is every frame with the
+/// partials above kWavetableMipPartials(k) removed, through an FFT. Mip 0
+/// is left as it is. A table that already has mips is left alone.
+void buildMips(Wavetable* pTable, int levels = kWavetableMipLevels);
 
 /// Decodes a Serum-layout wavetable: a .wav whose length is a whole number
 /// of 2048-sample-frame cycles, channels averaged to mono. Returns nullptr

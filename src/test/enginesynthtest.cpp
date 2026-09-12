@@ -521,4 +521,18 @@ TEST_F(EngineSynthTest, FilterResponseIsFlatBelowCutoffAndDropsTwelveDbPerOctave
     EXPECT_NEAR(20.0, EngineSynth::filterResponseDb(0.5, 1.0, fc), 0.1);
 }
 
+TEST_F(EngineSynthTest, MipForIncrementPicksTheFittingLevel) {
+    const double sr = 44100.0;
+    // Partials that fit below Nyquist: 1102 at 20 Hz (mip 0 keeps 1024),
+    // 501 at 44 Hz (mip 2 keeps 256), 50 at 440 Hz (mip 5 keeps 32), 10 at
+    // 2100 Hz (mip 7 keeps 8), 1 at 12 kHz (clamped to the last mip).
+    EXPECT_EQ(0, EngineSynth::mipForIncrement(20.0 / sr, kWavetableMipLevels));
+    EXPECT_EQ(2, EngineSynth::mipForIncrement(44.0 / sr, kWavetableMipLevels));
+    EXPECT_EQ(5, EngineSynth::mipForIncrement(440.0 / sr, kWavetableMipLevels));
+    EXPECT_EQ(7, EngineSynth::mipForIncrement(2100.0 / sr, kWavetableMipLevels));
+    EXPECT_EQ(8, EngineSynth::mipForIncrement(12000.0 / sr, kWavetableMipLevels));
+    // A table without mips always reads mip 0.
+    EXPECT_EQ(0, EngineSynth::mipForIncrement(12000.0 / sr, 1));
+}
+
 } // namespace
