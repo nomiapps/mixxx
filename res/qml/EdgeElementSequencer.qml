@@ -12,6 +12,9 @@ import "Theme"
 //   steps         steps shown (default 16; the engine pattern is 16)
 //   samplerLanes  drum lanes (default 4)
 //   samplerCount  how many samplers a lane header cycles through (default 8)
+//   compact       fixed-height transport and detail rows, smaller type and
+//                 narrow lane labels, for a main-window row (default false)
+//   showDetail    the selected step's velocity/gate/note row (default true)
 // Every cell is a control, so a controller mapping can edit the same pattern.
 // The pattern strip drives the SequencerPatternBank controls (pattern,
 // pattern_save, pattern_N_filled) in the same group.
@@ -26,6 +29,13 @@ Item {
     required property var spec
     readonly property int steps: Math.max(1, Math.min(16, spec.steps ?? 16))
     property var surface: null
+    readonly property bool compact: spec.compact ?? false
+    readonly property bool showDetail: spec.showDetail ?? true
+    // The Edge panel scales with its 704 px; a 220 px row cannot, so compact
+    // pins the two chrome rows and lets the grid have the rest.
+    readonly property real transportHeight: compact ? 36 : root.height * 0.16
+    readonly property real detailHeight: showDetail ? (compact ? 40 : root.height * 0.2) : 0
+    readonly property int cellFont: compact ? 10 : 12
 
     function noteName(value) {
         const note = Math.max(0, Math.min(127, Math.round(value)));
@@ -76,7 +86,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        height: root.height * 0.16
+        height: root.transportHeight
         spacing: Math.max(6, root.width * 0.008)
 
         Skin.ControlButton {
@@ -98,28 +108,26 @@ Item {
             text: "RESTART"
             width: transport.buttonHeight * 2.4
         }
-        Item {
-            height: transport.height
-            width: transport.buttonHeight * 1.2
+        // Label beside the knob, not above it: a stacked pair needs more height
+        // than the compact transport row has, and side by side reads fine on
+        // the panel too.
+        Row {
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 4
 
             Text {
-                id: swingLabel
-
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
+                anchors.verticalCenter: parent.verticalCenter
                 color: Theme.deckTextColor
                 font.pixelSize: 10
                 text: "SWING"
             }
             Skin.ControlKnob {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: swingLabel.bottom
-                anchors.topMargin: 2
+                anchors.verticalCenter: parent.verticalCenter
                 color: Theme.amber
                 group: root.groupResolved
                 height: width
                 key: "swing"
-                width: Math.min(parent.width, transport.height * 0.7)
+                width: transport.buttonHeight
             }
         }
         Skin.Button {
@@ -202,10 +210,10 @@ Item {
         readonly property real cellHeight: (height - gap * root.samplerLanes) / (root.samplerLanes + 1)
         readonly property real cellWidth: (width - labelWidth - gap * root.steps) / root.steps
         readonly property real gap: Math.max(3, height * 0.03)
-        readonly property real labelWidth: width * 0.06
+        readonly property real labelWidth: root.compact ? Math.max(40, width * 0.03) : width * 0.06
 
         anchors.bottom: detail.top
-        anchors.bottomMargin: gap
+        anchors.bottomMargin: root.showDetail ? gap : 0
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: transport.bottom
@@ -256,7 +264,7 @@ Item {
                     }
                     Skin.Button {
                         activeColor: Theme.purple
-                        fontPixelSize: 12
+                        fontPixelSize: root.cellFont
                         height: grid.cellHeight
                         highlight: true
                         text: "S" + Math.round(targetControl.value)
@@ -301,7 +309,8 @@ Item {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        height: root.height * 0.2
+        height: root.detailHeight
+        visible: root.showDetail
         spacing: Math.max(6, root.width * 0.008)
 
         Text {
@@ -322,30 +331,27 @@ Item {
                 }
             ]
 
-            Item {
+            Row {
+                id: knobRow
+
                 required property var modelData
 
-                height: detail.height
-                width: detail.height
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 4
 
                 Text {
-                    id: knobLabel
-
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
+                    anchors.verticalCenter: parent.verticalCenter
                     color: Theme.deckTextColor
                     font.pixelSize: 10
-                    text: parent.modelData.label
+                    text: knobRow.modelData.label
                 }
                 Skin.ControlKnob {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: knobLabel.bottom
-                    anchors.topMargin: 2
+                    anchors.verticalCenter: parent.verticalCenter
                     color: Theme.blue
                     group: root.groupResolved
                     height: width
-                    key: "synth_step_" + (root.selectedStep + 1) + "_" + parent.modelData.key
-                    width: Math.min(parent.width, detail.height * 0.7)
+                    key: "synth_step_" + (root.selectedStep + 1) + "_" + knobRow.modelData.key
+                    width: detail.height * 0.7
                 }
             }
         }
@@ -401,7 +407,7 @@ Item {
         Skin.Button {
             activeColor: Theme.blue
             anchors.fill: parent
-            fontPixelSize: 12
+            fontPixelSize: root.cellFont
             highlight: enabledControl.value > 0
             // Beats read as groups of four.
             normalColor: Math.floor(cell.index / 4) % 2 ? Theme.darkGray4 : Theme.darkGray2
@@ -410,7 +416,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             border.color: Theme.blue
-            border.width: 2
+            border.width: root.compact ? 1 : 2
             color: "transparent"
             radius: 3
             visible: root.selectedStep === cell.index

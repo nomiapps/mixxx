@@ -22,6 +22,7 @@ ApplicationWindow {
     property alias showAux: showAuxButton.checked
     property alias showEffects: showEffectsButton.checked
     property alias showSamplers: showSamplersButton.checked
+    property alias showSequencer: showSequencerButton.checked
     property alias showSynth: showSynthButton.checked
 
     color: Theme.backgroundColor
@@ -294,6 +295,13 @@ ApplicationWindow {
                     activeColor: Theme.white
                     checkable: true
                     text: "Synth"
+                }
+                Skin.Button {
+                    id: showSequencerButton
+
+                    activeColor: Theme.white
+                    checkable: true
+                    text: "Sequencer"
                 }
                 Item {
                     Layout.fillWidth: true
@@ -899,6 +907,22 @@ ApplicationWindow {
                         fadeTarget: synth
                     }
                 }
+                Skin.SequencerRow {
+                    id: sequencer
+
+                    clip: true
+                    height: visible ? implicitHeight : 0
+                    visible: root.showSequencer && !root.maximizeLibrary
+                    width: parent.width
+
+                    anchors {
+                        top: synth.bottom
+                    }
+
+                    Skin.FadeBehavior on visible {
+                        fadeTarget: sequencer
+                    }
+                }
                 Loader {
                     id: library
 
@@ -941,7 +965,7 @@ ApplicationWindow {
                         bottom: parent.bottom
                         // The last row above it, so a new row does not end up
                         // underneath the library.
-                        top: synth.bottom
+                        top: sequencer.bottom
                     }
                 }
             }
