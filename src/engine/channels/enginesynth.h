@@ -196,6 +196,9 @@ class EngineSynth : public EngineChannel {
         double wtBlend = 0.0;
         // The unmodulated knob, 0..1, for the LFO to move.
         double wtPosition = 0.0;
+        // How far the amplitude envelope pushes the position, -1..1 of the
+        // whole table: the per-note sweep through the frames.
+        double wtEnvAmount = 0.0;
         // The LFO for this buffer: shape and target, depth already applied
         // to the value, and the absolute phase at frame 0 plus its
         // increment per frame.
@@ -275,6 +278,7 @@ class EngineSynth : public EngineChannel {
     ControlObject* m_pOsc2Wave;
     ControlPotmeter* m_pOscMix;
     ControlPotmeter* m_pWtPosition;
+    ControlPotmeter* m_pWtEnvAmount;
     ControlPotmeter* m_pOsc2Semitones;
     ControlPotmeter* m_pOsc2Detune;
     ControlPotmeter* m_pAttack;

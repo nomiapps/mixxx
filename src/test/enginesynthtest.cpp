@@ -535,4 +535,41 @@ TEST_F(EngineSynthTest, MipForIncrementPicksTheFittingLevel) {
     EXPECT_EQ(0, EngineSynth::mipForIncrement(12000.0 / sr, 1));
 }
 
+TEST_F(EngineSynthTest, EnvelopeSweepsTheWavetable) {
+    // Frame 0 a sine, frame 1 its inverse; the envelope pushes the position
+    // from 0 to 1 over a four-second attack. Halfway, the two frames cancel
+    // and the voice goes quiet; then it comes back as the inverse.
+    setupClean();
+    set("attack", 1.0); // kMaxAttackSeconds
+    set("osc1_wave", 4);
+    set("osc_mix", 0.0);
+    set("wt_position", 0.0);
+    set("wt_env_amount", 1.0);
+    m_pSynth->adoptWavetable(makeTable(2, [](int f, int i) {
+        return f == 0 ? sine(i) : -sine(i);
+    }));
+    set("note_on", 60);
+    // 4 s at 44.1 kHz is 172 buffers of 1024 frames; the envelope is 0.5 at
+    // buffer 86. Near the start the sine plays, halfway almost nothing.
+    EXPECT_GT(render(4), 0.002f);
+    render(80);
+    EXPECT_LT(render(2), 0.02f);
+    render(90);
+    EXPECT_GT(render(2), 0.05f);
+}
+
+TEST_F(EngineSynthTest, WavetableEnvelopeAmountDefaultsOff) {
+    setupClean();
+    set("attack", 1.0);
+    set("osc1_wave", 4);
+    set("osc_mix", 0.0);
+    m_pSynth->adoptWavetable(makeTable(2, [](int f, int i) {
+        return f == 0 ? sine(i) : -sine(i);
+    }));
+    set("note_on", 60);
+    render(86);
+    // Still frame 0 halfway through the attack: audible, not cancelled.
+    EXPECT_GT(render(2), 0.05f);
+}
+
 } // namespace

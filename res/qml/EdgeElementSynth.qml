@@ -299,7 +299,7 @@ Item {
     Row {
         id: controls
 
-        // 22 controls of three widths. A knob is one slot; the two oscillator
+        // 23 controls of three widths. A knob is one slot; the two oscillator
         // buttons and the scale button are 1.8, because their label carries a
         // word ("1 SINE", "BLUES") that does not fit in a square; the key
         // button is 1.4, for two characters and a sharp. The octave buttons
@@ -308,7 +308,7 @@ Item {
         // are the size of a fingertip, down to 10 px in the compact row.
         readonly property int buttonFont: knobSize >= 72 ? 16 : (knobSize >= 52 ? 12 : 10)
         readonly property real keyWidth: knobSize * 1.4
-        readonly property real knobSize: Math.min(height * 0.72, (root.width - spacing * 21) / 24.8)
+        readonly property real knobSize: Math.min(height * 0.72, (root.width - spacing * 22) / 25.8)
         readonly property real waveWidth: knobSize * 1.8
 
         anchors.left: parent.left
@@ -399,6 +399,11 @@ Item {
                 {
                     "key": "wt_position",
                     "label": "WT POS",
+                    "color": Theme.amber
+                },
+                {
+                    "key": "wt_env_amount",
+                    "label": "WT ENV",
                     "color": Theme.amber
                 },
                 {

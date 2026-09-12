@@ -254,6 +254,12 @@ EngineSynth::EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManage
     m_pWtPosition = new ControlPotmeter(ConfigKey(getGroup(), "wt_position"), 0.0, 1.0);
     m_pWtPosition->setDefaultValue(0.0);
     m_pWtPosition->set(0.0);
+    // The envelope's reach into the table, so every note can sweep through
+    // the frames from where the knob sits: +1 the whole table upwards at
+    // full envelope, -1 downwards. Off by default.
+    m_pWtEnvAmount = new ControlPotmeter(ConfigKey(getGroup(), "wt_env_amount"), -1.0, 1.0);
+    m_pWtEnvAmount->setDefaultValue(0.0);
+    m_pWtEnvAmount->set(0.0);
     m_pOsc2Semitones = new ControlPotmeter(ConfigKey(getGroup(), "osc2_semitones"), -24.0, 24.0);
     m_pOsc2Semitones->setDefaultValue(0.0);
     m_pOsc2Semitones->set(0.0);
@@ -361,6 +367,7 @@ EngineSynth::~EngineSynth() {
     delete m_pAttack;
     delete m_pOsc2Detune;
     delete m_pOsc2Semitones;
+    delete m_pWtEnvAmount;
     delete m_pWtPosition;
     delete m_pOscMix;
     delete m_pOsc2Wave;
@@ -530,6 +537,7 @@ void EngineSynth::readParams(Params* pParams) const {
     pParams->gain = m_pPregain->get();
 
     pParams->wtPosition = std::clamp(m_pWtPosition->get(), 0.0, 1.0);
+    pParams->wtEnvAmount = std::clamp(m_pWtEnvAmount->get(), -1.0, 1.0);
     pParams->lfoShape = std::clamp(static_cast<int>(std::lround(m_pLfoShape->get())), 0, 4);
     pParams->lfoTarget = std::clamp(static_cast<int>(std::lround(m_pLfoTarget->get())), 0, 3);
     pParams->lfoDepth = std::clamp(m_pLfoDepth->get(), 0.0, 1.0);
@@ -793,9 +801,16 @@ void EngineSynth::renderVoice(Voice* pVoice,
                 mip1 = mipForIncrement(inc1, mipCount);
                 mip2 = mipForIncrement(inc2, mipCount);
             }
-            if (params.lfoTarget == 1 && params.pWavetable != nullptr) {
+            // The table position moves with the envelope of this voice and,
+            // when it is the LFO's target, with the LFO; both from the knob.
+            if (params.pWavetable != nullptr &&
+                    (params.lfoTarget == 1 || params.wtEnvAmount != 0.0)) {
                 const int last = params.pWavetable->frameCount - 1;
-                const double position = std::clamp(params.wtPosition + lfo, 0.0, 1.0) * last;
+                double offset = params.wtEnvAmount * pVoice->env;
+                if (params.lfoTarget == 1) {
+                    offset += lfo;
+                }
+                const double position = std::clamp(params.wtPosition + offset, 0.0, 1.0) * last;
                 frameA = static_cast<int>(position);
                 frameB = std::min(frameA + 1, last);
                 blend = position - frameA;
