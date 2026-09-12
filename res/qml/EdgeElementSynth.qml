@@ -12,7 +12,7 @@ import "Theme"
 //   wavetable the wavetable band between the controls and the keyboard:
 //             the table picker, its frame count and the stack of frames
 //             with the one WT POS is playing drawn bright (default true;
-//             hidden anyway below 320 px, where a main-window row is)
+//             hidden anyway below 200 px, where the band cannot fit)
 // Keys write note_on / note_off with the MIDI note number; the engine keeps
 // the key state, so a MIDI keyboard mapped to the same group can play at the
 // same time.
@@ -63,7 +63,7 @@ Item {
             "degrees": [0, 3, 5, 6, 7, 10]
         }
     ]
-    readonly property bool showWavetable: (spec.wavetable ?? true) && root.height >= 320
+    readonly property bool showWavetable: (spec.wavetable ?? true) && root.height >= 200
     required property var spec
     property var surface: null
     readonly property var waveNames: ["SINE", "TRI", "SAW", "SQR", "WT"]
@@ -403,7 +403,9 @@ Item {
                 required property var modelData
 
                 height: controls.height
-                width: controls.knobSize
+                // A slot is the knob's width, unless its label is wider: with
+                // small knobs "DETUNE" and "CUTOFF" ran into their neighbours.
+                width: Math.max(controls.knobSize, knobLabel.implicitWidth + 4)
 
                 Text {
                     id: knobLabel
@@ -411,7 +413,7 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
                     color: Theme.deckTextColor
-                    font.pixelSize: Math.max(9, controls.height * 0.14)
+                    font.pixelSize: Math.max(10, controls.height * 0.14)
                     text: parent.modelData.label
                 }
                 Skin.ControlKnob {
@@ -447,7 +449,9 @@ Item {
             Column {
                 id: picker
 
-                readonly property real buttonHeight: Math.max(44, (wavetableBand.height - spacing * 2 - framesLabel.height) / 2)
+                // 44 px for touch where the band is tall; in the main-window row
+                // the band is a third of that and the buttons shrink to fit it.
+                readonly property real buttonHeight: Math.max(22, Math.min(44, (wavetableBand.height - spacing * 2 - framesLabel.height) / 2))
 
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 4

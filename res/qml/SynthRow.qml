@@ -14,7 +14,9 @@ import "Theme"
 //
 // The panel is built for touch, so it is given a generous height here rather
 // than squeezed: on a mouse it is still played one note at a time, and on a
-// touchscreen the whole row is playable.
+// touchscreen the whole row is playable. The height is what the panel needs
+// to show its wavetable band (see EdgeElementSynth's showWavetable); the
+// keys take what is left, which on a mouse is plenty.
 Item {
     id: root
 
@@ -23,7 +25,7 @@ Item {
     property string group: "[Synth1]"
     property int octaves: 3
 
-    implicitHeight: 150
+    implicitHeight: 260
 
     Skin.SectionBackground {
         anchors.fill: parent

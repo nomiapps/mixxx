@@ -79,12 +79,18 @@ ComboBox {
             radius: 4
         }
         contentItem: ListView {
+            id: popupList
+
             clip: true
             currentIndex: root.highlightedIndex
             implicitHeight: contentHeight
             model: root.popup.visible ? root.delegateModel : null
 
-            ScrollIndicator.vertical: ScrollIndicator {
+            // A ScrollIndicator only appears while the list is moving, so a
+            // popup capped below its content (thirteen Edge layouts in 400 px)
+            // gave no sign there was more. The bar stays up whenever there is.
+            ScrollBar.vertical: ScrollBar {
+                policy: popupList.contentHeight > popupList.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
             }
         }
     }
