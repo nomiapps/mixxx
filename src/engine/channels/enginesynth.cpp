@@ -20,9 +20,12 @@ constexpr double kPi = 3.14159265358979323846;
 constexpr double kTwoPi = 2.0 * kPi;
 constexpr double kMinCutoffHz = 20.0;
 constexpr double kMaxCutoffHz = 20000.0;
-// Eight full-velocity voices summed at this level stay under 0 dBFS with a
-// resonant filter adding a few dB on top.
+// Eight full-velocity notes summed at this level stay under 0 dBFS with a
+// resonant filter adding a few dB on top; a note's unison voices share
+// it, scaled by 1/sqrt(count).
 constexpr double kVoiceLevel = 0.2;
+// Full unison_detune spreads a note's voices over this many cents.
+constexpr double kUnisonMaxCents = 50.0;
 // The filter coefficients follow the envelope, but recomputing a tan() for
 // every sample of every voice is wasteful; this is inaudible at 44.1 kHz.
 constexpr int kControlRateSamples = 32;
@@ -163,7 +166,9 @@ EngineSynth::EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManage
                   /*isPrimaryDeck*/ false),
           m_lastHeld{0, 0},
           m_voiceSequence(0),
-          m_monoBuffer(kMaxEngineFrames, 0.0f),
+          m_leftBuffer(kMaxEngineFrames, 0.0f),
+          m_rightBuffer(kMaxEngineFrames, 0.0f),
+          m_unisonVoices(1),
           m_scheduledCount(0),
           m_pTable(nullptr),
           m_clockBpm(QStringLiteral("[InternalClock]"),
@@ -285,6 +290,18 @@ EngineSynth::EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManage
     m_pLfoPhase = new ControlObject(ConfigKey(getGroup(), "lfo_phase"));
     m_pLfoPhase->setReadOnly();
 
+    // Unison. One voice by default; detune and spread default to a
+    // usable width so turning the count up sounds like unison at once.
+    m_pUnisonVoices = new ControlObject(ConfigKey(getGroup(), "unison_voices"));
+    m_pUnisonVoices->setDefaultValue(1.0);
+    m_pUnisonVoices->set(1.0);
+    m_pUnisonDetune = new ControlPotmeter(ConfigKey(getGroup(), "unison_detune"), 0.0, 1.0);
+    m_pUnisonDetune->setDefaultValue(0.3);
+    m_pUnisonDetune->set(0.3);
+    m_pUnisonSpread = new ControlPotmeter(ConfigKey(getGroup(), "unison_spread"), 0.0, 1.0);
+    m_pUnisonSpread->setDefaultValue(0.5);
+    m_pUnisonSpread->set(0.5);
+
     // Unlike an aux input there is nothing to configure before this channel
     // can make sound, so it goes straight to the main mix; the ON button on
     // the surface toggles main_mix.
@@ -302,6 +319,9 @@ EngineSynth::~EngineSynth() {
             delete pQueued;
         }
     }
+    delete m_pUnisonSpread;
+    delete m_pUnisonDetune;
+    delete m_pUnisonVoices;
     delete m_pLfoPhase;
     delete m_pLfoTarget;
     delete m_pLfoDepth;
@@ -504,11 +524,16 @@ void EngineSynth::readParams(Params* pParams) const {
         pParams->lfoPhase0 = m_lfoFreePhase;
         pParams->lfoInc = hz / sampleRate;
     }
+    pParams->unisonVoices = std::clamp(
+            static_cast<int>(std::lround(m_pUnisonVoices->get())), 1, kMaxUnison);
+    pParams->unisonCents = std::clamp(m_pUnisonDetune->get(), 0.0, 1.0) * kUnisonMaxCents;
+    pParams->unisonSpread = std::clamp(m_pUnisonSpread->get(), 0.0, 1.0);
 }
 
-EngineSynth::Voice* EngineSynth::findVoiceFor(int note) {
+EngineSynth::Voice* EngineSynth::findVoiceFor(int note, int unisonIndex) {
     for (Voice& voice : m_voices) {
-        if (voice.stage != Stage::Idle && voice.note == note) {
+        if (voice.stage != Stage::Idle && voice.note == note &&
+                voice.unisonIndex == unisonIndex) {
             return &voice;
         }
     }
@@ -540,22 +565,36 @@ EngineSynth::Voice* EngineSynth::allocateVoice() {
 }
 
 void EngineSynth::startVoice(int note, double velocity, bool gate) {
-    Voice* pVoice = findVoiceFor(note);
-    if (!pVoice) {
-        pVoice = allocateVoice();
-        DEBUG_ASSERT(pVoice);
-        if (pVoice->stage == Stage::Idle) {
-            pVoice->ic1eq = 0.0;
-            pVoice->ic2eq = 0.0;
+    const int count = std::clamp(m_unisonVoices, 1, kMaxUnison);
+    for (int i = 0; i < count; ++i) {
+        Voice* pVoice = findVoiceFor(note, i);
+        if (!pVoice) {
+            // Stealing takes any voice, so with everything busy a note's
+            // unison can come up thinner than asked. Accepted.
+            pVoice = allocateVoice();
+            DEBUG_ASSERT(pVoice);
+            if (pVoice->stage == Stage::Idle) {
+                pVoice->ic1eq = 0.0;
+                pVoice->ic2eq = 0.0;
+            }
+        }
+        // A retriggered voice keeps its envelope level and phases so there
+        // is no click; it just climbs again from wherever it is.
+        pVoice->note = note;
+        pVoice->velocity = velocity;
+        pVoice->gate = gate;
+        pVoice->stage = Stage::Attack;
+        pVoice->startedAt = ++m_voiceSequence;
+        pVoice->unisonIndex = static_cast<uint8_t>(i);
+        pVoice->unisonCount = static_cast<uint8_t>(count);
+    }
+    // Unison turned down since the note last started: the surplus voices
+    // of this note are let go.
+    for (Voice& voice : m_voices) {
+        if (voice.stage != Stage::Idle && voice.note == note && voice.unisonIndex >= count) {
+            voice.gate = false;
         }
     }
-    // A retriggered voice keeps its envelope level and phases so there is
-    // no click; it just climbs again from wherever it is.
-    pVoice->note = note;
-    pVoice->velocity = velocity;
-    pVoice->gate = gate;
-    pVoice->stage = Stage::Attack;
-    pVoice->startedAt = ++m_voiceSequence;
 }
 
 void EngineSynth::releaseVoicesFor(int note) {
@@ -628,10 +667,25 @@ void EngineSynth::applyKeyChanges() {
 
 void EngineSynth::renderVoice(Voice* pVoice,
         const Params& params,
-        CSAMPLE* pMono,
+        CSAMPLE* pLeft,
+        CSAMPLE* pRight,
         std::size_t bufferOffset,
         std::size_t frames) {
-    const double baseInc1 = noteToHz(pVoice->note) / params.sampleRate;
+    // This voice's place in its note's unison: -1 .. 1 across the voices,
+    // 0 for a single one. Detune and pan follow it, from the knobs as they
+    // are now, so a held note widens when they turn.
+    const int unisonCount = std::max<int>(1, pVoice->unisonCount);
+    const double unisonOffset = unisonCount > 1
+            ? 2.0 * pVoice->unisonIndex / (unisonCount - 1) - 1.0
+            : 0.0;
+    const double detuneRatio = std::pow(2.0, unisonOffset * params.unisonCents / 1200.0);
+    const double pan = unisonOffset * params.unisonSpread;
+    // No-boost pan: a centred voice is 1.0 on both sides, a hard-panned
+    // one 1.0 on its side and 0 on the other, so unison at full width does
+    // not gain over a single voice the way constant power would.
+    const double gainLeft = 1.0 - std::max(0.0, pan);
+    const double gainRight = 1.0 + std::min(0.0, pan);
+    const double baseInc1 = noteToHz(pVoice->note) * detuneRatio / params.sampleRate;
     // Per control-rate block when the LFO is on pitch.
     double inc1 = baseInc1;
     double inc2 = inc1 * params.osc2Ratio;
@@ -641,7 +695,7 @@ void EngineSynth::renderVoice(Voice* pVoice,
     double blend = params.wtBlend;
     const double mix2 = params.oscMix;
     const double mix1 = 1.0 - mix2;
-    const double level = pVoice->velocity * kVoiceLevel;
+    const double level = pVoice->velocity * kVoiceLevel / std::sqrt(static_cast<double>(unisonCount));
     const double maxCutoff = std::min(kMaxCutoffHz, params.sampleRate * 0.45);
     const bool table1 = params.wave1 == 4;
     const bool table2 = params.wave2 == 4;
@@ -752,19 +806,22 @@ void EngineSynth::renderVoice(Voice* pVoice,
         pVoice->ic1eq = 2.0 * v1 - pVoice->ic1eq;
         pVoice->ic2eq = 2.0 * v2 - pVoice->ic2eq;
 
-        pMono[i] += static_cast<CSAMPLE>(v2 * pVoice->env * level);
+        const double sample = v2 * pVoice->env * level;
+        pLeft[i] += static_cast<CSAMPLE>(sample * gainLeft);
+        pRight[i] += static_cast<CSAMPLE>(sample * gainRight);
     }
 }
 
 void EngineSynth::process(CSAMPLE* pOut, const std::size_t bufferSize) {
     std::size_t frames = bufferSize / 2;
-    VERIFY_OR_DEBUG_ASSERT(frames <= m_monoBuffer.size()) {
-        frames = m_monoBuffer.size();
+    VERIFY_OR_DEBUG_ASSERT(frames <= m_leftBuffer.size()) {
+        frames = m_leftBuffer.size();
     }
 
     drainWavetableLane();
     Params params;
     readParams(&params);
+    m_unisonVoices = params.unisonVoices;
     applyKeyChanges();
 
     // Scheduled events split the buffer into segments: every sounding voice
@@ -781,8 +838,10 @@ void EngineSynth::process(CSAMPLE* pOut, const std::size_t bufferSize) {
         m_scheduled[j + 1] = event;
     }
 
-    CSAMPLE* pMono = m_monoBuffer.data();
-    std::fill_n(pMono, frames, 0.0f);
+    CSAMPLE* pLeft = m_leftBuffer.data();
+    CSAMPLE* pRight = m_rightBuffer.data();
+    std::fill_n(pLeft, frames, 0.0f);
+    std::fill_n(pRight, frames, 0.0f);
     bool sounding = false;
     std::size_t cursor = 0;
     for (int e = 0; e <= m_scheduledCount; ++e) {
@@ -792,7 +851,12 @@ void EngineSynth::process(CSAMPLE* pOut, const std::size_t bufferSize) {
         if (segmentEnd > cursor) {
             for (Voice& voice : m_voices) {
                 if (voice.stage != Stage::Idle) {
-                    renderVoice(&voice, params, pMono + cursor, cursor, segmentEnd - cursor);
+                    renderVoice(&voice,
+                            params,
+                            pLeft + cursor,
+                            pRight + cursor,
+                            cursor,
+                            segmentEnd - cursor);
                     sounding = true;
                 }
             }
@@ -828,9 +892,8 @@ void EngineSynth::process(CSAMPLE* pOut, const std::size_t bufferSize) {
     if (sounding) {
         const CSAMPLE gain = static_cast<CSAMPLE>(params.gain);
         for (std::size_t i = 0; i < frames; ++i) {
-            const CSAMPLE sample = pMono[i] * gain;
-            pOut[2 * i] = sample;
-            pOut[2 * i + 1] = sample;
+            pOut[2 * i] = pLeft[i] * gain;
+            pOut[2 * i + 1] = pRight[i] * gain;
         }
         EngineEffectsManager* pEngineEffectsManager = m_pEffectsManager
                 ? m_pEffectsManager->getEngineEffectsManager()

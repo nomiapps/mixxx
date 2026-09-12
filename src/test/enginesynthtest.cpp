@@ -13,6 +13,9 @@
 namespace {
 
 constexpr std::size_t kBufferSize = 2048; // interleaved stereo samples
+// Notes for the level tests: what a player can hold, not the voice budget,
+// which unison made bigger than any chord.
+constexpr int kTestPolyphony = 8;
 const QString kGroup = QStringLiteral("[Synth1]");
 
 class EngineSynthTest : public SignalPathTest {
@@ -199,7 +202,7 @@ TEST_F(EngineSynthTest, OutputStaysBoundedWithFullPolyphonyAndResonance) {
     set("resonance", 1.0);
     set("cutoff", 0.5);
     set("env_amount", 1.0);
-    for (int note = 36; note < 36 + EngineSynth::kVoices; ++note) {
+    for (int note = 36; note < 36 + kTestPolyphony; ++note) {
         m_pSynth->noteOn(note);
     }
     for (int i = 0; i < 20; ++i) {
@@ -346,7 +349,7 @@ TEST_F(EngineSynthTest, WavetableOutputStaysBounded) {
     set("resonance", 1.0);
     set("cutoff", 0.5);
     set("env_amount", 1.0);
-    for (int note = 36; note < 36 + EngineSynth::kVoices; ++note) {
+    for (int note = 36; note < 36 + kTestPolyphony; ++note) {
         m_pSynth->noteOn(note);
     }
     for (int i = 0; i < 20; ++i) {
@@ -438,6 +441,65 @@ TEST_F(EngineSynthTest, LfoSyncFollowsBeatClock) {
     render(1);
     EXPECT_NEAR(1.1 / 4.0, ControlObject::get(ConfigKey(kGroup, "lfo_phase")), 0.02);
     ControlObject::set(beatDistance, 0.0);
+}
+
+TEST_F(EngineSynthTest, UnisonStartsNVoicesPerNote) {
+    set("unison_voices", 3);
+    set("note_on", 60);
+    render(2);
+    EXPECT_EQ(3, m_pSynth->activeVoiceCount());
+    set("note_on", 60);
+    render(2);
+    EXPECT_EQ(3, m_pSynth->activeVoiceCount());
+    // Turned down while held: the surplus voices release.
+    set("unison_voices", 1);
+    set("release", 0.0);
+    set("note_on", 60);
+    render(10);
+    EXPECT_EQ(1, m_pSynth->activeVoiceCount());
+    set("note_off", 60);
+    render(100);
+    EXPECT_EQ(0, m_pSynth->activeVoiceCount());
+}
+
+TEST_F(EngineSynthTest, UnisonSpreadZeroIsMono) {
+    set("unison_voices", 4);
+    set("unison_detune", 0.5);
+    set("unison_spread", 0.0);
+    set("note_on", 60);
+    render(4);
+    for (std::size_t i = 0; i < kBufferSize; i += 2) {
+        ASSERT_FLOAT_EQ(m_pOutput[i], m_pOutput[i + 1]);
+    }
+}
+
+TEST_F(EngineSynthTest, UnisonSpreadMakesStereo) {
+    set("unison_voices", 4);
+    set("unison_detune", 0.5);
+    set("unison_spread", 1.0);
+    set("note_on", 60);
+    render(4);
+    float difference = 0.0f;
+    for (std::size_t i = 0; i < kBufferSize; i += 2) {
+        difference = std::max(difference, std::fabs(m_pOutput[i] - m_pOutput[i + 1]));
+    }
+    EXPECT_GT(difference, 0.01f);
+}
+
+TEST_F(EngineSynthTest, UnisonLevelStaysBounded) {
+    set("unison_voices", 4);
+    set("unison_detune", 1.0);
+    set("unison_spread", 1.0);
+    set("resonance", 1.0);
+    set("cutoff", 0.5);
+    set("env_amount", 1.0);
+    for (int note = 48; note < 52; ++note) {
+        m_pSynth->noteOn(note);
+    }
+    for (int i = 0; i < 20; ++i) {
+        EXPECT_LT(render(1), 1.5f);
+    }
+    EXPECT_EQ(16, m_pSynth->activeVoiceCount());
 }
 
 } // namespace

@@ -40,6 +40,13 @@ class ControlPushButton;
 /// is stateless in the voice: every voice reads the same LFO. lfo_phase
 /// (read-only) publishes the phase for a display cursor.
 ///
+/// Unison starts unison_voices (1..4) voices per note, spread symmetrically
+/// by up to unison_detune (0..50 cents) and panned apart by unison_spread.
+/// Each has its own filter and phases, which is what makes them beat. The
+/// output is stereo from here on: voices sum into a left and a right
+/// buffer with a no-boost pan law (centre 1.0 both sides), scaled by
+/// 1/sqrt(voices) so a note is about as loud however many it uses.
+///
 /// It is played through controls in its group ("[Synth1]"):
 ///   note_on   set to a MIDI note number to start it (a fractional part
 ///             carries velocity: note + velocity / 128, so a bare integer is
@@ -52,7 +59,11 @@ class ControlPushButton;
 class EngineSynth : public EngineChannel {
     Q_OBJECT
   public:
-    static constexpr int kVoices = 8;
+    // Sixteen, so four-note chords at four-voice unison do not steal from
+    // each other. A voice is two oscillators and a filter; sixteen is
+    // still far below one deck's time stretcher.
+    static constexpr int kVoices = 16;
+    static constexpr int kMaxUnison = 4;
     static constexpr int kNotes = 128;
 
     EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManager* pEffectsManager);
@@ -134,6 +145,11 @@ class EngineSynth : public EngineChannel {
         double phase2 = 0.0;
         double ic1eq = 0.0;
         double ic2eq = 0.0;
+        // Which of the note's unison voices this is, and how many the note
+        // started with. Detune and spread are read per buffer, so the knobs
+        // move held notes; only the index and count are baked at note-on.
+        uint8_t unisonIndex = 0;
+        uint8_t unisonCount = 1;
     };
 
     /// Parameters sampled once per buffer from the controls.
@@ -167,20 +183,24 @@ class EngineSynth : public EngineChannel {
         double lfoDepth = 0.0;
         double lfoPhase0 = 0.0;
         double lfoInc = 0.0;
+        int unisonVoices = 1;
+        double unisonCents = 0.0;
+        double unisonSpread = 0.0;
     };
 
     void readParams(Params* pParams) const;
     void applyKeyChanges();
     void startVoice(int note, double velocity, bool gate);
     void releaseVoicesFor(int note);
-    Voice* findVoiceFor(int note);
+    Voice* findVoiceFor(int note, int unisonIndex);
     Voice* allocateVoice();
     /// bufferOffset is where pMono sits in the buffer, so a voice can place
     /// itself on the LFO's timeline; scheduled events split a buffer into
     /// segments that start anywhere.
     void renderVoice(Voice* pVoice,
             const Params& params,
-            CSAMPLE* pMono,
+            CSAMPLE* pLeft,
+            CSAMPLE* pRight,
             std::size_t bufferOffset,
             std::size_t frames);
     void drainWavetableLane();
@@ -199,7 +219,10 @@ class EngineSynth : public EngineChannel {
     std::array<uint64_t, 2> m_lastHeld;
     std::array<Voice, kVoices> m_voices;
     uint32_t m_voiceSequence;
-    std::vector<CSAMPLE> m_monoBuffer;
+    std::vector<CSAMPLE> m_leftBuffer;
+    std::vector<CSAMPLE> m_rightBuffer;
+    // unison_voices as read for this buffer, for the note starts in it.
+    int m_unisonVoices;
     // Engine thread only: filled between callbacks by the sequencer, drained
     // by process(). Sorted by frame there, so callers need not order them.
     std::array<ScheduledEvent, kMaxScheduledEvents> m_scheduled;
@@ -247,4 +270,7 @@ class EngineSynth : public EngineChannel {
     ControlPotmeter* m_pLfoDepth;
     ControlObject* m_pLfoTarget;
     ControlObject* m_pLfoPhase;
+    ControlObject* m_pUnisonVoices;
+    ControlPotmeter* m_pUnisonDetune;
+    ControlPotmeter* m_pUnisonSpread;
 };

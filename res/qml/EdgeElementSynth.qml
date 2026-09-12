@@ -276,6 +276,12 @@ Item {
         group: root.groupResolved
         key: "lfo_sync"
     }
+    Mixxx.ControlProxy {
+        id: unisonVoicesControl
+
+        group: root.groupResolved
+        key: "unison_voices"
+    }
     Connections {
         function onWavetableChanged(group) {
             if (group === root.groupResolved)
@@ -628,6 +634,31 @@ Item {
                     lineColor: Theme.purple
                     shape: Math.max(0, Math.min(4, Math.round(lfoShapeControl.value)))
                     width: extras.knob * 2.2
+                }
+                // Unison: how many voices a note gets, spread by DETUNE and
+                // panned apart by WIDTH.
+                Skin.Button {
+                    activeColor: Theme.purple
+                    anchors.bottom: parent.bottom
+                    fontPixelSize: extras.font
+                    height: extras.knob
+                    highlight: true
+                    text: Math.max(1, Math.min(4, Math.round(unisonVoicesControl.value))) + " VOICE"
+                    width: extras.buttonWidth
+
+                    onClicked: unisonVoicesControl.value = (Math.round(unisonVoicesControl.value) % 4) + 1
+                }
+                KnobCell {
+                    cell: extras.line
+                    knobColor: Theme.purple
+                    knobKey: "unison_detune"
+                    label: "DETUNE"
+                }
+                KnobCell {
+                    cell: extras.line
+                    knobColor: Theme.purple
+                    knobKey: "unison_spread"
+                    label: "WIDTH"
                 }
             }
         }
