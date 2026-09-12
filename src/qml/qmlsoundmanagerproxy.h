@@ -167,6 +167,9 @@ class QmlSoundManagerProxy : public QObject {
 
   signals:
     void committed(const QString& error = {});
+    /// Forwarded from SoundManager: an output stopped calling back and
+    /// the devices were reopened (recovered) or could not be.
+    void audioStalled(const QString& deviceNames, bool recovered);
 
   private:
     static inline std::shared_ptr<SoundManager> s_pSoundManager;

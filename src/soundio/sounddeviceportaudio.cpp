@@ -458,6 +458,7 @@ SoundDeviceStatus SoundDevicePortAudio::open(bool isClkRefDevice, int syncBuffer
 
     // Set the finished callback. See makeStreamInactiveAndWait()
     m_bFinished = false;
+    resetCallbackCount();
     Pa_SetStreamFinishedCallback(pStream, paFinishedCallback);
 
     // Tell the callback to return paContinue, once running.
@@ -848,6 +849,7 @@ int SoundDevicePortAudio::callbackProcessDrift(
         const PaStreamCallbackTimeInfo *timeInfo,
         PaStreamCallbackFlags statusFlags) {
     Q_UNUSED(timeInfo);
+    noteCallback();
     Trace trace("SoundDevicePortAudio::callbackProcessDrift %1",
             m_deviceId.debugName());
 
@@ -981,6 +983,7 @@ int SoundDevicePortAudio::callbackProcess(const SINT framesPerBuffer,
         const PaStreamCallbackTimeInfo *timeInfo,
         PaStreamCallbackFlags statusFlags) {
     Q_UNUSED(timeInfo);
+    noteCallback();
     Trace trace("SoundDevicePortAudio::callbackProcess %1", m_deviceId.debugName());
 
     if (statusFlags & (paOutputUnderflow | paInputOverflow)) {
@@ -1034,6 +1037,7 @@ int SoundDevicePortAudio::callbackProcessClkRef(
         PaStreamCallbackFlags statusFlags) {
     // This must be the very first call, else timeInfo becomes invalid
     updateCallbackEntryToDacTime(framesPerBuffer, timeInfo);
+    noteCallback();
 
     Trace trace("SoundDevicePortAudio::callbackProcessClkRef %1",
             m_deviceId.debugName());

@@ -3,6 +3,7 @@
 #include <qlogging.h>
 
 #include <QLibrary>
+#include <QStringList>
 #include <QThread>
 #include <QtGlobal>
 #include <cstring> // for memcpy and strcmp
@@ -64,7 +65,8 @@ SoundManager::SoundManager(
           m_pNetworkDevice(QSharedPointer<SoundDeviceNetwork>::create(
                   pConfig, this, m_pNetworkStream)),
           m_pipewireEnabled(m_pConfig->getValue(
-                  ConfigKey(kAppGroup, QStringLiteral("pipewire")), false)) {
+                  ConfigKey(kAppGroup, QStringLiteral("pipewire")), false)),
+          m_stallRecoveries(0) {
     // TODO(xxx) some of these ControlObject are not needed by soundmanager, or are unused here.
     // It is possible to take them out?
     m_pControlObjectSoundStatusCO = new ControlObject(
@@ -95,6 +97,17 @@ SoundManager::SoundManager(
 
     checkConfig();
 
+    // A stream can stop calling back without any error reaching Mixxx (seen
+    // with WASAPI: the PortAudio thread waits forever, nothing is logged, and
+    // Mixxx sits silent until the devices are reopened). Look at the
+    // counters every few seconds and reopen when one has gone quiet.
+    m_callbackWatchdogTimer.setInterval(kCallbackWatchdogSeconds * 1000);
+    connect(&m_callbackWatchdogTimer,
+            &QTimer::timeout,
+            this,
+            &SoundManager::checkCallbacks);
+    m_callbackWatchdogTimer.start();
+
     // Don't write config to disk, yet -- it may be reset to defaults in case
     // previously configured devices were not found.
     // Write new config after MixxxMainWindow::noOutputDlg where the user has
@@ -102,6 +115,7 @@ SoundManager::SoundManager(
 }
 
 SoundManager::~SoundManager() {
+    m_callbackWatchdogTimer.stop();
     // Clean up devices.
     const bool sleepAfterClosing = false;
     clearDeviceList(sleepAfterClosing);
@@ -541,6 +555,9 @@ SoundDeviceStatus SoundManager::setConfig(const SoundManagerConfig& config) {
     SoundDeviceStatus status = SoundDeviceStatus::Ok;
     m_config = config;
     checkConfig();
+    // The user is applying a configuration: whatever the watchdog gave up
+    // on before is history.
+    m_stallRecoveries = 0;
 
     closeActiveConfig();
 
@@ -675,6 +692,63 @@ void SoundManager::processUnderflowHappened(SINT framesPerBuffer) {
     } else {
         --m_underflowUpdateCount;
     }
+}
+
+void SoundManager::checkCallbacks() {
+    QList<CallbackWatchdog::Sample> samples;
+    for (const auto& pDevice : m_pEnumerator->queryDevices()) {
+        if (pDevice->reportsCallbacks() && pDevice->isOpen()) {
+            samples.append({pDevice->getDeviceId(), pDevice->callbackCount()});
+        }
+    }
+    const CallbackWatchdog::Result result = m_callbackWatchdog.tick(samples);
+    for (const CallbackWatchdog::Sample& sample : result.firstSeen) {
+        // One line per opened stream, so a log shows where the counting
+        // started and what the stream had done by then.
+        qDebug() << "Audio callback watchdog: watching" << sample.id.name
+                 << "from callback" << sample.callbackCount;
+    }
+    if (result.anyAdvanced) {
+        // Sound is flowing again (or still): the next stall gets a fresh
+        // set of attempts.
+        m_stallRecoveries = 0;
+    }
+    if (result.stalled.isEmpty()) {
+        return;
+    }
+    QStringList names;
+    for (const SoundDeviceId& id : result.stalled) {
+        names.append(id.name);
+        for (const CallbackWatchdog::Sample& sample : samples) {
+            if (sample.id == id) {
+                qWarning() << "Audio callback watchdog:" << id.name
+                           << "stuck at callback" << sample.callbackCount;
+            }
+        }
+    }
+    const QString stalledNames = names.join(QStringLiteral(", "));
+    if (m_stallRecoveries >= kMaxStallRecoveries) {
+        // Said so when the cap was reached; no more log spam.
+        return;
+    }
+    ++m_stallRecoveries;
+    qWarning() << "Audio callback stalled on" << stalledNames
+               << "for" << (CallbackWatchdog::kStalledTicks * kCallbackWatchdogSeconds)
+               << "s, reopening the sound devices (attempt" << m_stallRecoveries
+               << "of" << kMaxStallRecoveries << ")";
+    const bool sleepAfterClosing = false;
+    closeDevices(sleepAfterClosing);
+    const SoundDeviceStatus status = setupDevices();
+    m_callbackWatchdog.reset();
+    const bool recovered = status == SoundDeviceStatus::Ok;
+    if (!recovered) {
+        qWarning() << "Reopening the sound devices failed:" << getLastErrorMessage(status);
+    }
+    if (m_stallRecoveries == kMaxStallRecoveries) {
+        qWarning() << "Giving up on the audio callback until the sound"
+                   << "configuration is applied again";
+    }
+    emit audioStalled(stalledNames, recovered);
 }
 
 void SoundManager::addDevice(SoundDevicePointer pDevice) {

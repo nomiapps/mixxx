@@ -85,6 +85,10 @@ QmlSoundManagerProxy::QmlSoundManagerProxy(
           m_pSoundManager(pSoundManager),
           m_keylockEngine(kKeylockEngineCfgkey),
           m_config(m_pSoundManager->getConfig()) {
+    connect(m_pSoundManager.get(),
+            &SoundManager::audioStalled,
+            this,
+            &QmlSoundManagerProxy::audioStalled);
     connect(m_pSoundManager.get(), &SoundManager::devicesClosed, this, [this]() {
         SoundDeviceStatus status = SoundDeviceStatus::Ok;
         {

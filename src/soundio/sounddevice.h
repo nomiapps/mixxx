@@ -2,7 +2,9 @@
 
 #include <QList>
 #include <QString>
+#include <atomic>
 #include <chrono>
+#include <cstdint>
 
 #include "audio/types.h"
 #include "preferences/usersettings.h"
@@ -45,6 +47,16 @@ class SoundDevice {
     virtual QString getError() const = 0;
     virtual mixxx::audio::SampleRate getDefaultSampleRate() const = 0;
     virtual QString getChannelString(ChannelGroup channelGroup, bool input) const;
+    /// Whether this device drives callbackCount(). The SoundManager's
+    /// watchdog only judges devices that do.
+    virtual bool reportsCallbacks() const {
+        return false;
+    }
+    /// How often the device's audio callback has run since it was opened.
+    /// Advanced from the callback thread, read from the main thread.
+    uint64_t callbackCount() const {
+        return m_callbackCount.load(std::memory_order_relaxed);
+    }
     mixxx::audio::ChannelCount getNumOutputChannels() const;
     mixxx::audio::ChannelCount getNumInputChannels() const;
     SoundDeviceStatus addOutput(const AudioOutputBuffer& out);
@@ -77,6 +89,15 @@ class SoundDevice {
     void clearInputBuffer(const SINT framesToPush,
                           const SINT framesWriteOffset);
 
+    /// Callback thread only: one more callback ran.
+    void noteCallback() {
+        m_callbackCount.fetch_add(1, std::memory_order_relaxed);
+    }
+    /// Main thread, before the stream starts.
+    void resetCallbackCount() {
+        m_callbackCount.store(0, std::memory_order_relaxed);
+    }
+
     SoundDeviceId m_deviceId;
     UserSettingsPointer m_pConfig;
     // Pointer to the SoundManager object which we'll request audio from.
@@ -101,6 +122,9 @@ class SoundDevice {
     SINT m_configFramesPerBuffer;
     QList<AudioOutputBuffer> m_audioOutputs;
     QList<AudioInputBuffer> m_audioInputs;
+
+  private:
+    std::atomic<uint64_t> m_callbackCount{0};
 };
 
 typedef QSharedPointer<SoundDevice> SoundDevicePointer;

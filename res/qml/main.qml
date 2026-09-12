@@ -971,6 +971,64 @@ ApplicationWindow {
             }
         }
     }
+    // The sound engine's watchdog reopened (or failed to reopen) a device
+    // whose stream stopped calling back. Without this the only trace is a
+    // line in mixxx.log, and a silent Mixxx looks like a broken one.
+    Rectangle {
+        id: audioToast
+
+        function show(message) {
+            audioToastText.text = message;
+            opacity = 1;
+            audioToastTimer.restart();
+        }
+
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: 12
+        border.color: Theme.amber
+        border.width: 1
+        color: Theme.knobBackgroundColor
+        height: 32
+        opacity: 0
+        radius: 4
+        visible: opacity > 0
+        width: Math.min(audioToastText.implicitWidth + 24, parent.width - 24)
+        z: 30
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 150
+            }
+        }
+
+        Text {
+            id: audioToastText
+
+            anchors.fill: parent
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            color: Theme.deckTextColor
+            elide: Text.ElideRight
+            font.pixelSize: 12
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+        Timer {
+            id: audioToastTimer
+
+            interval: 8000
+
+            onTriggered: audioToast.opacity = 0
+        }
+        Connections {
+            function onAudioStalled(deviceNames, recovered) {
+                audioToast.show(recovered ? qsTr("Audio restarted: %1 stopped responding").arg(deviceNames) : qsTr("Audio stopped: %1 stopped responding and could not be reopened. See Settings > Sound hardware.").arg(deviceNames));
+            }
+
+            target: Mixxx.SoundManager
+        }
+    }
     Skin.KeywheelPopup {
         id: keywheelPopup
 

@@ -5,12 +5,14 @@
 #include <QObject>
 #include <QSharedPointer>
 #include <QString>
+#include <QTimer>
 #include <memory>
 
 #include "audio/types.h"
 #include "control/pollingcontrolproxy.h"
 #include "engine/sidechain/enginenetworkstream.h"
 #include "preferences/usersettings.h"
+#include "soundio/callbackwatchdog.h"
 #include "soundio/portaudioenumerator.h"
 #include "soundio/sounddevice.h"
 #include "soundio/sounddeviceenumerator.h"
@@ -154,6 +156,12 @@ class SoundManager : public QObject {
 
     void loadConfig();
     void invalidateConfig();
+
+    /// Seconds between two looks at the devices' callback counters.
+    static constexpr int kCallbackWatchdogSeconds = 2;
+    /// Reopens attempted for one stall before the watchdog gives up; a
+    /// later Apply in the sound settings arms it again.
+    static constexpr int kMaxStallRecoveries = 3;
   signals:
     void deviceAdded(SoundDevicePointer pDevice);
     void deviceRemoved(SoundDevicePointer pDevice);
@@ -167,9 +175,13 @@ class SoundManager : public QObject {
     void outputRegistered(const AudioOutput& output, AudioSource* src);
     void inputRegistered(const AudioInput& input, AudioDestination* dest);
     void configInvalidated();
+    /// An open device stopped calling back for a few seconds. The
+    /// devices were reopened; recovered says whether that succeeded.
+    void audioStalled(const QString& deviceNames, bool recovered);
 
   private slots:
     void completeDevicesClosing();
+    void checkCallbacks();
 
   public slots:
     void addDevice(SoundDevicePointer pDevice);
@@ -212,4 +224,8 @@ class SoundManager : public QObject {
     QSharedPointer<EngineNetworkStream> m_pNetworkStream;
     QSharedPointer<SoundDeviceNetwork> m_pNetworkDevice;
     bool m_pipewireEnabled;
+
+    QTimer m_callbackWatchdogTimer;
+    CallbackWatchdog m_callbackWatchdog;
+    int m_stallRecoveries;
 };

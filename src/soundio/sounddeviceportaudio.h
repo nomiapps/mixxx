@@ -54,6 +54,10 @@ class SoundDevicePortAudio : public SoundDevice {
     // Callback called once the process callback returns paAbort.
     void finishedCallback();
 
+    bool reportsCallbacks() const override {
+        return true;
+    }
+
     mixxx::audio::SampleRate getDefaultSampleRate() const override {
         return m_deviceInfo ? mixxx::audio::SampleRate::fromDouble(
                                       m_deviceInfo->defaultSampleRate)
