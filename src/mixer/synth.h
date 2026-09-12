@@ -13,6 +13,7 @@
 class ControlObject;
 class EffectsManager;
 class EngineMixer;
+class SynthPatchBank;
 class WavetableLibrary;
 
 /// A Synth is the player-side owner of an EngineSynth channel: a sound
@@ -49,6 +50,10 @@ class WavetableLibrary;
 ///               loads it; a file that fails to load is reported and the
 ///               engine keeps playing the previous one.
 ///   wt_frames   read-only: frames in the loaded table, 0 while none is.
+///
+/// The patch slots (SynthPatchBank: patch, patch_save, patch_load,
+/// patch_N_filled) are owned here too, built last so every control a
+/// patch carries exists, and destroyed first.
 class Synth : public BasePlayer {
     Q_OBJECT
   public:
@@ -72,6 +77,9 @@ class Synth : public BasePlayer {
     }
     /// Re-reads the wavetable folder. The selection is kept by index.
     void rescanWavetables();
+    SynthPatchBank* patchBank() const {
+        return m_pPatches.get();
+    }
 
   signals:
     void wavetableNamesChanged();
@@ -97,4 +105,6 @@ class Synth : public BasePlayer {
     std::shared_ptr<const Wavetable> m_pUiTable;
     std::unique_ptr<ControlObject> m_pWavetable;
     std::unique_ptr<ControlObject> m_pWtFrames;
+    // Last: it reads and writes the controls above and the engine's.
+    std::unique_ptr<SynthPatchBank> m_pPatches;
 };

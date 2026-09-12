@@ -1510,6 +1510,7 @@ add_library(
   src/mixer/sampler.cpp
   src/mixer/samplerbank.cpp
   src/mixer/synth.cpp
+  src/mixer/synthpatchbank.cpp
   src/mixer/wavetablelibrary.cpp
   src/mixxxapplication.cpp
   src/mixxxmainwindow.cpp
@@ -2951,6 +2952,7 @@ if(BUILD_TESTING)
     src/test/sequencerpatternbanktest.cpp
     src/test/enginesynthtest.cpp
     src/test/synthtest.cpp
+    src/test/synthpatchbanktest.cpp
     src/test/wavetabletest.cpp
     src/test/enginesynctest.cpp
     src/test/fileinfo_test.cpp

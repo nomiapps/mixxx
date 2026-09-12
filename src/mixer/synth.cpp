@@ -8,6 +8,7 @@
 #include "control/controlobject.h"
 #include "engine/channels/enginesynth.h"
 #include "engine/enginemixer.h"
+#include "mixer/synthpatchbank.h"
 #include "mixer/wavetablelibrary.h"
 #include "moc_synth.cpp"
 
@@ -80,6 +81,9 @@ Synth::Synth(PlayerManager* pParent,
             this,
             &Synth::slotWavetableControlChanged);
     selectWavetable(static_cast<int>(std::lround(m_pWavetable->get())));
+
+    // After everything a patch carries exists; applies the persisted slot.
+    m_pPatches = std::make_unique<SynthPatchBank>(group, pConfig);
 }
 
 Synth::~Synth() {

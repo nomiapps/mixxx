@@ -282,6 +282,12 @@ Item {
         group: root.groupResolved
         key: "unison_voices"
     }
+    Mixxx.ControlProxy {
+        id: patchControl
+
+        group: root.groupResolved
+        key: "patch"
+    }
     Connections {
         function onWavetableChanged(group) {
             if (group === root.groupResolved)
@@ -659,6 +665,58 @@ Item {
                     knobColor: Theme.purple
                     knobKey: "unison_spread"
                     label: "WIDTH"
+                }
+            }
+            Row {
+                height: extras.line
+                spacing: controls.spacing
+
+                // Patch slots: the current one lit, filled ones on the lighter
+                // face, empty ones on the darker. Selecting a filled slot loads
+                // it; SAVE snapshots the live sound into the current slot.
+                Text {
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: (extras.knob - height) / 2
+                    color: Theme.deckTextColor
+                    font.pixelSize: extras.font
+                    text: "PATCH"
+                }
+                Repeater {
+                    model: 8
+
+                    Skin.Button {
+                        id: patchSlot
+
+                        required property int index
+
+                        activeColor: Theme.amber
+                        anchors.bottom: parent.bottom
+                        fontPixelSize: extras.font
+                        height: extras.knob
+                        highlight: Math.round(patchControl.value) === index + 1
+                        normalColor: patchFilled.value > 0 ? Theme.darkGray2 : Theme.darkGray4
+                        text: index + 1
+                        width: extras.knob
+
+                        onClicked: patchControl.value = index + 1
+
+                        Mixxx.ControlProxy {
+                            id: patchFilled
+
+                            group: root.groupResolved
+                            key: "patch_" + (patchSlot.index + 1) + "_filled"
+                        }
+                    }
+                }
+                Skin.EdgePadButton {
+                    activeColor: Theme.amber
+                    anchors.bottom: parent.bottom
+                    fontPixelSize: extras.font
+                    height: extras.knob
+                    padGroup: root.groupResolved
+                    padKey: "patch_save"
+                    text: "SAVE"
+                    width: extras.buttonWidth
                 }
             }
         }
