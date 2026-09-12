@@ -29,9 +29,6 @@ constexpr double kUnisonMaxCents = 50.0;
 // The filter coefficients follow the envelope, but recomputing a tan() for
 // every sample of every voice is wasteful; this is inaudible at 44.1 kHz.
 constexpr int kControlRateSamples = 32;
-constexpr double kMaxAttackSeconds = 4.0;
-constexpr double kMaxDecaySeconds = 4.0;
-constexpr double kMaxReleaseSeconds = 8.0;
 constexpr double kFilterEnvelopeOctaves = 5.0;
 // The LFO. Free-running it spans this range exponentially; on cutoff it
 // swings this many octaves at full depth; on pitch this many semitones, but
@@ -124,18 +121,33 @@ double wavetableSample(const Wavetable& table,
     return sa + (sb - sa) * blend;
 }
 
-// 0..1 -> 1 ms .. maxSeconds, exponentially, so the bottom of the knob is
-// usable for percussive settings.
-double envelopeSeconds(double param, double maxSeconds) {
-    param = std::clamp(param, 0.0, 1.0);
-    return 0.001 * std::pow(maxSeconds * 1000.0, param);
-}
 
 double noteToHz(int note) {
     return 440.0 * std::pow(2.0, (note - 69) / 12.0);
 }
 
 } // namespace
+
+// static
+double EngineSynth::envelopeSeconds(double param, double maxSeconds) {
+    param = std::clamp(param, 0.0, 1.0);
+    return 0.001 * std::pow(maxSeconds * 1000.0, param);
+}
+
+// static
+double EngineSynth::cutoffHz(double param) {
+    return kMinCutoffHz * std::pow(kMaxCutoffHz / kMinCutoffHz, std::clamp(param, 0.0, 1.0));
+}
+
+// static
+double EngineSynth::filterResponseDb(double cutoffParam, double resonanceParam, double hz) {
+    // damping k = 1/Q, as readParams sets it; |H| of a second-order
+    // low-pass at w = hz / cutoff.
+    const double w = std::max(0.0, hz) / cutoffHz(cutoffParam);
+    const double k = 2.0 * (1.0 - 0.95 * std::clamp(resonanceParam, 0.0, 1.0));
+    const double denominator = std::sqrt((1.0 - w * w) * (1.0 - w * w) + k * k * w * w);
+    return 20.0 * std::log10(1.0 / std::max(1e-9, denominator));
+}
 
 // static
 double EngineSynth::lfoValue(int shape, double absolutePhase) {
@@ -500,8 +512,7 @@ void EngineSynth::readParams(Params* pParams) const {
     pParams->decayInc = 1.0 / (envelopeSeconds(m_pDecay->get(), kMaxDecaySeconds) * sampleRate);
     pParams->sustain = std::clamp(m_pSustain->get(), 0.0, 1.0);
     pParams->releaseInc = 1.0 / (envelopeSeconds(m_pRelease->get(), kMaxReleaseSeconds) * sampleRate);
-    const double cutoff = std::clamp(m_pCutoff->get(), 0.0, 1.0);
-    pParams->cutoffHz = kMinCutoffHz * std::pow(kMaxCutoffHz / kMinCutoffHz, cutoff);
+    pParams->cutoffHz = cutoffHz(m_pCutoff->get());
     // damping k = 1/Q: 2.0 (Q 0.5, no peak) down to 0.1 (Q 10).
     pParams->damping = 2.0 * (1.0 - 0.95 * std::clamp(m_pResonance->get(), 0.0, 1.0));
     pParams->envAmountOctaves = std::clamp(m_pEnvAmount->get(), -1.0, 1.0) * kFilterEnvelopeOctaves;

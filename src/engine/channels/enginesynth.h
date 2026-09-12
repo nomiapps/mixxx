@@ -64,6 +64,22 @@ class EngineSynth : public EngineChannel {
     // still far below one deck's time stretcher.
     static constexpr int kVoices = 16;
     static constexpr int kMaxUnison = 4;
+    // The envelope knobs' top ends, in seconds. Public with the mappings
+    // below so a display draws exactly what the engine will do.
+    static constexpr double kMaxAttackSeconds = 4.0;
+    static constexpr double kMaxDecaySeconds = 4.0;
+    static constexpr double kMaxReleaseSeconds = 8.0;
+
+    /// 0..1 -> 1 ms .. maxSeconds, exponentially, so the bottom of the
+    /// knob is usable for percussive settings.
+    static double envelopeSeconds(double param, double maxSeconds);
+    /// The cutoff knob, 0..1, in Hz: 20 Hz to 20 kHz, exponentially.
+    static double cutoffHz(double param);
+    /// The low-pass filter's gain in dB at hz for a cutoff and resonance
+    /// knob setting: the two-pole response the engine's filter is tuned
+    /// to (it prewarps to match it), so a curve drawn from this is what
+    /// the ear gets.
+    static double filterResponseDb(double cutoffParam, double resonanceParam, double hz);
     static constexpr int kNotes = 128;
 
     EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManager* pEffectsManager);

@@ -39,6 +39,11 @@ class QmlSynthProxy : public QObject {
     /// The engine's LFO shape function, for drawing it: -1..1 for shape
     /// 0..4 at a phase whose integer part is the cycle.
     Q_INVOKABLE double lfoValue(int shape, double phase) const;
+    /// The envelope knob's seconds for stage 0 attack, 1 decay, 2 release.
+    Q_INVOKABLE double envelopeSeconds(double param, int stage) const;
+    Q_INVOKABLE double cutoffHz(double param) const;
+    /// The low-pass filter's gain in dB at hz for the two knob settings.
+    Q_INVOKABLE double filterResponseDb(double cutoffParam, double resonanceParam, double hz) const;
 
     /// The Synth behind a "[SynthN]" group, nullptr for anything else. For
     /// the QML items that watch one synth directly.

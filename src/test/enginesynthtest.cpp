@@ -502,4 +502,23 @@ TEST_F(EngineSynthTest, UnisonLevelStaysBounded) {
     EXPECT_EQ(16, m_pSynth->activeVoiceCount());
 }
 
+TEST_F(EngineSynthTest, EnvelopeSecondsEndpoints) {
+    EXPECT_DOUBLE_EQ(0.001, EngineSynth::envelopeSeconds(0.0, EngineSynth::kMaxAttackSeconds));
+    EXPECT_DOUBLE_EQ(4.0, EngineSynth::envelopeSeconds(1.0, EngineSynth::kMaxAttackSeconds));
+    EXPECT_DOUBLE_EQ(8.0, EngineSynth::envelopeSeconds(1.0, EngineSynth::kMaxReleaseSeconds));
+    EXPECT_DOUBLE_EQ(20.0, EngineSynth::cutoffHz(0.0));
+    EXPECT_DOUBLE_EQ(20000.0, EngineSynth::cutoffHz(1.0));
+}
+
+TEST_F(EngineSynthTest, FilterResponseIsFlatBelowCutoffAndDropsTwelveDbPerOctave) {
+    const double fc = EngineSynth::cutoffHz(0.5);
+    EXPECT_NEAR(0.0, EngineSynth::filterResponseDb(0.5, 0.0, fc / 10.0), 0.5);
+    EXPECT_NEAR(-40.0, EngineSynth::filterResponseDb(0.5, 0.0, fc * 10.0), 0.5);
+    const double slope = EngineSynth::filterResponseDb(0.5, 0.0, fc * 8.0) -
+            EngineSynth::filterResponseDb(0.5, 0.0, fc * 16.0);
+    EXPECT_NEAR(12.0, slope, 0.5);
+    // Full resonance: damping 0.1, a 20 dB peak at the cutoff.
+    EXPECT_NEAR(20.0, EngineSynth::filterResponseDb(0.5, 1.0, fc), 0.1);
+}
+
 } // namespace

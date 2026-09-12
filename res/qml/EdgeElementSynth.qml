@@ -671,6 +671,22 @@ Item {
                 height: extras.line
                 spacing: controls.spacing
 
+                // The envelope and the filter as they will sound, in their
+                // knobs' colours.
+                Skin.SynthEnvelopeCurve {
+                    anchors.bottom: parent.bottom
+                    group: root.groupResolved
+                    height: extras.knob
+                    lineColor: Theme.green
+                    width: extras.knob * 2.2
+                }
+                Skin.SynthFilterCurve {
+                    anchors.bottom: parent.bottom
+                    group: root.groupResolved
+                    height: extras.knob
+                    lineColor: Theme.blue
+                    width: extras.knob * 2.2
+                }
                 // Patch slots: the current one lit, filled ones on the lighter
                 // face, empty ones on the darker. Selecting a filled slot loads
                 // it; SAVE snapshots the live sound into the current slot.

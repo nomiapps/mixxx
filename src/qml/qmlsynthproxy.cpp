@@ -98,6 +98,22 @@ double QmlSynthProxy::lfoValue(int shape, double phase) const {
     return EngineSynth::lfoValue(shape, phase);
 }
 
+double QmlSynthProxy::envelopeSeconds(double param, int stage) const {
+    const double maxSeconds = stage == 0 ? EngineSynth::kMaxAttackSeconds
+            : stage == 1                 ? EngineSynth::kMaxDecaySeconds
+                                         : EngineSynth::kMaxReleaseSeconds;
+    return EngineSynth::envelopeSeconds(param, maxSeconds);
+}
+
+double QmlSynthProxy::cutoffHz(double param) const {
+    return EngineSynth::cutoffHz(param);
+}
+
+double QmlSynthProxy::filterResponseDb(
+        double cutoffParam, double resonanceParam, double hz) const {
+    return EngineSynth::filterResponseDb(cutoffParam, resonanceParam, hz);
+}
+
 void QmlSynthProxy::rescanWavetables(const QString& group) {
     Synth* pSynth = synthForGroup(group);
     if (pSynth != nullptr) {
