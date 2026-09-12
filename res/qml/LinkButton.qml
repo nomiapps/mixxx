@@ -7,7 +7,6 @@ import "." as Skin
 Skin.Button {
     id: root
 
-    implicitWidth: 94
     activeColor: Theme.white
     checked: linkEnabled.value > 0
     enabled: linkEnabled.keyValid

@@ -23,7 +23,9 @@ AbstractButton {
 
     Accessible.name: root.accessibleName
     implicitHeight: 26
-    implicitWidth: 52
+    // Wide enough for its label: the fixed 52 px squeezed anything longer
+    // than about seven characters into a clipped 40 px text box.
+    implicitWidth: Math.max(52, label.implicitWidth + 12)
 
     background: Rectangle {
         id: backgroundImage
