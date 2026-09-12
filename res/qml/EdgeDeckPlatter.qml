@@ -133,6 +133,9 @@ Item {
             anchors.centerIn: parent
             height: width
             source: root.deckPlayer?.currentTrack?.coverArtUrl ?? ""
+            // Bounded decode; see the library cell's cover.
+            sourceSize.height: 512
+            sourceSize.width: 512
             visible: false
             width: parent.width * 0.5
         }

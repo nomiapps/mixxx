@@ -48,10 +48,16 @@ Rectangle {
                     asynchronous: true
                     clip: true
                     fillMode: Image.PreserveAspectFit
-                    // Full-size cover art minified to a 75 px cell; mipmaps
-                    // keep that downsample from aliasing.
+                    // Decoded at twice the 75 px cell and no larger. Without a
+                    // sourceSize the provider returns every cover at its full
+                    // embedded resolution and Qt caches them all, so a screenful
+                    // of rows costs whatever the artwork happens to be. Fixed
+                    // rather than bound to the cell, so a resize does not reload
+                    // them.
                     mipmap: true
                     source: cover_art
+                    sourceSize.height: 150
+                    sourceSize.width: 150
                 }
                 ColumnLayout {
                     Layout.fillHeight: true

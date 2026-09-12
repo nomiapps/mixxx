@@ -122,6 +122,9 @@ Item {
                     fillMode: Image.PreserveAspectCrop
                     height: width
                     source: root.currentTrack?.coverArtUrl ?? ""
+                    // Bounded decode; see the library cell's cover.
+                    sourceSize.height: 512
+                    sourceSize.width: 512
                     visible: false
                     width: parent.width * 0.52
                 }
