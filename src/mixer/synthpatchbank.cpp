@@ -36,6 +36,8 @@ const char* const kPatchKeys[] = {
         "osc_mix",
         "wt_position",
         "wt_env_amount",
+        "fm_amount",
+        "fm_env_amount",
         "osc2_semitones",
         "osc2_detune",
         "attack",

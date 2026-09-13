@@ -199,6 +199,11 @@ class EngineSynth : public EngineChannel {
         // How far the amplitude envelope pushes the position, -1..1 of the
         // whole table: the per-note sweep through the frames.
         double wtEnvAmount = 0.0;
+        // Two-operator FM: osc 2 modulates osc 1's phase. fmAmount is the
+        // knob, 0..1, and fmEnvAmount how far the amplitude envelope adds to
+        // it, -1..1; the index in radians comes from their sum per block.
+        double fmAmount = 0.0;
+        double fmEnvAmount = 0.0;
         // The LFO for this buffer: shape and target, depth already applied
         // to the value, and the absolute phase at frame 0 plus its
         // increment per frame.
@@ -279,6 +284,8 @@ class EngineSynth : public EngineChannel {
     ControlPotmeter* m_pOscMix;
     ControlPotmeter* m_pWtPosition;
     ControlPotmeter* m_pWtEnvAmount;
+    ControlPotmeter* m_pFmAmount;
+    ControlPotmeter* m_pFmEnvAmount;
     ControlPotmeter* m_pOsc2Semitones;
     ControlPotmeter* m_pOsc2Detune;
     ControlPotmeter* m_pAttack;

@@ -38,6 +38,13 @@ constexpr double kLfoMinHz = 0.05;
 constexpr double kLfoMaxHz = 20.0;
 constexpr double kLfoCutoffOctaves = 4.0;
 constexpr double kLfoPitchSemitones = 12.0;
+// Phase modulation index at a full FM knob, in radians, for a sine or
+// triangle carrier; the knob is squared on the way there so the first
+// half of its travel is the gentle range. A saw, square or wavetable
+// carrier is already full of harmonics and aliases badly under a deep
+// index, so it gets a lower ceiling instead of oversampling.
+constexpr double kMaxFmIndex = 8.0;
+constexpr double kMaxFmIndexBright = 2.5;
 // Synced, lfo_rate picks one of these divisions, in beats: four bars
 // down to a thirty-second.
 constexpr double kSyncBeats[8] = {16.0, 8.0, 4.0, 2.0, 1.0, 0.5, 0.25, 0.125};
@@ -260,6 +267,15 @@ EngineSynth::EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManage
     m_pWtEnvAmount = new ControlPotmeter(ConfigKey(getGroup(), "wt_env_amount"), -1.0, 1.0);
     m_pWtEnvAmount->setDefaultValue(0.0);
     m_pWtEnvAmount->set(0.0);
+    // Osc 2 modulating osc 1's phase: the knob sets the index, and the
+    // envelope can add to it (+) or take from it (-) per note, which is
+    // where electric pianos and bells come from. Both off by default.
+    m_pFmAmount = new ControlPotmeter(ConfigKey(getGroup(), "fm_amount"), 0.0, 1.0);
+    m_pFmAmount->setDefaultValue(0.0);
+    m_pFmAmount->set(0.0);
+    m_pFmEnvAmount = new ControlPotmeter(ConfigKey(getGroup(), "fm_env_amount"), -1.0, 1.0);
+    m_pFmEnvAmount->setDefaultValue(0.0);
+    m_pFmEnvAmount->set(0.0);
     m_pOsc2Semitones = new ControlPotmeter(ConfigKey(getGroup(), "osc2_semitones"), -24.0, 24.0);
     m_pOsc2Semitones->setDefaultValue(0.0);
     m_pOsc2Semitones->set(0.0);
@@ -367,6 +383,8 @@ EngineSynth::~EngineSynth() {
     delete m_pAttack;
     delete m_pOsc2Detune;
     delete m_pOsc2Semitones;
+    delete m_pFmEnvAmount;
+    delete m_pFmAmount;
     delete m_pWtEnvAmount;
     delete m_pWtPosition;
     delete m_pOscMix;
@@ -538,6 +556,8 @@ void EngineSynth::readParams(Params* pParams) const {
 
     pParams->wtPosition = std::clamp(m_pWtPosition->get(), 0.0, 1.0);
     pParams->wtEnvAmount = std::clamp(m_pWtEnvAmount->get(), -1.0, 1.0);
+    pParams->fmAmount = std::clamp(m_pFmAmount->get(), 0.0, 1.0);
+    pParams->fmEnvAmount = std::clamp(m_pFmEnvAmount->get(), -1.0, 1.0);
     pParams->lfoShape = std::clamp(static_cast<int>(std::lround(m_pLfoShape->get())), 0, 4);
     pParams->lfoTarget = std::clamp(static_cast<int>(std::lround(m_pLfoTarget->get())), 0, 3);
     pParams->lfoDepth = std::clamp(m_pLfoDepth->get(), 0.0, 1.0);
@@ -733,6 +753,11 @@ void EngineSynth::renderVoice(Voice* pVoice,
     const double maxCutoff = std::min(kMaxCutoffHz, params.sampleRate * 0.45);
     const bool table1 = params.wave1 == 4;
     const bool table2 = params.wave2 == 4;
+    const bool fm = params.fmAmount > 0.0 || params.fmEnvAmount != 0.0;
+    const double fmIndexCeiling =
+            (params.wave1 == 0 || params.wave1 == 1) ? kMaxFmIndex : kMaxFmIndexBright;
+    // Radians of phase osc 2 pushes osc 1 by at full swing; per block.
+    double fmIndex = 0.0;
     double a1 = 0.0;
     double a2 = 0.0;
     double a3 = 0.0;
@@ -815,6 +840,11 @@ void EngineSynth::renderVoice(Voice* pVoice,
                 frameB = std::min(frameA + 1, last);
                 blend = position - frameA;
             }
+            if (fm) {
+                const double amount = std::clamp(
+                        params.fmAmount + params.fmEnvAmount * pVoice->env, 0.0, 1.0);
+                fmIndex = amount * amount * fmIndexCeiling;
+            }
             double cutoff = params.cutoffHz * std::pow(2.0, cutoffOctaves);
             cutoff = std::clamp(cutoff, kMinCutoffHz, maxCutoff);
             const double g = std::tan(kPi * cutoff / params.sampleRate);
@@ -825,12 +855,20 @@ void EngineSynth::renderVoice(Voice* pVoice,
         }
         --untilCoefficients;
 
-        const double s1 = table1
-                ? wavetableSample(*params.pWavetable, frameA, frameB, blend, mip1, pVoice->phase1)
-                : oscillator(params.wave1, pVoice->phase1, inc1);
+        // The modulator first: osc 1 reads at its own phase pushed by osc 2's
+        // sample, wrapped, so a sine pair gives the classic FM spectrum and
+        // the mix knob still decides how much of the modulator is heard.
         const double s2 = table2
                 ? wavetableSample(*params.pWavetable, frameA, frameB, blend, mip2, pVoice->phase2)
                 : oscillator(params.wave2, pVoice->phase2, inc2);
+        double phase1 = pVoice->phase1;
+        if (fmIndex > 0.0) {
+            phase1 += s2 * fmIndex / kTwoPi;
+            phase1 -= std::floor(phase1);
+        }
+        const double s1 = table1
+                ? wavetableSample(*params.pWavetable, frameA, frameB, blend, mip1, phase1)
+                : oscillator(params.wave1, phase1, inc1);
         pVoice->phase1 += inc1;
         if (pVoice->phase1 >= 1.0) {
             pVoice->phase1 -= 1.0;

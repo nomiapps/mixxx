@@ -572,4 +572,79 @@ TEST_F(EngineSynthTest, WavetableEnvelopeAmountDefaultsOff) {
     EXPECT_GT(render(2), 0.05f);
 }
 
+// Largest sample-to-sample step of the left channel over the last
+// buffer: a plain sine keeps it small, sidebands raise it.
+float maxSlope(const CSAMPLE* pOutput) {
+    float slope = 0.0f;
+    for (std::size_t i = 2; i < kBufferSize; i += 2) {
+        slope = std::max(slope, std::fabs(pOutput[i] - pOutput[i - 2]));
+    }
+    return slope;
+}
+
+TEST_F(EngineSynthTest, FmAddsSidebandsWithoutRaisingThePeak) {
+    // Sine carrier, sine modulator an octave up, modulator not in the mix.
+    setupClean();
+    set("osc1_wave", 0);
+    set("osc2_wave", 0);
+    set("osc_mix", 0.0);
+    set("osc2_semitones", 12);
+    set("note_on", 60);
+    render(3);
+    const float peakClean = render(1);
+    const float slopeClean = maxSlope(m_pOutput);
+    set("fm_amount", 1.0);
+    render(3);
+    // The sidebands steepen the wave without raising its peak: phase
+    // modulation moves energy between partials, it adds none.
+    EXPECT_GT(maxSlope(m_pOutput), slopeClean * 2.0f);
+    EXPECT_LT(render(1), peakClean * 1.2f);
+}
+
+TEST_F(EngineSynthTest, FmOffLeavesTheCarrierASine) {
+    setupClean();
+    set("osc1_wave", 0);
+    set("osc2_wave", 3); // a square modulator would show at once
+    set("osc_mix", 0.0);
+    set("note_on", 60);
+    render(3);
+    // A 261.6 Hz sine at 44.1 kHz moves at most about 0.037 per sample
+    // of its peak; the peak here is kVoiceLevel.
+    EXPECT_LT(maxSlope(m_pOutput), 0.05f * 0.2f);
+}
+
+TEST_F(EngineSynthTest, FmEnvelopeSweepsTheIndex) {
+    // Knob at zero, envelope adding the whole index over a four-second
+    // attack: near the start a sine, halfway through clearly not.
+    setupClean();
+    set("attack", 1.0); // kMaxAttackSeconds
+    set("osc1_wave", 0);
+    set("osc2_wave", 0);
+    set("osc_mix", 0.0);
+    set("osc2_semitones", 12);
+    set("fm_env_amount", 1.0);
+    set("note_on", 60);
+    render(4);
+    const float slopeEarly = maxSlope(m_pOutput) / render(1);
+    render(80);
+    const float slopeHalfway = maxSlope(m_pOutput) / render(1);
+    EXPECT_GT(slopeHalfway, slopeEarly * 2.0f);
+}
+
+TEST_F(EngineSynthTest, FmOutputStaysBoundedOnABrightCarrier) {
+    set("osc1_wave", 2);
+    set("osc2_wave", 3);
+    set("fm_amount", 1.0);
+    set("fm_env_amount", 1.0);
+    set("resonance", 1.0);
+    set("cutoff", 0.5);
+    set("env_amount", 1.0);
+    for (int note = 36; note < 36 + kTestPolyphony; ++note) {
+        m_pSynth->noteOn(note);
+    }
+    for (int i = 0; i < 20; ++i) {
+        EXPECT_LT(render(1), 1.5f);
+    }
+}
+
 } // namespace
