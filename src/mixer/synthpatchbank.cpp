@@ -36,6 +36,8 @@ const char* const kPatchKeys[] = {
         "osc_mix",
         "wt_position",
         "wt_env_amount",
+        "wt_position_y",
+        "wt_env_amount_y",
         "fm_amount",
         "fm_env_amount",
         "osc2_semitones",
@@ -191,7 +193,7 @@ void SynthPatchBank::applyToLive(const QJsonObject& slot) {
                 key.item == QLatin1String("lfo_shape")) {
             value = std::clamp(std::round(value), 0.0, 4.0);
         } else if (key.item == QLatin1String("lfo_target")) {
-            value = std::clamp(std::round(value), 0.0, 3.0);
+            value = std::clamp(std::round(value), 0.0, 4.0);
         } else if (key.item == QLatin1String("unison_voices")) {
             value = std::clamp(std::round(value), 1.0, 4.0);
         } else if (key.item == QLatin1String("lfo_sync")) {

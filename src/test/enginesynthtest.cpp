@@ -276,6 +276,65 @@ TEST_F(EngineSynthTest, WavetableBlendsAdjacentFrames) {
     EXPECT_EQ(1, m_pSynth->activeVoiceCount());
 }
 
+// A 2x2 grid: the top row a sine in both columns, the bottom row silence.
+TEST_F(EngineSynthTest, WavetableYMovesDownTheRowsOfAGrid) {
+    setupClean();
+    set("osc1_wave", 4);
+    set("osc_mix", 0.0);
+    Wavetable* pGrid = makeTable(4, [](int f, int i) { return f < 2 ? sine(i) : 0.0f; });
+    pGrid->columns = 2;
+    m_pSynth->adoptWavetable(pGrid);
+
+    set("wt_position", 0.5);
+    set("wt_position_y", 0.0);
+    set("note_on", 60);
+    EXPECT_GT(render(4), 0.1f);
+    set("wt_position_y", 0.5);
+    const CSAMPLE half = render(4);
+    EXPECT_GT(half, 0.05f);
+    set("wt_position_y", 1.0);
+    EXPECT_LT(render(4), half * 0.1f);
+    EXPECT_EQ(1, m_pSynth->activeVoiceCount());
+}
+
+TEST_F(EngineSynthTest, WavetableYDoesNothingOnAPlainList) {
+    setupClean();
+    set("osc1_wave", 4);
+    set("osc_mix", 0.0);
+    m_pSynth->adoptWavetable(makeTable(4, [](int f, int i) { return f < 2 ? sine(i) : 0.0f; }));
+    set("wt_position", 0.0);
+    set("wt_position_y", 1.0);
+    set("note_on", 60);
+    EXPECT_GT(render(4), 0.1f);
+}
+
+TEST_F(EngineSynthTest, TheEnvelopeAndTheLfoMoveTheRow) {
+    setupClean();
+    set("osc1_wave", 4);
+    set("osc_mix", 0.0);
+    Wavetable* pGrid = makeTable(4, [](int f, int i) { return f < 2 ? sine(i) : 0.0f; });
+    pGrid->columns = 2;
+    m_pSynth->adoptWavetable(pGrid);
+    set("wt_position_y", 0.0);
+    set("note_on", 60);
+    EXPECT_GT(render(4), 0.1f);
+
+    // Sustain 1 holds the envelope at the top: the whole way down the rows.
+    set("wt_env_amount_y", 1.0);
+    EXPECT_LT(render(4), 1e-3f);
+    set("wt_env_amount_y", 0.0);
+    EXPECT_GT(render(4), 0.1f);
+
+    // Synced to a clock that is not moving, a square LFO sits at +1.
+    set("lfo_sync", 1.0);
+    set("lfo_shape", 3);
+    set("lfo_depth", 1.0);
+    set("lfo_target", 1); // along the row: both columns are the sine
+    EXPECT_GT(render(4), 0.1f);
+    set("lfo_target", 4); // down the rows
+    EXPECT_LT(render(4), 1e-3f);
+}
+
 TEST_F(EngineSynthTest, WavetableOnOsc2) {
     setupClean();
     m_pSynth->adoptWavetable(makeTable(1, [](int, int i) { return sine(i); }));

@@ -24,6 +24,10 @@ namespace qml {
 /// playing is drawn bright at its depth, so the cursor moves through the landscape
 /// the ear hears. With `surface` off it is the wireframe stack of frame lines.
 ///
+/// A grid table (see wavetable.h) is drawn one row at a time: the surface is the
+/// row positionY sits on, blended between the rows either side as the engine
+/// blends them, and a small map in the corner shows the grid and where x and y are.
+///
 /// It draws from the Synth's own copy of the table (Synth::currentTable), which is
 /// immutable and only ever replaced on the GUI thread, so no lock is needed even
 /// though paint() runs during scene-graph sync. The surface is rendered once per
@@ -35,9 +39,14 @@ class QmlWavetableView : public QQuickPaintedItem {
     /// 0..1 through the table, the same reading the engine's wt_position gets: the
     /// bright frame is the crossfade the ear hears.
     Q_PROPERTY(qreal position READ position WRITE setPosition NOTIFY positionChanged)
+    /// 0..1 down the rows of a grid table, as wt_position_y; ignored on a plain list.
+    Q_PROPERTY(qreal positionY READ positionY WRITE setPositionY NOTIFY positionYChanged)
     Q_PROPERTY(QColor frameColor READ frameColor WRITE setFrameColor NOTIFY frameColorChanged)
     Q_PROPERTY(QColor currentColor READ currentColor WRITE setCurrentColor NOTIFY currentColorChanged)
     Q_PROPERTY(int frameCount READ frameCount NOTIFY tableChanged)
+    /// Frames to a row and rows: frameCount by 1 for a plain list.
+    Q_PROPERTY(int gridColumns READ gridColumns NOTIFY tableChanged)
+    Q_PROPERTY(int gridRows READ gridRows NOTIFY tableChanged)
     /// Frames drawn; a bigger table is thinned evenly to this.
     Q_PROPERTY(int maxStackFrames READ maxStackFrames WRITE setMaxStackFrames NOTIFY
                     maxStackFramesChanged)
@@ -88,6 +97,20 @@ class QmlWavetableView : public QQuickPaintedItem {
             const Camera& camera,
             qreal position,
             const QColor& color);
+    /// The row of a grid table at y (0..1): its columns as a plain list, each the
+    /// blend of the rows either side the way the engine blends them, full band
+    /// only. nullptr for a plain list, which is its own only row.
+    static std::unique_ptr<Wavetable> gridRow(const Wavetable& table, qreal y);
+    /// The grid's map: a dot per frame, and the position (x, y, each 0..1) as a
+    /// ring in `currentColor`, inside `rect`.
+    static void drawGridMap(QPainter* pPainter,
+            const QRectF& rect,
+            int columns,
+            int rows,
+            qreal x,
+            qreal y,
+            const QColor& frameColor,
+            const QColor& currentColor);
 
     explicit QmlWavetableView(QQuickItem* parent = nullptr);
     ~QmlWavetableView() override = default;
@@ -102,6 +125,10 @@ class QmlWavetableView : public QQuickPaintedItem {
         return m_position;
     }
     void setPosition(qreal position);
+    qreal positionY() const {
+        return m_positionY;
+    }
+    void setPositionY(qreal position);
     QColor frameColor() const {
         return m_frameColor;
     }
@@ -112,6 +139,12 @@ class QmlWavetableView : public QQuickPaintedItem {
     void setCurrentColor(const QColor& color);
     int frameCount() const {
         return m_pTable ? m_pTable->frameCount : 0;
+    }
+    int gridColumns() const {
+        return m_pTable ? m_pTable->gridColumns() : 0;
+    }
+    int gridRows() const {
+        return m_pTable ? m_pTable->gridRows() : 0;
     }
     int maxStackFrames() const {
         return m_maxStackFrames;
@@ -136,6 +169,7 @@ class QmlWavetableView : public QQuickPaintedItem {
   signals:
     void groupChanged();
     void positionChanged();
+    void positionYChanged();
     void frameColorChanged();
     void currentColorChanged();
     void tableChanged();
@@ -147,9 +181,12 @@ class QmlWavetableView : public QQuickPaintedItem {
 
   private:
     void rebuildImage();
+    /// What the surface shows: the row at positionY of a grid, else the table.
+    const Wavetable* shownTable() const;
 
     QString m_group;
     qreal m_position;
+    qreal m_positionY;
     QColor m_frameColor;
     QColor m_currentColor;
     int m_maxStackFrames;
@@ -158,6 +195,8 @@ class QmlWavetableView : public QQuickPaintedItem {
     bool m_surface;
     QPointer<Synth> m_pSynth;
     std::shared_ptr<const Wavetable> m_pTable;
+    // The row of a grid table at m_positionY; empty for a plain list.
+    std::unique_ptr<Wavetable> m_pRow;
     QImage m_image;
     bool m_imageDirty;
 };

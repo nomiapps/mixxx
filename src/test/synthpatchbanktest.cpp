@@ -171,7 +171,7 @@ TEST_F(SynthPatchBankTest, LoadClampsWhatAFileSays) {
     build();
     EXPECT_TRUE(bank()->isFilled(1));
     EXPECT_DOUBLE_EQ(4.0, get("osc1_wave"));
-    EXPECT_DOUBLE_EQ(3.0, get("lfo_target"));
+    EXPECT_DOUBLE_EQ(4.0, get("lfo_target"));
     EXPECT_DOUBLE_EQ(4.0, get("unison_voices"));
     EXPECT_DOUBLE_EQ(1.0, get("lfo_sync"));
     EXPECT_DOUBLE_EQ(0.0, get("wavetable"));

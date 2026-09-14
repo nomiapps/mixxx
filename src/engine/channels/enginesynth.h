@@ -25,15 +25,18 @@ class ControlPushButton;
 ///
 /// Wave 4 of either oscillator reads the wavetable: wt_position picks the
 /// frame, crossfading between neighbours, and the frame is read with linear
-/// interpolation. The table itself arrives from the main thread down a
+/// interpolation. On a grid table (see wavetable.h) wt_position_y picks the
+/// row too, and the four frames around the point are blended; wt_env_amount_y
+/// is its per-note envelope sweep. The table itself arrives from the main thread down a
 /// lock-free lane (see wavetable.h); until one has arrived wave 4 plays the
 /// saw, so the channel is never silent by surprise. Unlike the PolyBLEP
 /// waves a table is not band-limited by nature, so each frame comes in
 /// mips (see wavetable.h) and a voice reads the first one whose partials
 /// all sit below Nyquist for its pitch, chosen per control-rate block.
 ///
-/// One LFO per synth modulates the wavetable position, the cutoff or the
-/// pitch of every voice (lfo_target), with lfo_shape, lfo_depth and
+/// One LFO per synth modulates the wavetable position (along the row, or
+/// down the rows of a grid), the cutoff or the pitch of every voice
+/// (lfo_target), with lfo_shape, lfo_depth and
 /// lfo_rate. With lfo_sync its phase is derived from the [InternalClock]
 /// beat position every buffer, so it locks to the mix and cannot drift;
 /// free-running, lfo_rate is 0.05 .. 20 Hz. The value is evaluated once
@@ -188,17 +191,18 @@ class EngineSynth : public EngineChannel {
         double damping = 1.0;
         double envAmountOctaves = 0.0;
         double gain = 1.0;
-        // Wave 4 reads frames wtFrameA and wtFrameB of pWavetable, blended
-        // wtBlend of the way from A to B. Never wave 4 with no table.
+        // Wave 4 reads the frames of pWavetable around wtCell, the knobs'
+        // position before any modulation. Never wave 4 with no table.
         const Wavetable* pWavetable = nullptr;
-        int wtFrameA = 0;
-        int wtFrameB = 0;
-        double wtBlend = 0.0;
-        // The unmodulated knob, 0..1, for the LFO to move.
+        WavetableCell wtCell;
+        // The unmodulated knobs, 0..1, for the LFO and envelope to move: x
+        // along a row, y down the rows of a grid.
         double wtPosition = 0.0;
-        // How far the amplitude envelope pushes the position, -1..1 of the
-        // whole table: the per-note sweep through the frames.
+        double wtPositionY = 0.0;
+        // How far the amplitude envelope pushes each, -1..1 of the whole
+        // table: the per-note sweep through the frames.
         double wtEnvAmount = 0.0;
+        double wtEnvAmountY = 0.0;
         // Two-operator FM: osc 2 modulates osc 1's phase. fmAmount is the
         // knob, 0..1, and fmEnvAmount how far the amplitude envelope adds to
         // it, -1..1; the index in radians comes from their sum per block.
@@ -284,6 +288,8 @@ class EngineSynth : public EngineChannel {
     ControlPotmeter* m_pOscMix;
     ControlPotmeter* m_pWtPosition;
     ControlPotmeter* m_pWtEnvAmount;
+    ControlPotmeter* m_pWtPositionY;
+    ControlPotmeter* m_pWtEnvAmountY;
     ControlPotmeter* m_pFmAmount;
     ControlPotmeter* m_pFmEnvAmount;
     ControlPotmeter* m_pOsc2Semitones;

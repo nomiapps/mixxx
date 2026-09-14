@@ -39,6 +39,12 @@ constexpr qreal kLightZ = -0.4;
 constexpr qreal kFillAlpha = 0.55;
 constexpr qreal kFrontLineAlpha = 0.9;
 constexpr qreal kBackLineAlpha = 0.3;
+// The grid map, in the bottom-left corner the default angle leaves empty: its
+// height as a fraction of the item's, within these bounds.
+constexpr qreal kMapFraction = 0.24;
+constexpr qreal kMinMapHeight = 14.0;
+constexpr qreal kMaxMapHeight = 30.0;
+constexpr qreal kMapMargin = 2.0;
 
 qreal radians(qreal degrees) {
     return degrees * std::numbers::pi / 180.0;
@@ -261,9 +267,69 @@ void QmlWavetableView::drawCurrentFrame(QPainter* pPainter,
     pPainter->drawPolyline(line);
 }
 
+// static
+std::unique_ptr<Wavetable> QmlWavetableView::gridRow(const Wavetable& table, qreal y) {
+    const int rows = table.gridRows();
+    if (rows <= 1) {
+        return nullptr;
+    }
+    const int columns = table.gridColumns();
+    auto pRow = Wavetable::create(columns);
+    for (int column = 0; column < columns; ++column) {
+        // x on this column exactly, so blendX is 0 and only the rows blend.
+        const qreal x = columns > 1 ? static_cast<qreal>(column) / (columns - 1) : 0.0;
+        const WavetableCell cell = WavetableCell::locate(table, x, y);
+        const float blend = static_cast<float>(cell.blendY);
+        const float* pA = table.frame(cell.frameA0);
+        const float* pB = table.frame(cell.frameA1);
+        float* pOut = pRow->frame(column);
+        for (int i = 0; i < kWavetableFrameSize; ++i) {
+            pOut[i] = pA[i] + (pB[i] - pA[i]) * blend;
+        }
+    }
+    pRow->fillGuards();
+    return pRow;
+}
+
+// static
+void QmlWavetableView::drawGridMap(QPainter* pPainter,
+        const QRectF& rect,
+        int columns,
+        int rows,
+        qreal x,
+        qreal y,
+        const QColor& frameColor,
+        const QColor& currentColor) {
+    if (columns <= 0 || rows <= 0 || rect.width() <= 0 || rect.height() <= 0) {
+        return;
+    }
+    const qreal stepX = columns > 1 ? rect.width() / (columns - 1) : 0.0;
+    const qreal stepY = rows > 1 ? rect.height() / (rows - 1) : 0.0;
+    const qreal dot = std::clamp(std::min(stepX > 0 ? stepX : rect.width(),
+                                         stepY > 0 ? stepY : rect.height()) *
+                    0.3,
+            1.0,
+            2.5);
+    pPainter->setRenderHint(QPainter::Antialiasing, true);
+    pPainter->setPen(Qt::NoPen);
+    pPainter->setBrush(frameColor);
+    for (int row = 0; row < rows; ++row) {
+        for (int column = 0; column < columns; ++column) {
+            pPainter->drawEllipse(
+                    QPointF(rect.left() + column * stepX, rect.top() + row * stepY), dot, dot);
+        }
+    }
+    const QPointF cursor(rect.left() + std::clamp(x, 0.0, 1.0) * rect.width(),
+            rect.top() + std::clamp(y, 0.0, 1.0) * rect.height());
+    pPainter->setBrush(Qt::NoBrush);
+    pPainter->setPen(QPen(currentColor, 1.5));
+    pPainter->drawEllipse(cursor, dot + 2.0, dot + 2.0);
+}
+
 QmlWavetableView::QmlWavetableView(QQuickItem* parent)
         : QQuickPaintedItem(parent),
           m_position(0.0),
+          m_positionY(0.0),
           m_frameColor(Qt::gray),
           m_currentColor(Qt::white),
           m_maxStackFrames(kDefaultFrames),
@@ -295,6 +361,7 @@ void QmlWavetableView::slotTableChanged() {
     // is the only write paint() ever races with, and paint() runs while this thread
     // is blocked.
     m_pTable = m_pSynth ? m_pSynth->currentTable() : nullptr;
+    m_pRow = m_pTable ? gridRow(*m_pTable, m_positionY) : nullptr;
     m_imageDirty = true;
     emit tableChanged();
     update();
@@ -307,6 +374,21 @@ void QmlWavetableView::setPosition(qreal position) {
     }
     m_position = clamped;
     emit positionChanged();
+    update();
+}
+
+void QmlWavetableView::setPositionY(qreal position) {
+    const qreal clamped = std::clamp(position, 0.0, 1.0);
+    if (m_positionY == clamped) {
+        return;
+    }
+    m_positionY = clamped;
+    if (m_pTable && m_pTable->gridRows() > 1) {
+        // A grid's surface is the row at y: a new one to draw.
+        m_pRow = gridRow(*m_pTable, m_positionY);
+        m_imageDirty = true;
+    }
+    emit positionYChanged();
     update();
 }
 
@@ -378,6 +460,13 @@ void QmlWavetableView::resetView() {
     setPitch(kDefaultPitch);
 }
 
+const Wavetable* QmlWavetableView::shownTable() const {
+    if (m_pRow) {
+        return m_pRow.get();
+    }
+    return m_pTable && m_pTable->frameCount > 0 ? m_pTable.get() : nullptr;
+}
+
 void QmlWavetableView::rebuildImage() {
     const qreal dpr = window() ? window()->devicePixelRatio() : 1.0;
     const QSize pixels(static_cast<int>(std::ceil(width() * dpr)),
@@ -386,12 +475,13 @@ void QmlWavetableView::rebuildImage() {
     m_image.setDevicePixelRatio(dpr);
     m_image.fill(Qt::transparent);
     m_imageDirty = false;
-    if (!m_pTable || m_pTable->frameCount <= 0) {
+    const Wavetable* pShown = shownTable();
+    if (pShown == nullptr) {
         return;
     }
     QPainter painter(&m_image);
     drawTable(&painter,
-            *m_pTable,
+            *pShown,
             Camera::fit(QSizeF(width(), height()), m_yaw, m_pitch),
             m_maxStackFrames,
             m_frameColor,
@@ -409,14 +499,31 @@ void QmlWavetableView::paint(QPainter* pPainter) {
         rebuildImage();
     }
     pPainter->drawImage(QPointF(0.0, 0.0), m_image);
-    if (!m_pTable || m_pTable->frameCount <= 0) {
+    const Wavetable* pShown = shownTable();
+    if (pShown == nullptr) {
         return;
     }
+    // On a grid's row, the frame at x is already the four-frame blend.
     drawCurrentFrame(pPainter,
-            *m_pTable,
+            *pShown,
             Camera::fit(QSizeF(width(), height()), m_yaw, m_pitch),
             m_position,
             m_currentColor);
+    if (m_pRow) {
+        const int columns = m_pTable->gridColumns();
+        const int rows = m_pTable->gridRows();
+        const qreal mapHeight = std::clamp(height() * kMapFraction, kMinMapHeight, kMaxMapHeight);
+        const qreal mapWidth = std::min(mapHeight * (columns - 1) / std::max(1, rows - 1),
+                width() * kMapFraction);
+        drawGridMap(pPainter,
+                QRectF(kMapMargin + 3.0, height() - kMapMargin - 3.0 - mapHeight, mapWidth, mapHeight),
+                columns,
+                rows,
+                m_position,
+                m_positionY,
+                m_frameColor,
+                m_currentColor);
+    }
 }
 
 } // namespace qml

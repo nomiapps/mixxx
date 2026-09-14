@@ -120,6 +120,62 @@ TEST(QmlWavetableViewTest, TheCurrentFrameIsDrawnInItsColour) {
             100);
 }
 
+TEST(QmlWavetableViewTest, AGridIsDrawnARowAtATime) {
+    // 2 columns by 2 rows: the top row at amplitude 0.2, the bottom at 1.
+    auto pGrid = Wavetable::create(4);
+    pGrid->columns = 2;
+    for (int f = 0; f < 4; ++f) {
+        const float amplitude = f < 2 ? 0.2f : 1.0f;
+        for (int i = 0; i < kWavetableFrameSize; ++i) {
+            pGrid->frame(f)[i] = amplitude *
+                    static_cast<float>(std::sin(2.0 * std::numbers::pi * i / kWavetableFrameSize));
+        }
+    }
+    pGrid->fillGuards();
+
+    const auto pRow = View::gridRow(*pGrid, 0.5);
+    ASSERT_TRUE(pRow);
+    EXPECT_EQ(2, pRow->frameCount);
+    EXPECT_EQ(1, pRow->gridRows());
+    const int peak = kWavetableFrameSize / 4;
+    EXPECT_NEAR(0.6f, pRow->frame(0)[peak], 1e-5f);
+    EXPECT_NEAR(0.6f, pRow->frame(1)[peak], 1e-5f);
+    EXPECT_FLOAT_EQ(pRow->frame(1)[0], pRow->frame(1)[kWavetableFrameSize]);
+    EXPECT_NEAR(1.0f, View::gridRow(*pGrid, 1.0)->frame(0)[peak], 1e-5f);
+
+    EXPECT_FALSE(View::gridRow(*table(16), 0.5)) << "a plain list is its own row";
+}
+
+TEST(QmlWavetableViewTest, TheGridMapMarksThePosition) {
+    QImage image(80, 40, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        View::drawGridMap(&painter,
+                QRectF(5, 5, 70, 30),
+                8,
+                4,
+                1.0,
+                1.0,
+                QColor(160, 160, 160),
+                QColor(255, 180, 0));
+    }
+    // Amber only around the bottom-right corner, where x = y = 1 is.
+    int amberNear = 0;
+    int amberFar = 0;
+    for (int y = 0; y < image.height(); ++y) {
+        for (int x = 0; x < image.width(); ++x) {
+            const QRgb p = image.pixel(x, y);
+            if (qAlpha(p) > 100 && qRed(p) > 200 && qBlue(p) < 90) {
+                (x > 60 && y > 25 ? amberNear : amberFar) += 1;
+            }
+        }
+    }
+    EXPECT_GT(amberNear, 5);
+    EXPECT_EQ(0, amberFar);
+    EXPECT_GT(opaquePixels(image), 32) << "a dot for each of the 32 frames";
+}
+
 TEST(QmlWavetableViewTest, ASingleFrameTableDrawsItsLineAndNoSurface) {
     const auto pTable = table(1);
     const int wire = opaquePixels(render(*pTable, View::kDefaultYaw, View::kDefaultPitch, false));

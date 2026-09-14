@@ -108,25 +108,28 @@ double oscillator(int wave, double phase, double inc) {
 
 // One sample of a wavetable voice: linear interpolation within the frame
 // (the guard sample makes index i + 1 valid for every phase below 1) and a
-// linear crossfade between the two frames either side of wt_position.
+// linear crossfade between the two frames either side of wt_position; on a
+// grid, the same again on the next row and a crossfade between the rows.
 // Interpolating rather than truncating matters: at 2048 points truncation
 // leaves a broadband noise floor around -60 dB, audible as hiss on a clean
 // sine frame at low notes where many output samples read the same entry;
 // the lerp pushes it to around -120 dB for two multiply-adds.
-double wavetableSample(const Wavetable& table,
-        int frameA,
-        int frameB,
-        double blend,
-        int mip,
-        double phase) {
+double wavetableSample(const Wavetable& table, const WavetableCell& cell, int mip, double phase) {
     const double x = phase * kWavetableFrameSize;
     const int i = static_cast<int>(x);
     const double f = x - i;
-    const float* a = table.frame(frameA, mip);
-    const float* b = table.frame(frameB, mip);
-    const double sa = a[i] + (a[i + 1] - a[i]) * f;
-    const double sb = b[i] + (b[i + 1] - b[i]) * f;
-    return sa + (sb - sa) * blend;
+    const auto read = [&](int frame) {
+        const float* p = table.frame(frame, mip);
+        return p[i] + (p[i + 1] - p[i]) * f;
+    };
+    const double sa0 = read(cell.frameA0);
+    const double row0 = sa0 + (read(cell.frameB0) - sa0) * cell.blendX;
+    if (cell.blendY <= 0.0) {
+        return row0; // a plain list, or exactly on a row: two frames, not four
+    }
+    const double sa1 = read(cell.frameA1);
+    const double row1 = sa1 + (read(cell.frameB1) - sa1) * cell.blendX;
+    return row0 + (row1 - row0) * cell.blendY;
 }
 
 double noteToHz(int note) {
@@ -267,6 +270,13 @@ EngineSynth::EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManage
     m_pWtEnvAmount = new ControlPotmeter(ConfigKey(getGroup(), "wt_env_amount"), -1.0, 1.0);
     m_pWtEnvAmount->setDefaultValue(0.0);
     m_pWtEnvAmount->set(0.0);
+    // The same pair down the rows of a grid table; a plain list ignores them.
+    m_pWtPositionY = new ControlPotmeter(ConfigKey(getGroup(), "wt_position_y"), 0.0, 1.0);
+    m_pWtPositionY->setDefaultValue(0.0);
+    m_pWtPositionY->set(0.0);
+    m_pWtEnvAmountY = new ControlPotmeter(ConfigKey(getGroup(), "wt_env_amount_y"), -1.0, 1.0);
+    m_pWtEnvAmountY->setDefaultValue(0.0);
+    m_pWtEnvAmountY->set(0.0);
     // Osc 2 modulating osc 1's phase: the knob sets the index, and the
     // envelope can add to it (+) or take from it (-) per note, which is
     // where electric pianos and bells come from. Both off by default.
@@ -312,8 +322,9 @@ EngineSynth::EngineSynth(const ChannelHandleAndGroup& handleGroup, EffectsManage
     m_pPregain = new ControlAudioTaperPot(ConfigKey(getGroup(), "pregain"), -12, 12, 0.5);
 
     // The LFO: shape 0 sine, 1 triangle, 2 saw, 3 square, 4 sample and
-    // hold; target 0 off, 1 wavetable position, 2 cutoff, 3 pitch. Depth
-    // defaults to 0, so a synth sounds as it did until the knob moves.
+    // hold; target 0 off, 1 wavetable position, 2 cutoff, 3 pitch, 4 the
+    // row of a grid wavetable. Depth defaults to 0, so a synth sounds as
+    // it did until the knob moves.
     // lfo_rate is a free frequency unless lfo_sync, when it picks a beat
     // division; synced by default, since that is what a DJ wants.
     m_pLfoShape = new ControlObject(ConfigKey(getGroup(), "lfo_shape"));
@@ -385,6 +396,8 @@ EngineSynth::~EngineSynth() {
     delete m_pOsc2Semitones;
     delete m_pFmEnvAmount;
     delete m_pFmAmount;
+    delete m_pWtEnvAmountY;
+    delete m_pWtPositionY;
     delete m_pWtEnvAmount;
     delete m_pWtPosition;
     delete m_pOscMix;
@@ -525,11 +538,8 @@ void EngineSynth::readParams(Params* pParams) const {
     pParams->wave2 = std::clamp(static_cast<int>(std::lround(m_pOsc2Wave->get())), 0, 4);
     pParams->pWavetable = m_pTable;
     if (m_pTable != nullptr && m_pTable->frameCount > 0) {
-        const double position = std::clamp(m_pWtPosition->get(), 0.0, 1.0) *
-                (m_pTable->frameCount - 1);
-        pParams->wtFrameA = static_cast<int>(position);
-        pParams->wtFrameB = std::min(pParams->wtFrameA + 1, m_pTable->frameCount - 1);
-        pParams->wtBlend = position - pParams->wtFrameA;
+        pParams->wtCell = WavetableCell::locate(
+                *m_pTable, m_pWtPosition->get(), m_pWtPositionY->get());
     } else {
         // No table yet: wave 4 plays the saw rather than nothing.
         pParams->pWavetable = nullptr;
@@ -556,10 +566,12 @@ void EngineSynth::readParams(Params* pParams) const {
 
     pParams->wtPosition = std::clamp(m_pWtPosition->get(), 0.0, 1.0);
     pParams->wtEnvAmount = std::clamp(m_pWtEnvAmount->get(), -1.0, 1.0);
+    pParams->wtPositionY = std::clamp(m_pWtPositionY->get(), 0.0, 1.0);
+    pParams->wtEnvAmountY = std::clamp(m_pWtEnvAmountY->get(), -1.0, 1.0);
     pParams->fmAmount = std::clamp(m_pFmAmount->get(), 0.0, 1.0);
     pParams->fmEnvAmount = std::clamp(m_pFmEnvAmount->get(), -1.0, 1.0);
     pParams->lfoShape = std::clamp(static_cast<int>(std::lround(m_pLfoShape->get())), 0, 4);
-    pParams->lfoTarget = std::clamp(static_cast<int>(std::lround(m_pLfoTarget->get())), 0, 3);
+    pParams->lfoTarget = std::clamp(static_cast<int>(std::lround(m_pLfoTarget->get())), 0, 4);
     pParams->lfoDepth = std::clamp(m_pLfoDepth->get(), 0.0, 1.0);
     const double rate = std::clamp(m_pLfoRate->get(), 0.0, 1.0);
     if (m_pLfoSync->toBool() && m_beatFrames > 0.0) {
@@ -739,10 +751,12 @@ void EngineSynth::renderVoice(Voice* pVoice,
     // Per control-rate block when the LFO is on pitch.
     double inc1 = baseInc1;
     double inc2 = inc1 * params.osc2Ratio;
-    // Per control-rate block when the LFO is on the wavetable position.
-    int frameA = params.wtFrameA;
-    int frameB = params.wtFrameB;
-    double blend = params.wtBlend;
+    // Per control-rate block when the LFO or the envelope moves the
+    // wavetable position.
+    WavetableCell cell = params.wtCell;
+    const bool movesTable = params.pWavetable != nullptr &&
+            (params.lfoTarget == 1 || params.lfoTarget == 4 || params.wtEnvAmount != 0.0 ||
+                    params.wtEnvAmountY != 0.0);
     // Per control-rate block too: pitch moves with the LFO and unison.
     const int mipCount = params.pWavetable != nullptr ? params.pWavetable->mipCount : 1;
     int mip1 = mipForIncrement(inc1, mipCount);
@@ -827,18 +841,13 @@ void EngineSynth::renderVoice(Voice* pVoice,
                 mip2 = mipForIncrement(inc2, mipCount);
             }
             // The table position moves with the envelope of this voice and,
-            // when it is the LFO's target, with the LFO; both from the knob.
-            if (params.pWavetable != nullptr &&
-                    (params.lfoTarget == 1 || params.wtEnvAmount != 0.0)) {
-                const int last = params.pWavetable->frameCount - 1;
-                double offset = params.wtEnvAmount * pVoice->env;
-                if (params.lfoTarget == 1) {
-                    offset += lfo;
-                }
-                const double position = std::clamp(params.wtPosition + offset, 0.0, 1.0) * last;
-                frameA = static_cast<int>(position);
-                frameB = std::min(frameA + 1, last);
-                blend = position - frameA;
+            // when it is the LFO's target, with the LFO; both from the knobs.
+            if (movesTable) {
+                const double x = params.wtPosition + params.wtEnvAmount * pVoice->env +
+                        (params.lfoTarget == 1 ? lfo : 0.0);
+                const double y = params.wtPositionY + params.wtEnvAmountY * pVoice->env +
+                        (params.lfoTarget == 4 ? lfo : 0.0);
+                cell = WavetableCell::locate(*params.pWavetable, x, y);
             }
             if (fm) {
                 const double amount = std::clamp(
@@ -859,7 +868,7 @@ void EngineSynth::renderVoice(Voice* pVoice,
         // sample, wrapped, so a sine pair gives the classic FM spectrum and
         // the mix knob still decides how much of the modulator is heard.
         const double s2 = table2
-                ? wavetableSample(*params.pWavetable, frameA, frameB, blend, mip2, pVoice->phase2)
+                ? wavetableSample(*params.pWavetable, cell, mip2, pVoice->phase2)
                 : oscillator(params.wave2, pVoice->phase2, inc2);
         double phase1 = pVoice->phase1;
         if (fmIndex > 0.0) {
@@ -867,7 +876,7 @@ void EngineSynth::renderVoice(Voice* pVoice,
             phase1 -= std::floor(phase1);
         }
         const double s1 = table1
-                ? wavetableSample(*params.pWavetable, frameA, frameB, blend, mip1, phase1)
+                ? wavetableSample(*params.pWavetable, cell, mip1, phase1)
                 : oscillator(params.wave1, phase1, inc1);
         pVoice->phase1 += inc1;
         if (pVoice->phase1 >= 1.0) {

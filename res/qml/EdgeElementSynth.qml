@@ -45,7 +45,7 @@ Item {
     // The beat divisions lfo_rate picks when synced, in the engine's order.
     readonly property var lfoDivisionNames: ["4 BAR", "2 BAR", "1 BAR", "1/2", "1/4", "1/8", "1/16", "1/32"]
     readonly property var lfoShapeNames: ["SINE", "TRI", "SAW", "SQR", "S&H"]
-    readonly property var lfoTargetNames: ["OFF", "WT", "CUT", "PIT"]
+    readonly property var lfoTargetNames: ["OFF", "WT", "CUT", "PIT", "WT Y"]
     readonly property var noteNames: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
     readonly property int octaves: Math.max(1, spec.octaves ?? 2)
     // touch point id -> note, so each finger releases only its own key
@@ -255,6 +255,12 @@ Item {
 
         group: root.groupResolved
         key: "wt_position"
+    }
+    Mixxx.ControlProxy {
+        id: wtPositionYControl
+
+        group: root.groupResolved
+        key: "wt_position_y"
     }
     Mixxx.ControlProxy {
         id: wtFramesControl
@@ -562,7 +568,8 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     color: Theme.deckTextColor
                     font.pixelSize: 12
-                    text: Math.round(wtFramesControl.value) + " FRAMES"
+                    // A grid reads as its shape, a list as its length.
+                    text: wavetableView.gridRows > 1 ? wavetableView.gridColumns + " \u00d7 " + wavetableView.gridRows + " GRID" : Math.round(wtFramesControl.value) + " FRAMES"
                 }
             }
             Rectangle {
@@ -581,6 +588,7 @@ Item {
                     frameColor: Theme.wavetableFrameColor
                     group: root.groupResolved
                     position: wtPositionControl.value
+                    positionY: wtPositionYControl.value
 
                     // Drag to turn the table round and tip it; a double tap puts it back.
                     DragHandler {
@@ -659,10 +667,10 @@ Item {
                     fontPixelSize: extras.font
                     height: extras.knob
                     highlight: true
-                    text: "TO " + root.lfoTargetNames[Math.max(0, Math.min(3, Math.round(lfoTargetControl.value)))]
+                    text: "TO " + root.lfoTargetNames[Math.max(0, Math.min(4, Math.round(lfoTargetControl.value)))]
                     width: extras.buttonWidth
 
-                    onClicked: lfoTargetControl.value = (Math.round(lfoTargetControl.value) + 1) % 4
+                    onClicked: lfoTargetControl.value = (Math.round(lfoTargetControl.value) + 1) % 5
                 }
                 // Lit when synced, reading the division lfo_rate picks; unlit
                 // it runs free and the knob is a frequency.
@@ -808,6 +816,22 @@ Item {
                     padKey: "patch_save"
                     text: "SAVE"
                     width: extras.buttonWidth
+                }
+                // Down the rows of a grid table, and the envelope's sweep down
+                // them; only a grid has rows to move through.
+                KnobCell {
+                    cell: extras.line
+                    knobColor: Theme.amber
+                    knobKey: "wt_position_y"
+                    label: "WT Y"
+                    visible: wavetableView.gridRows > 1
+                }
+                KnobCell {
+                    cell: extras.line
+                    knobColor: Theme.amber
+                    knobKey: "wt_env_amount_y"
+                    label: "WT ENV Y"
+                    visible: wavetableView.gridRows > 1
                 }
             }
         }

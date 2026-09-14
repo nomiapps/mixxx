@@ -47,14 +47,14 @@ class WavetableTest : public MixxxTest, SoundSourceProviderRegistration {
         return path;
     }
 
-    // Frame 0 a sine, frame 1 its inverse, channels identical.
-    QString writeTwoFrameWav(const QString& name, int channels) {
+    // Even frames a sine, odd frames its inverse, channels identical.
+    QString writeTwoFrameWav(const QString& name, int channels, int frames = 2) {
         std::vector<double> samples;
-        samples.reserve(2 * kWavetableFrameSize * channels);
-        for (int f = 0; f < 2; ++f) {
+        samples.reserve(frames * kWavetableFrameSize * channels);
+        for (int f = 0; f < frames; ++f) {
             for (int i = 0; i < kWavetableFrameSize; ++i) {
                 for (int c = 0; c < channels; ++c) {
-                    samples.push_back(f == 0 ? sine(i) : -sine(i));
+                    samples.push_back(f % 2 == 0 ? sine(i) : -sine(i));
                 }
             }
         }
@@ -142,6 +142,99 @@ TEST_F(WavetableTest, HarmonicsStartsAsASine) {
     }
 }
 
+TEST_F(WavetableTest, FoldGridIsAnEightByFourGrid) {
+    const auto pTable = wavetable::generateFoldGrid();
+    ASSERT_TRUE(pTable);
+    EXPECT_EQ(wavetable::kGridColumns * wavetable::kGridRows, pTable->frameCount);
+    EXPECT_EQ(wavetable::kGridColumns, pTable->gridColumns());
+    EXPECT_EQ(wavetable::kGridRows, pTable->gridRows());
+    expectFinalised(*pTable);
+    // The top row starts on the plain sine; folding changes the rows below it.
+    // A folded frame is the table's loudest, so compare shape, not level.
+    const float* pTopLeft = pTable->frame(0);
+    const float scale = pTopLeft[kWavetableFrameSize / 4];
+    EXPECT_GT(scale, 0.5f);
+    const float* pBottomLeft = pTable->frame((wavetable::kGridRows - 1) * wavetable::kGridColumns);
+    double difference = 0.0;
+    for (int i = 0; i < kWavetableFrameSize; ++i) {
+        EXPECT_NEAR(sine(i) * scale, pTopLeft[i], 2e-3) << "sample " << i;
+        difference += std::fabs(pTopLeft[i] - pBottomLeft[i]);
+    }
+    EXPECT_GT(difference / kWavetableFrameSize, 0.2);
+}
+
+TEST_F(WavetableTest, ACellIsTheFourFramesAroundAPoint) {
+    auto pGrid = Wavetable::create(12);
+    pGrid->columns = 4; // three rows
+    WavetableCell cell = WavetableCell::locate(*pGrid, 0.5, 0.25);
+    EXPECT_EQ(1, cell.frameA0);
+    EXPECT_EQ(2, cell.frameB0);
+    EXPECT_EQ(5, cell.frameA1);
+    EXPECT_EQ(6, cell.frameB1);
+    EXPECT_DOUBLE_EQ(0.5, cell.blendX);
+    EXPECT_DOUBLE_EQ(0.5, cell.blendY);
+
+    // The far corner, and out of range clamps to it.
+    cell = WavetableCell::locate(*pGrid, 3.0, 1.5);
+    EXPECT_EQ(11, cell.frameA0);
+    EXPECT_EQ(11, cell.frameB1);
+    EXPECT_DOUBLE_EQ(0.0, cell.blendX);
+    EXPECT_DOUBLE_EQ(0.0, cell.blendY);
+
+    // A plain list has one row, so y does nothing.
+    auto pList = Wavetable::create(12);
+    cell = WavetableCell::locate(*pList, 0.5, 0.9);
+    EXPECT_EQ(5, cell.frameA0);
+    EXPECT_EQ(6, cell.frameB0);
+    EXPECT_EQ(cell.frameA0, cell.frameA1);
+    EXPECT_DOUBLE_EQ(0.5, cell.blendX);
+    EXPECT_DOUBLE_EQ(0.0, cell.blendY);
+}
+
+TEST_F(WavetableTest, ColumnsThatMakeNoGridAreAPlainList) {
+    auto pTable = Wavetable::create(12);
+    for (const int columns : {0, 5, 12, 13}) {
+        pTable->columns = columns;
+        EXPECT_EQ(12, pTable->gridColumns()) << columns;
+        EXPECT_EQ(1, pTable->gridRows()) << columns;
+    }
+    pTable->columns = 6;
+    EXPECT_EQ(2, pTable->gridRows());
+}
+
+TEST_F(WavetableTest, AFileNameCanGiveAGrid) {
+    QString name;
+    int columns = 0;
+    int rows = 0;
+    ASSERT_TRUE(wavetable::parseGridName(QStringLiteral("Fold.8x4"), &name, &columns, &rows));
+    EXPECT_EQ(QStringLiteral("Fold"), name);
+    EXPECT_EQ(8, columns);
+    EXPECT_EQ(4, rows);
+    ASSERT_TRUE(wavetable::parseGridName(QStringLiteral("a.b.2X3"), &name, &columns, &rows));
+    EXPECT_EQ(QStringLiteral("a.b"), name);
+    EXPECT_EQ(2, columns);
+    EXPECT_EQ(3, rows);
+    for (const char* plain : {"Plain", "x.0x4", "big.20x20", ".8x4", "Fold.8x"}) {
+        name = QStringLiteral("unchanged");
+        EXPECT_FALSE(wavetable::parseGridName(QLatin1String(plain), &name, &columns, &rows))
+                << plain;
+        EXPECT_EQ(QStringLiteral("unchanged"), name) << plain;
+    }
+}
+
+TEST_F(WavetableTest, AGridFileMustHoldItsGrid) {
+    const QString path = writeTwoFrameWav("grid.wav", 1, 4);
+    QString reason;
+    const auto pGrid = wavetable::decodeSerumWav(path, &reason, 2, 2);
+    ASSERT_TRUE(pGrid) << reason.toStdString();
+    EXPECT_EQ(2, pGrid->gridColumns());
+    EXPECT_EQ(2, pGrid->gridRows());
+    expectFinalised(*pGrid);
+
+    EXPECT_FALSE(wavetable::decodeSerumWav(path, &reason, 3, 1));
+    EXPECT_TRUE(reason.contains(QStringLiteral("3x1"))) << reason.toStdString();
+}
+
 TEST_F(WavetableTest, MipsRemovePartialsAboveTheirLimit) {
     // The pulse is the brightest built-in: every partial present.
     const auto pTable = wavetable::generatePulse();
@@ -220,11 +313,18 @@ TEST_F(WavetableTest, ScanListsBuiltinsThenFilesByName) {
     std::vector<double> zeros(kWavetableFrameSize, 0.0);
     QFile::copy(writeWav("zed.wav", 1, zeros), QDir(library.directory()).filePath("Zed.wav"));
     QFile::copy(writeWav("alpha.wav", 1, zeros), QDir(library.directory()).filePath("alpha.wav"));
+    QFile::copy(writeWav("grid.wav", 1, zeros), QDir(library.directory()).filePath("grid.2x2.wav"));
     library.scan();
-    ASSERT_EQ(WavetableLibrary::kBuiltinCount + 2, library.count());
-    EXPECT_EQ(QStringLiteral("alpha"), library.entry(3).name);
-    EXPECT_EQ(QStringLiteral("Zed"), library.entry(4).name);
-    EXPECT_FALSE(library.entry(4).path.isEmpty());
+    const int first = WavetableLibrary::kBuiltinCount;
+    ASSERT_EQ(first + 3, library.count());
+    EXPECT_EQ(QStringLiteral("alpha"), library.entry(first).name);
+    EXPECT_EQ(0, library.entry(first).columns);
+    // Listed by its name without the grid, which the entry carries.
+    EXPECT_EQ(QStringLiteral("grid"), library.entry(first + 1).name);
+    EXPECT_EQ(2, library.entry(first + 1).columns);
+    EXPECT_EQ(2, library.entry(first + 1).rows);
+    EXPECT_EQ(QStringLiteral("Zed"), library.entry(first + 2).name);
+    EXPECT_FALSE(library.entry(first + 2).path.isEmpty());
 }
 
 TEST_F(WavetableTest, LoadingABuiltinCompletesAtOnce) {
