@@ -3081,6 +3081,7 @@ if(BUILD_TESTING)
         src/test/linkbuttonqml_test.cpp
         src/test/qmlaccessibilitytest.cpp
         src/test/qmlaccessibilitytest.h
+        src/test/qmlwavetableviewtest.cpp
     )
   endif()
 

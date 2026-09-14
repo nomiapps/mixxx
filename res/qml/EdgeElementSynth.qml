@@ -573,12 +573,31 @@ Item {
                 width: wavetableBand.stackWidth
 
                 Mixxx.WavetableView {
+                    id: wavetableView
+
                     anchors.fill: parent
                     anchors.margins: 6
                     currentColor: Theme.wavetableCurrentColor
                     frameColor: Theme.wavetableFrameColor
                     group: root.groupResolved
                     position: wtPositionControl.value
+
+                    // Drag to turn the table round and tip it; a double tap puts it back.
+                    DragHandler {
+                        property point last: Qt.point(0, 0)
+
+                        target: null
+
+                        onActiveChanged: last = Qt.point(0, 0)
+                        onTranslationChanged: {
+                            wavetableView.yaw -= (translation.x - last.x) * 0.5;
+                            wavetableView.pitch += (translation.y - last.y) * 0.35;
+                            last = Qt.point(translation.x, translation.y);
+                        }
+                    }
+                    TapHandler {
+                        onDoubleTapped: wavetableView.resetView()
+                    }
                 }
             }
         }
