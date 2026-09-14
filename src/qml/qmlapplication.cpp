@@ -1,5 +1,6 @@
 #include "qmlapplication.h"
 
+#include <QAccessible>
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <QLocale>
@@ -25,6 +26,7 @@
 #include "moc_qmlapplication.cpp"
 #include "preferences/configobject.h"
 #include "qml/asyncimageprovider.h"
+#include "qml/qmlaccessibletable.h"
 #include "qml/qmlapplicationproxy.h"
 #include "qml/qmldlgpreferencesproxy.h"
 #include "qml/qmlrecordingproxy.h"
@@ -78,6 +80,10 @@ QmlApplication::QmlApplication(
     // The Edge surface layout engine reads its JSON controller layouts with
     // XMLHttpRequest, which Qt6 blocks for local files unless this is set.
     qputenv("QML_XHR_ALLOW_FILE_READ", "1");
+
+    // A TableView marked mixxxAccessibleTable (the library) reaches screen readers as
+    // a real table with rows, columns and headers instead of loose delegates.
+    QAccessible::installFactory(mixxx::qml::accessibleTableFactory);
 
     // Deliver window update requests one frame period of the slowest screen
     // after they are made, not 5 ms after (Qt's default on Windows, where the

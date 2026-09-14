@@ -614,6 +614,10 @@ Rectangle {
         id: view
 
         property int dynamicColumnCount: 0
+        // Screen readers get this view as a real table -- rows, columns, headers and
+        // every row including the ones scrolled away -- from mixxx::qml::AccessibleTable,
+        // which QmlApplication installs for any TableView with this property set.
+        readonly property bool mixxxAccessibleTable: true
         // Screen pixels held by columns with an explicit (mid-drag) width. These are
         // exactly what the user is dragging, so they are never scaled.
         property real fixedWidth: 0
@@ -732,13 +736,9 @@ Rectangle {
             required property int row
             required property bool selected
 
-            // A TableView delegate is one item per cell, and a bare Item declares
-            // no accessible role -- so the library reached a screen reader as a few
-            // hundred anonymous groups with nothing in them. The cell's own text is
-            // already here in `display`; this is what makes it speakable. It is not
-            // a substitute for the table semantics a QTableView gives for free
-            // (there is still no row, column or header relationship), but a named
-            // cell can at least be read.
+            // The table's accessible cells come from the model (see mixxxAccessibleTable
+            // above), not from these delegates; the role and name here only matter to a
+            // tool that reaches a delegate directly, such as by hit-testing a point.
             Accessible.name: item.display !== undefined && item.display !== null ? String(item.display) : ""
             Accessible.role: Accessible.Cell
             implicitHeight: Mixxx.Config.libraryRowHeight

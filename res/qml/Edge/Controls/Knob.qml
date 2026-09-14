@@ -40,6 +40,8 @@ Item {
     readonly property real maximumValue: root.max
     property real min: 0
     readonly property real minimumValue: root.min
+    // True while a drag owns the value.
+    readonly property bool pressed: dragHandler.active
     readonly property real stepSize: root.wheelStepSize
     property real value: min
     readonly property real valueCenter: (max - min) / 2
@@ -61,6 +63,12 @@ Item {
     // /stepSize are looked up by name on the item by QAccessibleQuickItem's value
     // interface -- they are not Accessible attached properties.
     Accessible.role: Accessible.Dial
+
+    // The steps a screen reader's increase and decrease take, the same as one wheel
+    // notch. Connecting these also puts the two actions on the accessible interface,
+    // which Qt only lists for a Dial when a handler is there.
+    Accessible.onDecreaseAction: root.turned(Mixxx.MathUtils.clamp(root.value - root.wheelStepSize, root.min, root.max))
+    Accessible.onIncreaseAction: root.turned(Mixxx.MathUtils.clamp(root.value + root.wheelStepSize, root.min, root.max))
 
     Item {
         id: background

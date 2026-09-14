@@ -3079,6 +3079,8 @@ if(BUILD_TESTING)
         src/test/qmlskincontrolcreatortest.cpp
         src/test/themeqml_test.cpp
         src/test/linkbuttonqml_test.cpp
+        src/test/qmlaccessibilitytest.cpp
+        src/test/qmlaccessibilitytest.h
     )
   endif()
 
@@ -3918,6 +3920,8 @@ if(QML)
   list(APPEND QT_EXTRA_COMPONENTS "QuickControls2Impl")
   list(APPEND QT_EXTRA_COMPONENTS "QuickDialogs2")
   list(APPEND QT_EXTRA_COMPONENTS "QuickLayouts")
+  # QuickPrivate: the library table's accessible interface subclasses QAccessibleQuickItem.
+  list(APPEND QT_EXTRA_COMPONENTS "QuickPrivate")
   list(APPEND QT_EXTRA_COMPONENTS "QuickShapesPrivate")
   list(APPEND QT_EXTRA_COMPONENTS "QuickTemplates2")
   list(APPEND QT_EXTRA_COMPONENTS "QuickWidgets")
@@ -4112,6 +4116,7 @@ if(QML)
       src/qml/qmllibraryproxy.cpp
       src/qml/qmllibrarysource.cpp
       src/qml/qmllibrarysourcetree.cpp
+      src/qml/qmlaccessibletable.cpp
       src/qml/qmllibrarytracklistmodel.cpp
       src/qml/qmlmixxxcontrollerscreen.cpp
       src/qml/qmlplayermanagerproxy.cpp

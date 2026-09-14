@@ -91,6 +91,9 @@ Item {
     implicitHeight: Math.max(backgroundItem.implicitHeight, handleItem.implicitHeight)
     implicitWidth: Math.max(backgroundItem.implicitWidth, handleItem.implicitWidth)
 
+    // A screen reader's increase and decrease: the same step as the arrow keys.
+    Accessible.onDecreaseAction: root.moved(root.stepValue(-1))
+    Accessible.onIncreaseAction: root.moved(root.stepValue(1))
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Left || event.key === Qt.Key_Down) {
             root.moved(stepValue(-1));
