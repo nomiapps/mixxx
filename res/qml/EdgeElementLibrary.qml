@@ -39,6 +39,24 @@ Item {
         anchors.right: targets.left
         anchors.top: parent.top
         clip: true
+
+        // One search across the surface and the main window (surface.librarySearch).
+        Component.onCompleted: {
+            if (root.surface)
+                library.setSearchText(root.surface.librarySearch);
+        }
+        onSearchTextChanged: {
+            if (root.surface)
+                root.surface.librarySearch = library.searchText;
+        }
+
+        Connections {
+            function onLibrarySearchChanged() {
+                library.setSearchText(root.surface.librarySearch);
+            }
+
+            target: root.surface
+        }
     }
     Column {
         id: targets

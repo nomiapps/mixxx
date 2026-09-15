@@ -931,7 +931,23 @@ ApplicationWindow {
 
                     sourceComponent: Component {
                         Skin.Library {
+                            id: mainLibrary
+
                             anchors.fill: parent
+
+                            // One search across this library and the Edge surface's
+                            // (edgeSurfaceWindow.librarySearch). Read on creation too:
+                            // this Loader drops the library when the window gets short.
+                            Component.onCompleted: mainLibrary.setSearchText(edgeSurfaceWindow.librarySearch)
+                            onSearchTextChanged: edgeSurfaceWindow.librarySearch = mainLibrary.searchText
+
+                            Connections {
+                                function onLibrarySearchChanged() {
+                                    mainLibrary.setSearchText(edgeSurfaceWindow.librarySearch);
+                                }
+
+                                target: edgeSurfaceWindow
+                            }
                         }
                     }
                     states: [

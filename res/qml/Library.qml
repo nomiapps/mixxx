@@ -67,6 +67,14 @@ Item {
         root.applySearch();
         searchField.forceActiveFocus();
     }
+    // Mirrors a search typed into another library view (the Edge surface's, or the
+    // main window's). The typing debounce applies it, as if typed here. Setting the
+    // text it already holds is a no-op, which is what stops two mirrored views
+    // echoing each other.
+    function setSearchText(text) {
+        if (searchField.text !== text)
+            searchField.text = text;
+    }
     function analyzeCurrentView() {
         if (!root.sidebar || !root.sidebar.tracklist) {
             analyzeToast.show(0);

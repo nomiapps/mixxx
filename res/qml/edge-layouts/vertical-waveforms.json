@@ -5,6 +5,21 @@
         2560,
         720
     ],
+    "_sections": "Named explicitly: each deck's waveform sits 12px from its controls, the same gap as a real seam, so found seams tore the waveforms off their decks off the strip.",
+    "sections": [
+        [
+            10,
+            1090
+        ],
+        [
+            1114,
+            1446
+        ],
+        [
+            1470,
+            2550
+        ]
+    ],
     "elements": [
         {
             "type": "overview",

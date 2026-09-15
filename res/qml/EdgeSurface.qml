@@ -22,6 +22,11 @@ Window {
             "@right": "[Channel2]"
         })
     property var layoutDef: null
+    // The library search, shared by every library view: the surface's library
+    // element and the main window's library both mirror it, so a search typed in
+    // one is the search shown in the other. It lives here because this window is
+    // the one object both of them can reach.
+    property string librarySearch: ""
     // True when a real strip display was found. It decides the window's chrome:
     // on the strip we are a frameless, always-on-top, focus-refusing panel bolted
     // to the hardware; anywhere else (a Surface Pro, a laptop) that is hostile --
@@ -198,13 +203,31 @@ Window {
         }
         best.place = place;
         best.bands = bs;
+        // Vertical stretch. A layout with no seam cannot reflow, so on a screen
+        // squarer than the strip it sat in a letterbox -- Launchpad X, Library,
+        // Synth and Sequencer used about 40% of a Surface Pro's height. Those are
+        // full-width elements that lay themselves out to whatever rect they are
+        // given, so their canvas grows downwards instead: x keeps the uniform fit,
+        // y takes the height that is there. A layout can force it either way with
+        // a top-level "stretch". Never on the strip, where the canvas is the panel.
+        const def = root.layoutDef;
+        const stretch = !root.onStrip && ((def && def.stretch !== undefined) ? def.stretch === true : bs.length === 1);
+        best.scaleY = stretch ? Math.max(best.scale, availH / best.totalH) : best.scale;
         return best;
     }
 
     // The seams, found from every rect an element can occupy -- including its
     // "rectIf" alternatives, so flipping a toggle cannot re-cut the layout
     // underneath and shuffle everything sideways.
+    //
+    // A layout can name its sections instead, as "sections": [[x0, x1], ...] in
+    // canvas units. Needed where the gaps lie: Vertical Waveforms has a 12 px gap
+    // between each deck's waveform and its controls, the same as its real seams
+    // elsewhere, so the found seams tore the waveforms off their decks and stood
+    // the mixer's divider lines up as sections of their own.
     function computeBands() {
+        if (root.layoutDef && Array.isArray(root.layoutDef.sections) && root.layoutDef.sections.length > 0)
+            return root.layoutDef.sections.slice().sort((a, b) => a[0] - b[0]);
         const canvasW = root.layoutDef ? root.layoutDef.canvas[0] : 2560;
         const els = root.layoutDef ? (root.layoutDef.elements ?? []) : [];
         const spans = [];
@@ -260,7 +283,7 @@ Window {
         // the screen can no longer drive the width negative.
         const plan = root.buildPlan(availW, availH - header.height);
         let w = Math.round(plan.totalW * plan.scale);
-        let h = Math.round(plan.totalH * plan.scale) + header.height;
+        let h = Math.round(plan.totalH * plan.scaleY) + header.height;
         // A screen too short to hold the header and a legible canvas drives the
         // scale to zero or below; fall back to filling what we have.
         if (w < 320 || h < 240) {
@@ -285,8 +308,11 @@ Window {
                 // Layouts do not all reflow to the same shape, so the window that
                 // fitted the last one is the wrong size for this one. Re-fit off
                 // the strip only; on the strip the window IS the panel and must
-                // not move.
-                if (!root.onStrip && root.placementReady && root.screen)
+                // not move. And only while it is an ordinary window: setting the
+                // geometry of a maximized window un-maximizes it behind Qt's back,
+                // so the layout came up in a smaller window and the next title-bar
+                // double-click only restored it.
+                if (!root.onStrip && root.placementReady && root.screen && root.visibility === Window.Windowed)
                     root.fitToScreen(root.screen);
                 root.revealIfReady();
             } catch (e) {
@@ -511,8 +537,10 @@ Window {
         readonly property real dpr: root.screen ? root.screen.devicePixelRatio : 1
         readonly property var plan: root.buildPlan(Math.max(1, width), Math.max(1, height))
         readonly property real ui: plan.scale
+        // Equal to ui except on a layout that stretches vertically (see buildPlan).
+        readonly property real uiY: plan.scaleY
         readonly property real xOff: (width - plan.totalW * ui) / 2
-        readonly property real yOff: (height - plan.totalH * ui) / 2
+        readonly property real yOff: (height - plan.totalH * uiY) / 2
 
         // Canvas coordinates to surface coordinates, through the band the point
         // belongs to. With a single row every offset is zero and this is the plain
@@ -523,7 +551,7 @@ Window {
         // y needs the element's x as well: which row it lands in is decided by
         // which band it is in.
         function mapY(cy, cx) {
-            return yOff + (cy + plan.place[root.bandAt(plan, cx)].dy) * ui;
+            return yOff + (cy + plan.place[root.bandAt(plan, cx)].dy) * uiY;
         }
         function pixelAligned(value) {
             return Math.round(value * dpr) / dpr;
@@ -558,7 +586,7 @@ Window {
                 // Size from the mapped origin plus the scaled extent rather than
                 // mapping the far corner: that corner can sit on a seam, where
                 // which band it belongs to is ambiguous.
-                height: canvasArea.pixelAligned(canvasArea.mapY(box[1], box[0]) + box[3] * canvasArea.ui) - y
+                height: canvasArea.pixelAligned(canvasArea.mapY(box[1], box[0]) + box[3] * canvasArea.uiY) - y
                 width: canvasArea.pixelAligned(canvasArea.mapX(box[0]) + box[2] * canvasArea.ui) - x
                 x: canvasArea.pixelAligned(canvasArea.mapX(box[0]))
                 y: canvasArea.pixelAligned(canvasArea.mapY(box[1], box[0]))
