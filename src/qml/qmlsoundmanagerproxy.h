@@ -156,6 +156,8 @@ class QmlSoundManagerProxy : public QObject {
     Q_INVOKABLE void clearOutputs();
     Q_INVOKABLE void clearInputs();
     Q_INVOKABLE bool hasMicInputs();
+    /// See SoundManager::takeHeadphonesRoutedNotice.
+    Q_INVOKABLE QString takeHeadphonesRoutedNotice();
 
     std::shared_ptr<SoundManager> internal() const;
     Q_INVOKABLE void commit();
@@ -170,6 +172,9 @@ class QmlSoundManagerProxy : public QObject {
     /// Forwarded from SoundManager: an output stopped calling back and
     /// the devices were reopened (recovered) or could not be.
     void audioStalled(const QString& deviceNames, bool recovered);
+    /// Forwarded from SoundManager: headphones routed to channels 3-4 of a
+    /// DJ controller's sound card.
+    void headphonesRouted(const QString& deviceName);
 
   private:
     static inline std::shared_ptr<SoundManager> s_pSoundManager;

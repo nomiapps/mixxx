@@ -989,14 +989,19 @@ ApplicationWindow {
     }
     // The sound engine's watchdog reopened (or failed to reopen) a device
     // whose stream stopped calling back. Without this the only trace is a
-    // line in mixxx.log, and a silent Mixxx looks like a broken one.
+    // line in mixxx.log, and a silent Mixxx looks like a broken one. Also
+    // where Mixxx says it routed a controller's headphones.
     Rectangle {
         id: audioToast
 
-        function show(message) {
+        function show(message, durationMs) {
             audioToastText.text = message;
             opacity = 1;
+            audioToastTimer.interval = durationMs ?? 8000;
             audioToastTimer.restart();
+        }
+        function showHeadphonesRouted(deviceName) {
+            audioToast.show(qsTr("Headphones set to outputs 3-4 of %1, the controller's headphone jack. Change it in Settings > Sound hardware.").arg(deviceName), 15000);
         }
 
         anchors.horizontalCenter: parent.horizontalCenter
@@ -1011,6 +1016,15 @@ ApplicationWindow {
         visible: opacity > 0
         width: Math.min(audioToastText.implicitWidth + 24, parent.width - 24)
         z: 30
+
+        // Mixxx routed a DJ controller's headphones while starting up, before
+        // this window could hear the signal: say so now, and for long enough
+        // to be read once the window has settled.
+        Component.onCompleted: {
+            const deviceName = Mixxx.SoundManager.takeHeadphonesRoutedNotice();
+            if (deviceName)
+                audioToast.showHeadphonesRouted(deviceName);
+        }
 
         Behavior on opacity {
             NumberAnimation {
@@ -1040,6 +1054,9 @@ ApplicationWindow {
         Connections {
             function onAudioStalled(deviceNames, recovered) {
                 audioToast.show(recovered ? qsTr("Audio restarted: %1 stopped responding").arg(deviceNames) : qsTr("Audio stopped: %1 stopped responding and could not be reopened. See Settings > Sound hardware.").arg(deviceNames));
+            }
+            function onHeadphonesRouted(deviceName) {
+                audioToast.showHeadphonesRouted(deviceName);
             }
 
             target: Mixxx.SoundManager

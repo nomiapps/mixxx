@@ -89,6 +89,10 @@ QmlSoundManagerProxy::QmlSoundManagerProxy(
             &SoundManager::audioStalled,
             this,
             &QmlSoundManagerProxy::audioStalled);
+    connect(m_pSoundManager.get(),
+            &SoundManager::headphonesRouted,
+            this,
+            &QmlSoundManagerProxy::headphonesRouted);
     connect(m_pSoundManager.get(), &SoundManager::devicesClosed, this, [this]() {
         SoundDeviceStatus status = SoundDeviceStatus::Ok;
         {
@@ -258,6 +262,10 @@ bool QmlSoundManagerProxy::hasMicInputs() {
 
 std::shared_ptr<SoundManager> QmlSoundManagerProxy::internal() const {
     return m_pSoundManager;
+}
+
+QString QmlSoundManagerProxy::takeHeadphonesRoutedNotice() {
+    return m_pSoundManager->takeHeadphonesRoutedNotice();
 }
 
 void QmlSoundManagerProxy::commit() {

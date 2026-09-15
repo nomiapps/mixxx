@@ -14,6 +14,7 @@
 #include "engine/enginemixer.h"
 #include "moc_soundmanager.cpp"
 #include "preferences/configobject.h"
+#include "soundio/headphonerouting.h"
 #include "soundio/portaudioenumerator.h"
 #include "soundio/sounddevice.h"
 #include "soundio/sounddeviceenumerator.h"
@@ -35,6 +36,11 @@
 namespace {
 
 const QString kAppGroup = QStringLiteral("[App]");
+/// Devices HeadphoneRouting has already considered, "|"-separated, so a
+/// routing the user undoes stays undone.
+const ConfigKey kHeadphonesRoutedDevicesKey(
+        QStringLiteral("[Soundcard]"), QStringLiteral("HeadphonesRoutedDevices"));
+const QChar kDeviceListSeparator = QLatin1Char('|');
 
 #define CPU_OVERLOAD_DURATION 500 // in ms
 
@@ -96,6 +102,10 @@ SoundManager::SoundManager(
     }
 
     checkConfig();
+    // A DJ controller's headphone jack is its channels 3-4. Routed here in
+    // memory only; setupDevices() writes it once the devices really open, for
+    // the reason given at the end of this constructor.
+    m_headphonesRoutedNotice = routeHeadphonesForDjHardware();
 
     // A stream can stop calling back without any error reaching Mixxx (seen
     // with WASAPI: the PortAudio thread waits forever, nothing is logged, and
@@ -494,6 +504,12 @@ SoundDeviceStatus SoundManager::setupDevices() {
 
     // returns OK if we were able to open all the devices the user wanted
     if (devicesNotFound.isEmpty() || pipewireSkipConfig()) {
+        if (!m_headphonesConsideredUnsaved.isEmpty()) {
+            // A routing made at startup: every configured device opened, so
+            // the configuration is the real one and safe to keep.
+            m_config.writeToDisk();
+            saveHeadphonesConsidered();
+        }
         emit devicesSetup();
         return SoundDeviceStatus::Ok;
     }
@@ -555,6 +571,9 @@ SoundDeviceStatus SoundManager::setConfig(const SoundManagerConfig& config) {
     SoundDeviceStatus status = SoundDeviceStatus::Ok;
     m_config = config;
     checkConfig();
+    // Picking a controller as the main output in the settings is the other
+    // moment its headphones need routing.
+    const QString routedDevice = routeHeadphonesForDjHardware();
     // The user is applying a configuration: whatever the watchdog gave up
     // on before is history.
     m_stallRecoveries = 0;
@@ -564,8 +583,50 @@ SoundDeviceStatus SoundManager::setConfig(const SoundManagerConfig& config) {
     status = setupDevices();
     if (status == SoundDeviceStatus::Ok) {
         m_config.writeToDisk();
+        saveHeadphonesConsidered();
+        if (!routedDevice.isEmpty()) {
+            emit headphonesRouted(routedDevice);
+        }
     }
     return status;
+}
+
+QString SoundManager::takeHeadphonesRoutedNotice() {
+    QString notice;
+    notice.swap(m_headphonesRoutedNotice);
+    return notice;
+}
+
+QString SoundManager::routeHeadphonesForDjHardware() {
+    QStringList considered = m_pConfig->getValueString(kHeadphonesRoutedDevicesKey)
+                                     .split(kDeviceListSeparator, Qt::SkipEmptyParts);
+    const qsizetype consideredBefore = considered.size();
+    QList<HeadphoneRouting::Device> devices;
+    for (const auto& pDevice : getDeviceList(m_config.getAPI(), true, false)) {
+        devices.append({pDevice->getDeviceId(),
+                pDevice->getDisplayName(),
+                static_cast<int>(pDevice->getNumOutputChannels())});
+    }
+    const HeadphoneRouting::Result result =
+            HeadphoneRouting::apply(&m_config.getOutputsRef(), devices, &considered);
+    if (considered.size() != consideredBefore) {
+        m_headphonesConsideredUnsaved = considered;
+    }
+    if (!result.routed) {
+        return {};
+    }
+    qInfo() << "Routed Headphones to channels 3-4 of" << result.displayName
+            << "(main output on its channels 1-2)";
+    return result.displayName;
+}
+
+void SoundManager::saveHeadphonesConsidered() {
+    if (m_headphonesConsideredUnsaved.isEmpty()) {
+        return;
+    }
+    m_pConfig->setValue(kHeadphonesRoutedDevicesKey,
+            m_headphonesConsideredUnsaved.join(kDeviceListSeparator));
+    m_headphonesConsideredUnsaved.clear();
 }
 
 void SoundManager::checkConfig() {

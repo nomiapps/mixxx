@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QSharedPointer>
 #include <QString>
+#include <QStringList>
 #include <QTimer>
 #include <memory>
 
@@ -69,6 +70,9 @@ class SoundManager : public QObject {
     QList<QString> getHostAPIList() const;
     SoundManagerConfig getConfig() const;
     SoundDeviceStatus setConfig(const SoundManagerConfig& config);
+    /// The device whose headphones were routed at startup, for a UI that was
+    /// not listening yet; empty once taken, or when nothing was routed.
+    QString takeHeadphonesRoutedNotice();
     // Due to a bug in in PulseAudio, we must give at least 5 seconds of cool
     // down before performing further audio related operation. This sleep
     // happens during the function call by default (synchronous blocking), but
@@ -178,6 +182,9 @@ class SoundManager : public QObject {
     /// An open device stopped calling back for a few seconds. The
     /// devices were reopened; recovered says whether that succeeded.
     void audioStalled(const QString& deviceNames, bool recovered);
+    /// Headphones were routed to channels 3-4 of a DJ controller's sound card
+    /// (HeadphoneRouting); the UI should say so.
+    void headphonesRouted(const QString& deviceName);
 
   private slots:
     void completeDevicesClosing();
@@ -197,6 +204,13 @@ class SoundManager : public QObject {
     // (from PortAudio) and attempts to close them all. Closing a soundcard that
     // isn't open is safe.
     void closeDevices(bool sleepAfterClosing, bool async = false);
+
+    /// Applies HeadphoneRouting to m_config. Returns the routed device's
+    /// display name, or an empty string.
+    QString routeHeadphonesForDjHardware();
+    /// Persists the devices HeadphoneRouting considered; called only where
+    /// the sound configuration itself is written, so the two never disagree.
+    void saveHeadphonesConsidered();
 
     bool jackApiUsed() const {
         return m_config.getAPI() == SoundManagerConfig::kAPIJack;
@@ -228,4 +242,6 @@ class SoundManager : public QObject {
     QTimer m_callbackWatchdogTimer;
     CallbackWatchdog m_callbackWatchdog;
     int m_stallRecoveries;
+    QString m_headphonesRoutedNotice;
+    QStringList m_headphonesConsideredUnsaved;
 };

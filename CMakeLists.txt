@@ -1587,6 +1587,7 @@ add_library(
   src/skin/skincontrols.cpp
   src/skin/skinloader.cpp
   src/soundio/callbackwatchdog.cpp
+  src/soundio/headphonerouting.cpp
   src/soundio/portaudioenumerator.cpp
   src/soundio/sounddeviceenumerator.cpp
   src/soundio/sounddevice.cpp
@@ -3006,6 +3007,7 @@ if(BUILD_TESTING)
     src/test/skincontext_test.cpp
     src/test/softtakeover_test.cpp
     src/test/callbackwatchdogtest.cpp
+    src/test/headphoneroutingtest.cpp
     src/test/soundproxy_test.cpp
     src/test/soundsourceproviderregistrytest.cpp
     src/test/sqliteliketest.cpp
