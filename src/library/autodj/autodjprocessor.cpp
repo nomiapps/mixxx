@@ -1607,7 +1607,7 @@ void AutoDJProcessor::playerTrackLoaded(DeckAttributes* pDeck, TrackPointer pTra
         // this deck has just changed the track so it becomes the toDeck
         DeckAttributes* fromDeck = getOtherDeck(pDeck);
         // check if this deck has suitable alignment
-        if (fromDeck && getOtherDeck(fromDeck) != pDeck) {
+        if (!fromDeck || getOtherDeck(fromDeck) != pDeck) {
             if constexpr (sDebug) {
                 qDebug() << this << "playerTrackLoaded()" << pDeck->group << "but not a toDeck";
             }

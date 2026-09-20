@@ -162,10 +162,10 @@ void WSearchRelatedTracksMenu::addActionsForTrack(
         if (bpm > 0) {
             QString bpmStr = QString::number(bpm);
             // BpmFilterNode has the user value for the fuzzy range, set in DlgPrefLibrary
-            BpmFilterNode* pBpmNode = new BpmFilterNode(bpmStr, true /* fuzzy search */);
+            BpmFilterNode bpmNode(bpmStr, true /* fuzzy search */);
             double bpmLowerBound = 0.0;
             double bpmUpperBound = 0.0;
-            std::tie(bpmLowerBound, bpmUpperBound) = pBpmNode->getBpmRange();
+            std::tie(bpmLowerBound, bpmUpperBound) = bpmNode.getBpmRange();
             const QString searchQuery =
                     QStringLiteral("bpm:") +
                     QString::number(bpmLowerBound) +

@@ -29,7 +29,7 @@ class DbNamedEntity: public DbEntity<T> {
   protected:
     DbNamedEntity() = default;
     explicit DbNamedEntity(T id)
-        : DbEntity<T>(std::forward<T>(id)) {
+            : DbEntity<T>(std::move(id)) {
     }
 
   private:

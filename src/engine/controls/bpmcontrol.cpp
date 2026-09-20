@@ -967,7 +967,9 @@ mixxx::audio::FramePos BpmControl::getBeatMatchPosition(
     mixxx::audio::FramePos thisNextBeatPosition =
             mixxx::audio::FramePos::fromEngineSamplePosMaybeInvalid(
                     m_nextBeat.get());
-    mixxx::audio::FrameDiff_t thisBeatLengthFrames;
+    // Initialized to an invalid length: getBeatContext() below may return
+    // without writing it, and it is read again after this block.
+    mixxx::audio::FrameDiff_t thisBeatLengthFrames = -1;
 
     // Look up the next beat and beat length for the new position
     if (!thisNextBeatPosition.isValid() || !thisPrevBeatPosition.isValid() ||

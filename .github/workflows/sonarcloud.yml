@@ -1,10 +1,22 @@
-# One-off / on-demand SonarCloud C++ analysis of the fork.
-# Manual trigger only: Actions tab -> SonarCloud analysis -> Run workflow.
+# SonarQube Cloud C++ analysis of the fork.
+# Runs on every push to main, and on demand: Actions tab -> SonarCloud analysis -> Run workflow.
 # Requires the SONAR_TOKEN repository secret (SonarCloud account -> security).
 name: SonarCloud analysis
 
 on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+      - "packaging/**"
   workflow_dispatch:
+
+# A push while an analysis is running makes that analysis stale, and each one
+# costs the better part of an hour. Keep only the newest.
+concurrency:
+  group: sonarcloud-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   sonarcloud:
@@ -17,15 +29,41 @@ jobs:
       - name: Install build dependencies
         run: tools/debian_buildenv.sh setup
 
+      - name: Install ccache
+        run: sudo apt-get install -y ccache
+
+      # Same cache conventions as build.yml, under its own id so the two do not
+      # evict each other.
+      - name: Set up GitHub cache for ccache
+        uses: actions/cache@v6
+        with:
+          path: /home/runner/.cache/ccache
+          key: ubuntu-24.04-sonar-${{ github.run_number }}
+          restore-keys: |
+            ubuntu-24.04-sonar
+
+      - name: Set up ccache
+        run: |
+          ccache --zero-stats
+          ccache --max-size=2G
+
       - name: Configure
         run: >
           cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=RelWithDebInfo
           -DQML=ON
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build (generated headers for the analyzer)
         run: cmake --build build --target mixxx-lib --parallel 4
+        env:
+          # GitHub Actions automatically zstd compresses caches
+          CCACHE_NOCOMPRESS: true
+
+      - name: Print compiler cache stats
+        run: ccache --show-stats
 
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v4
@@ -38,4 +76,5 @@ jobs:
             -Dsonar.organization=nomiapps
             -Dsonar.sources=src,res/qml
             -Dsonar.cfamily.compile-commands=build/compile_commands.json
+            -Dsonar.cfamily.threads=4
             -Dsonar.exclusions=src/test/**,lib/**

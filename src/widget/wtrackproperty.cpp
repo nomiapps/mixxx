@@ -303,10 +303,10 @@ void WTrackProperty::slotShowTrackMenuChangeRequest(bool show) {
     // Note: this widget may be hidden so the position may be unexpected,
     // though this is okay as long as all variants of deckN are on the same
     // side of the mixer.
-    QContextMenuEvent* pEvent = new QContextMenuEvent(QContextMenuEvent::Mouse,
+    QContextMenuEvent event(QContextMenuEvent::Mouse,
             QPoint(),
             mapToGlobal(rect().center()));
-    contextMenuEvent(pEvent);
+    contextMenuEvent(&event);
 }
 
 void WTrackProperty::slotCommitEditorData(const QString& text) {
