@@ -9,7 +9,9 @@ on:
       - edited
   push:
     branches:
-      - "*"
+      # "*" stops at a slash, so it never matched this fork's session/<name>
+      # branches and they were built by nothing at all.
+      - "**"
       - "!main"
       - "![0-9].[0-9]"
   workflow_dispatch:
