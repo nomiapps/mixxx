@@ -13,6 +13,7 @@
 #include <QMetaObject>
 #include <QSharedPointer>
 #include <QStringView>
+#include <chrono>
 #include <ranges>
 #include <string>
 
@@ -741,7 +742,19 @@ void PipewireEnumerator::callback(const spa_io_position* pos) {
         m_pSoundManager->pushInputBuffer(input, framesPerBuffer);
     }
 
-    m_pSoundManager->onDeviceOutputCallback(framesPerBuffer);
+    // PipeWire drives this callback from the graph rather than from a
+    // SoundDevice, so there is no measured DAC time to hand over as
+    // SoundDevicePortAudio and SoundDeviceNetwork have. Estimate it the way
+    // the network device does -- the host clock now plus the output latency --
+    // taking the latency from the delay PipeWire reports, the same figure used
+    // for setCallbackEntryToDacSecs() above.
+    const auto absTimeWhenPrevOutputBufferReachesDac =
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::steady_clock::now().time_since_epoch()) +
+            std::chrono::microseconds(static_cast<int64_t>(pos->clock.delay) *
+                    1000000 / static_cast<int64_t>(sampleRate));
+    m_pSoundManager->onDeviceOutputCallback(
+            framesPerBuffer, absTimeWhenPrevOutputBufferReachesDac);
 
     for (const auto& [output, ports] : m_outputs) {
         if (!ports.active.load()) {
