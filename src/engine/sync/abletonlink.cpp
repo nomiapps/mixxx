@@ -48,14 +48,31 @@ AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
 }
 
 AbletonLink::~AbletonLink() {
-    // Stop Link activity and remove callbacks before destroying ControlObjects.
-    m_pLink->setNumPeersCallback([](std::size_t) {});
-    m_pLink->enable(false);
+    // A destructor is noexcept, so anything thrown here is std::terminate
+    // rather than an exception: a crash on the way out of an otherwise clean
+    // shutdown. Link leaving the session reaches sockets and threads, which
+    // can throw, so neither step below is allowed to escape. They are caught
+    // separately because the second has to run even if the first throws.
+    try {
+        // Stop Link activity and remove callbacks before destroying ControlObjects.
+        m_pLink->setNumPeersCallback([](std::size_t) {});
+        m_pLink->enable(false);
+    } catch (const std::exception& e) {
+        kLogger.warning() << "leaving the Link session threw:" << e.what();
+    } catch (...) {
+        kLogger.warning() << "leaving the Link session threw an unknown exception";
+    }
 
     // Destroy Link first to ensure all Link-managed threads are stopped before
     // automatically destroying m_pNumLinkPeers and m_pLinkButton afterwards,
     // which may be accessed by in-flight callbacks otherwise.
-    m_pLink.reset();
+    try {
+        m_pLink.reset();
+    } catch (const std::exception& e) {
+        kLogger.warning() << "destroying Link threw:" << e.what();
+    } catch (...) {
+        kLogger.warning() << "destroying Link threw an unknown exception";
+    }
 }
 
 void AbletonLink::slotControlSyncEnabled(double controButtonlValue) {

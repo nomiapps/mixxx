@@ -63,10 +63,20 @@ TEST(WaveformTextureImageTest, RawBytesSurviveThePremultipliedLabel) {
     EXPECT_EQ(10, pTexel[3]);
 }
 
+// A bad stride is a caller's bug -- the only real caller passes the waveform's
+// own stride and texture size -- so it is a VERIFY_OR_DEBUG_ASSERT: a Debug
+// build stops on it, and a release build returns a null image. Test whichever
+// of the two this build does, as engineeffectsdelay_test.cpp does.
 TEST(WaveformTextureImageTest, RejectsABadStride) {
     const auto data = makeData(8);
+#ifdef MIXXX_DEBUG_ASSERTIONS_ENABLED
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    EXPECT_DEATH(packWaveformTexture(data.data(), 8, 3, 8), "stride > 0");
+    EXPECT_DEATH(packWaveformTexture(data.data(), 8, 0, 8), "stride > 0");
+#else
     EXPECT_TRUE(packWaveformTexture(data.data(), 8, 3, 8).isNull());
     EXPECT_TRUE(packWaveformTexture(data.data(), 8, 0, 8).isNull());
+#endif
 }
 
 } // namespace

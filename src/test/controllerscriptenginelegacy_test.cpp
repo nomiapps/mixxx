@@ -32,6 +32,7 @@
 #include "database/mixxxdb.h"
 #include "effects/effectsmanager.h"
 #include "engine/channelhandle.h"
+#include "engine/bufferscalers/rubberbandworkerpool.h"
 #include "engine/channels/enginedeck.h"
 #include "engine/enginebuffer.h"
 #include "engine/enginemixer.h"
@@ -89,6 +90,13 @@ class ControllerScriptEngineLegacyTest : public ControllerScriptEngineLegacy,
         m_pEngine->registerNonEngineChannelSoundIO(gsl::make_not_null(m_pSoundManager.get()));
 
         CoverArtCache::createInstance();
+#ifdef __RUBBERBAND__
+        // The decks below load tracks, and a deck loading a track reaches for
+        // the RubberBand pool. coreservices creates it; PlayerManagerTest and
+        // BaseSignalPathTest do as this now does. Without it a Debug build stops
+        // on the missing singleton, and a release build does not notice.
+        RubberBandWorkerPool::createInstance();
+#endif
 
         m_pPlayerManager = std::make_shared<PlayerManager>(config(),
                 m_pSoundManager.get(),
@@ -166,6 +174,9 @@ class ControllerScriptEngineLegacyTest : public ControllerScriptEngineLegacy,
         CoverArtCache::destroy();
         ControllerScriptEngineBase::registerPlayerManager(nullptr);
         ControllerScriptEngineBase::registerTrackCollectionManager(nullptr);
+#ifdef __RUBBERBAND__
+        RubberBandWorkerPool::destroy();
+#endif
     }
 
     ~ControllerScriptEngineLegacyTest() {

@@ -104,7 +104,11 @@ class WavetableLibrary : public QObject {
 
   signals:
     void namesChanged();
-    void loaded(int index, std::shared_ptr<const Wavetable> pTable);
+    // Emitted on the main thread only, and connected pointer-to-member: see
+    // the matching note on Synth::slotWavetableLoaded. The exclusion has to
+    // sit on the line clazy reports, which is the one carrying the argument.
+    void loaded(int index,
+            std::shared_ptr<const Wavetable> pTable); // clazy:exclude=fully-qualified-moc-types
     void loadFailed(int index, const QString& reason);
 
   private:

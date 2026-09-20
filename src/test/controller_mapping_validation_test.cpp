@@ -20,6 +20,7 @@
 #include "track/track.h"
 #ifdef MIXXX_USE_QML
 #include "qml/qmlplayermanagerproxy.h"
+#include "test/newuiqmlqtversion.h"
 #endif
 #include "moc_controller_mapping_validation_test.cpp"
 #include "soundio/soundmanager.h"
@@ -274,6 +275,18 @@ TEST_P(MappingTestFixture, ValidateMappingXML) {
 TEST_P(MappingTestFixture, LoadMapping) {
     QString mappingPath = QString::fromStdString(GetParam());
     qDebug() << "LoadMapping" << mappingPath;
+
+#ifdef MIXXX_USE_QML
+    // A mapping that declares a screen renders the New UI's QML onto it, so on
+    // an older Qt it fails for a reason that has nothing to do with the mapping.
+    // Only those are skipped; every other mapping is still loaded.
+    const std::shared_ptr<LegacyControllerMapping> pScreenCheck =
+            LegacyControllerMappingFileHandler::loadMapping(
+                    QFileInfo(mappingPath), QDir(RESOURCE_FOLDER "/controllers"));
+    if (pScreenCheck && !pScreenCheck->getInfoScreens().isEmpty()) {
+        SKIP_IF_NEW_UI_QML_UNSUPPORTED();
+    }
+#endif
 
     EXPECT_TRUE(testLoadMapping(mappingPath)) << "Error while loading " << GetParam();
 }

@@ -17,6 +17,7 @@
 #include "qml/qmlapplication.h"
 #include "skin/qml/qmlskin.h"
 #include "test/mixxxtest.h"
+#include "test/newuiqmlqtversion.h"
 #include "util/cmdlineargs.h"
 #include "util/versionstore.h"
 
@@ -86,6 +87,8 @@ class QmlStartupSmokeTest : public MixxxTest,
 
 TEST_P(QmlStartupSmokeTest, Starts) {
     const auto& skin = GetParam();
+    // Both skins reach res/qml/Knob.qml, and through it the New UI's controls.
+    SKIP_IF_NEW_UI_QML_UNSUPPORTED();
 #if defined(__WINDOWS__)
     if (skin.useNewUi) {
         GTEST_SKIP() << "NewUi QML startup smoke test is temporarily disabled on Windows";

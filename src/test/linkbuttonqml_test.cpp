@@ -10,10 +10,13 @@
 #include "control/controlpushbutton.h"
 #include "qml/qmlconfigproxy.h"
 #include "test/mixxxtest.h"
+#include "test/newuiqmlqtversion.h"
 
 class LinkButtonQmlTest : public MixxxTest {};
 
 TEST_F(LinkButtonQmlTest, ToggleAndPeerCountFollowSharedControls) {
+    // Loads the New UI's Link button, which is built on its Knob.
+    SKIP_IF_NEW_UI_QML_UNSUPPORTED();
     ControlPushButton enabled(ConfigKey(QStringLiteral("[AbletonLink]"), QStringLiteral("sync_enabled")));
     enabled.setButtonMode(mixxx::control::ButtonMode::Toggle);
     enabled.setStates(2);

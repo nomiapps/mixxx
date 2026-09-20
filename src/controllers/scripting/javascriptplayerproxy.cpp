@@ -152,7 +152,8 @@ QStringList JavascriptPlayerProxy::getStemLabels() const {
         return QStringList();
     }
     QStringList labels;
-    for (const StemInfo& stemInfo : pTrack->getStemInfo()) {
+    const QList<StemInfo> stems = pTrack->getStemInfo();
+    for (const StemInfo& stemInfo : stems) {
         labels.append(stemInfo.getLabel());
     }
     return labels;
@@ -164,7 +165,8 @@ QStringList JavascriptPlayerProxy::getStemColors() const {
         return QStringList();
     }
     QStringList colors;
-    for (const StemInfo& stemInfo : pTrack->getStemInfo()) {
+    const QList<StemInfo> stems = pTrack->getStemInfo();
+    for (const StemInfo& stemInfo : stems) {
         colors.append(stemInfo.getColor().name(QColor::HexRgb));
     }
     return colors;

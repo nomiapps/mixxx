@@ -15,6 +15,11 @@ jobs:
       checks: write #  to create new checks (coverallsapp/github-action)
 
     strategy:
+      # These three check different things and share nothing. Without this, the
+      # first one to fail cancels the other two, and its result is all you get:
+      # coverage stopping on a debug assertion was enough to hide every clazy
+      # finding in the tree.
+      fail-fast: false
       matrix:
         include:
           - name: clazy

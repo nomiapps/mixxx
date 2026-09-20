@@ -46,12 +46,14 @@ TEST_F(SynthTest, StartsWithTheFirstBuiltinLoaded) {
 
 TEST_F(SynthTest, TheControlSelectsATable) {
     const auto pBefore = m_pSynth->currentTable();
-    int changes = 0;
-    QObject::connect(m_pSynth.get(), &Synth::wavetableChanged, [&changes] { ++changes; });
+    // Counted through a shared_ptr, not a reference to a local: the connection
+    // lives as long as the fixture's Synth, which outlasts this function.
+    auto changes = std::make_shared<int>(0);
+    QObject::connect(m_pSynth.get(), &Synth::wavetableChanged, [changes] { ++*changes; });
     set("wavetable", 1);
     QCoreApplication::processEvents();
     EXPECT_EQ(1, m_pSynth->currentWavetable());
-    EXPECT_EQ(1, changes);
+    EXPECT_EQ(1, *changes);
     EXPECT_DOUBLE_EQ(wavetable::kBuiltinFrames, get("wt_frames"));
     EXPECT_NE(pBefore, m_pSynth->currentTable());
 }

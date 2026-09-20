@@ -97,7 +97,7 @@ class AccessibleTableCell : public QAccessibleInterface, public QAccessibleTable
         st.focusable = true;
         st.selected = isSelected();
         QQuickTableView* pView = m_pTable->view();
-        const QItemSelectionModel* pSelection = m_pTable->selection();
+        const QItemSelectionModel* pSelection = m_pTable->selectionModel();
         st.focused = pView->hasActiveFocus() && pSelection &&
                 pSelection->currentIndex().row() == m_row;
         // A row scrolled out of view has no delegate: still there, just not on screen.
@@ -114,7 +114,7 @@ class AccessibleTableCell : public QAccessibleInterface, public QAccessibleTable
 
     // QAccessibleTableCellInterface
     bool isSelected() const override {
-        const QItemSelectionModel* pSelection = m_pTable->selection();
+        const QItemSelectionModel* pSelection = m_pTable->selectionModel();
         return pSelection && pSelection->isRowSelected(m_row, QModelIndex());
     }
     QList<QAccessibleInterface*> columnHeaderCells() const override {
@@ -194,7 +194,7 @@ void AccessibleTableWatcher::wireSelection() {
     if (m_pSelection) {
         disconnect(m_pSelection, nullptr, this, nullptr);
     }
-    m_pSelection = m_pTable->selection();
+    m_pSelection = m_pTable->selectionModel();
     if (m_pSelection) {
         connect(m_pSelection,
                 &QItemSelectionModel::currentChanged,
@@ -264,7 +264,7 @@ QAbstractItemModel* AccessibleTable::model() const {
     return qobject_cast<QAbstractItemModel*>(view()->model().value<QObject*>());
 }
 
-QItemSelectionModel* AccessibleTable::selection() const {
+QItemSelectionModel* AccessibleTable::selectionModel() const {
     return view()->selectionModel();
 }
 
@@ -402,7 +402,8 @@ int AccessibleTable::selectedCellCount() const {
 QList<QAccessibleInterface*> AccessibleTable::selectedCells() const {
     QList<QAccessibleInterface*> cells;
     const int columns = columnCount();
-    for (const int row : selectedRows()) {
+    const QList<int> rows = selectedRows();
+    for (const int row : rows) {
         for (int c = 0; c < columns; ++c) {
             cells.append(cellAt(row, c));
         }
@@ -447,12 +448,13 @@ QList<int> AccessibleTable::selectedColumns() const {
 
 QList<int> AccessibleTable::selectedRows() const {
     QList<int> rows;
-    const QItemSelectionModel* pSelection = selection();
+    const QItemSelectionModel* pSelection = selectionModel();
     if (!pSelection) {
         return rows;
     }
     const int count = rowCount();
-    for (const QModelIndex& index : pSelection->selectedIndexes()) {
+    const QModelIndexList selected = pSelection->selectedIndexes();
+    for (const QModelIndex& index : selected) {
         if (index.row() < count && !rows.contains(index.row())) {
             rows.append(index.row());
         }
@@ -467,12 +469,12 @@ bool AccessibleTable::isColumnSelected(int column) const {
 }
 
 bool AccessibleTable::isRowSelected(int row) const {
-    const QItemSelectionModel* pSelection = selection();
+    const QItemSelectionModel* pSelection = selectionModel();
     return pSelection && pSelection->isRowSelected(row, QModelIndex());
 }
 
 bool AccessibleTable::selectRow(int row) {
-    QItemSelectionModel* pSelection = selection();
+    QItemSelectionModel* pSelection = selectionModel();
     QAbstractItemModel* pModel = model();
     if (!pSelection || !pModel || row < 0 || row >= rowCount()) {
         return false;
@@ -490,7 +492,7 @@ bool AccessibleTable::selectColumn(int column) {
 }
 
 bool AccessibleTable::unselectRow(int row) {
-    QItemSelectionModel* pSelection = selection();
+    QItemSelectionModel* pSelection = selectionModel();
     QAbstractItemModel* pModel = model();
     if (!pSelection || !pModel || row < 0 || row >= rowCount()) {
         return false;

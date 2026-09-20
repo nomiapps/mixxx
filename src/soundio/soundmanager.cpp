@@ -602,7 +602,8 @@ QString SoundManager::routeHeadphonesForDjHardware() {
                                      .split(kDeviceListSeparator, Qt::SkipEmptyParts);
     const qsizetype consideredBefore = considered.size();
     QList<HeadphoneRouting::Device> devices;
-    for (const auto& pDevice : getDeviceList(m_config.getAPI(), true, false)) {
+    const auto deviceList = getDeviceList(m_config.getAPI(), true, false);
+    for (const auto& pDevice : deviceList) {
         devices.append({pDevice->getDeviceId(),
                 pDevice->getDisplayName(),
                 static_cast<int>(pDevice->getNumOutputChannels())});
@@ -780,7 +781,7 @@ void SoundManager::checkCallbacks() {
     QStringList names;
     for (const SoundDeviceId& id : result.stalled) {
         names.append(id.name);
-        for (const CallbackWatchdog::Sample& sample : samples) {
+        for (const CallbackWatchdog::Sample& sample : std::as_const(samples)) {
             if (sample.id == id) {
                 qWarning() << "Audio callback watchdog:" << id.name
                            << "stuck at callback" << sample.callbackCount;

@@ -7,7 +7,7 @@
 #include "control/controlobject.h"
 #include "engine/controls/bpmcontrol.h"
 #include <QElapsedTimer>
-#include <QtTest>
+#include <QTest>
 #include <cmath>
 #include "engine/sync/abletonlink.h"
 #include "engine/sync/synccontrol.h"

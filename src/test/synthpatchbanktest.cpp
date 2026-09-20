@@ -7,7 +7,8 @@
 #include <memory>
 
 #include "control/controlobject.h"
-#include "mixer/synth.h"
+#include "engine/channelhandle.h"
+#include "engine/channels/enginesynth.h"
 #include "mixer/synthpatchbank.h"
 #include "test/signalpathtest.h"
 
@@ -15,9 +16,30 @@ namespace {
 
 const QString kGroup = QStringLiteral("[Synth1]");
 
-class SynthPatchBankTest : public SignalPathTest {
+// A restart here rebuilds the bank and nothing else, which is what these cases
+// are about: the file and the persisted patch control survive, and the new
+// bank applies them to the live controls.
+//
+// Rebuilding the whole Synth instead cannot work. The Synth hands its
+// EngineSynth to the mixer, the mixer never gives a channel back, so the first
+// EngineSynth outlives it with every one of its controls. A second Synth then
+// creates them all again: a Debug build stops on the first duplicate, and a
+// release build carries on with the new channel's controls dead and these
+// tests reading the old channel's -- testing less than their names say.
+//
+// So the fixture builds once what a Synth would: the EngineSynth, which owns
+// the sound's controls, and the three the Synth itself owns that cases here
+// touch. The bank reaches all of them by key. No tracks are loaded, so this is
+// a BaseSignalPathTest rather than a SignalPathTest.
+class SynthPatchBankTest : public BaseSignalPathTest {
   protected:
     void SetUp() override {
+        BaseSignalPathTest::SetUp();
+        m_pEngineSynth = std::make_unique<EngineSynth>(
+                ChannelHandleAndGroup(ChannelHandle(), kGroup), m_pEffectsManager.get());
+        m_pBaseNote = std::make_unique<ControlObject>(ConfigKey(kGroup, QStringLiteral("base_note")));
+        m_pScaleRoot = std::make_unique<ControlObject>(ConfigKey(kGroup, QStringLiteral("scale_root")));
+        m_pWavetable = std::make_unique<ControlObject>(ConfigKey(kGroup, QStringLiteral("wavetable")));
         // An existing, empty patch file: the bank seeds a profile that has
         // none, and most cases here want empty slots to start from.
         writeUserFile("{\"version\":1,\"group\":\"[Synth1]\",\"slots\":{}}");
@@ -35,19 +57,20 @@ class SynthPatchBankTest : public SignalPathTest {
     }
 
     void TearDown() override {
-        m_pSynth.reset();
+        m_pBank.reset();
+        m_pWavetable.reset();
+        m_pScaleRoot.reset();
+        m_pBaseNote.reset();
+        m_pEngineSynth.reset();
+        BaseSignalPathTest::TearDown();
     }
 
-    // The bank lives inside the Synth and writes into the test's own settings
-    // directory, so building a second Synth is a restart: the persisted patch
-    // control and the file are what survive.
+    // A restart: the bank writes into the test's own settings directory, so a
+    // new one finds the file and the persisted patch control where the last
+    // one left them.
     void build() {
-        m_pSynth.reset();
-        m_pSynth = std::make_unique<Synth>(nullptr,
-                kGroup,
-                m_pConfig,
-                m_pEngineMixer.get(),
-                m_pEffectsManager.get());
+        m_pBank.reset();
+        m_pBank = std::make_unique<SynthPatchBank>(kGroup, m_pConfig);
     }
 
     static double get(const char* key) {
@@ -62,10 +85,14 @@ class SynthPatchBankTest : public SignalPathTest {
         set(key, 0);
     }
     SynthPatchBank* bank() const {
-        return m_pSynth->patchBank();
+        return m_pBank.get();
     }
 
-    std::unique_ptr<Synth> m_pSynth;
+    std::unique_ptr<EngineSynth> m_pEngineSynth;
+    std::unique_ptr<ControlObject> m_pBaseNote;
+    std::unique_ptr<ControlObject> m_pScaleRoot;
+    std::unique_ptr<ControlObject> m_pWavetable;
+    std::unique_ptr<SynthPatchBank> m_pBank;
 };
 
 TEST_F(SynthPatchBankTest, StartsEmptyOnSlotOne) {
@@ -206,7 +233,7 @@ TEST_F(SynthPatchBankTest, FactoryPatchesAreValid) {
 }
 
 TEST_F(SynthPatchBankTest, FreshProfileIsSeededFromTheFactory) {
-    m_pSynth.reset();
+    m_pBank.reset();
     ASSERT_TRUE(QFile::remove(userFilePath()));
     build();
     for (int slot = 1; slot <= SynthPatchBank::kSlots; ++slot) {

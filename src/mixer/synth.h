@@ -89,7 +89,14 @@ class Synth : public BasePlayer {
 
   private slots:
     void slotWavetableControlChanged(double value);
-    void slotWavetableLoaded(int index, std::shared_ptr<const Wavetable> pTable);
+    // clazy wants a name moc can resolve for a queued connection. This one is
+    // never queued: WavetableLibrary emits loaded() from its QFutureWatcher
+    // callback, on the main thread, and the connect() is pointer-to-member, so
+    // the type is matched at compile time. Moving that emit to a worker thread
+    // would need a qRegisterMetaType here. The exclusion has to sit on the line
+    // clazy reports, which is the one carrying the argument.
+    void slotWavetableLoaded(int index,
+            std::shared_ptr<const Wavetable> pTable); // clazy:exclude=fully-qualified-moc-types
     void slotWavetableLoadFailed(int index, const QString& reason);
 
   private:

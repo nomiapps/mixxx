@@ -8,6 +8,7 @@
 #include <QtDebug>
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 #include "control/controlobject.h"
 #include "control/controlpushbutton.h"
@@ -182,7 +183,7 @@ QJsonObject SynthPatchBank::captureLive() const {
 }
 
 void SynthPatchBank::applyToLive(const QJsonObject& slot) {
-    for (const ConfigKey& key : m_liveKeys) {
+    for (const ConfigKey& key : std::as_const(m_liveKeys)) {
         if (!slot.contains(key.item)) {
             continue; // an older file: leave the live value alone
         }

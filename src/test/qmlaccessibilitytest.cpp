@@ -1,3 +1,5 @@
+#include "test/qmlaccessibilitytest.h"
+
 #include <gtest/gtest.h>
 
 #include <QAccessible>
@@ -18,7 +20,7 @@
 #include "qml/qmlaccessibletable.h"
 #include "qml/qmlconfigproxy.h"
 #include "test/mixxxtest.h"
-#include "test/qmlaccessibilitytest.h"
+#include "test/newuiqmlqtversion.h"
 
 // What a screen reader gets from the New UI's continuous controls, asked through the
 // same QAccessible interfaces Qt's UI Automation bridge serves on Windows. The widgets
@@ -125,6 +127,9 @@ class QmlAccessibilityTest : public MixxxTest {
 };
 
 TEST_F(QmlAccessibilityTest, KnobIsANamedDialAScreenReaderCanReadAndSet) {
+    // load() instantiates the real skin file. The table cases below do not, so
+    // the guard goes on the three that do rather than in SetUp().
+    SKIP_IF_NEW_UI_QML_UNSUPPORTED();
     ControlPotmeter control(ConfigKey(QStringLiteral("[Channel1]"), QStringLiteral("volume")), 0.0, 1.0);
     QQuickItem* knob = load(QStringLiteral("ControlKnob"), QStringLiteral("[Channel1]"), QStringLiteral("volume"));
     ASSERT_NE(knob, nullptr);
@@ -136,6 +141,7 @@ TEST_F(QmlAccessibilityTest, KnobIsANamedDialAScreenReaderCanReadAndSet) {
 }
 
 TEST_F(QmlAccessibilityTest, MiniKnobIsNamedAndSettableToo) {
+    SKIP_IF_NEW_UI_QML_UNSUPPORTED();
     ControlPotmeter control(ConfigKey(QStringLiteral("[Channel2]"), QStringLiteral("volume")), 0.0, 1.0);
     QQuickItem* knob = load(QStringLiteral("ControlMiniKnob"), QStringLiteral("[Channel2]"), QStringLiteral("volume"));
     ASSERT_NE(knob, nullptr);
@@ -146,6 +152,7 @@ TEST_F(QmlAccessibilityTest, MiniKnobIsNamedAndSettableToo) {
 }
 
 TEST_F(QmlAccessibilityTest, FaderIsANamedSliderAScreenReaderCanReadAndSet) {
+    SKIP_IF_NEW_UI_QML_UNSUPPORTED();
     ControlPotmeter control(ConfigKey(QStringLiteral("[Channel1]"), QStringLiteral("volume")), 0.0, 1.0);
     QQuickItem* fader = load(QStringLiteral("ControlFader"), QStringLiteral("[Channel1]"), QStringLiteral("volume"));
     ASSERT_NE(fader, nullptr);
@@ -223,7 +230,7 @@ TEST_F(QmlAccessibleTableTest, ALibraryTableIsATableWithRowsColumnsAndHeaders) {
     EXPECT_EQ(pCellInfo->rowIndex(), 2);
     EXPECT_EQ(pCellInfo->columnIndex(), 1);
     ASSERT_EQ(pCellInfo->columnHeaderCells().size(), 1);
-    EXPECT_EQ(pCellInfo->columnHeaderCells().first()->text(QAccessible::Name),
+    EXPECT_EQ(pCellInfo->columnHeaderCells().constFirst()->text(QAccessible::Name),
             QStringLiteral("Header 1"));
     EXPECT_EQ(pTable->cellAt(2, 1), pCell) << "the same cell comes back, not a new one";
 

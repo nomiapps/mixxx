@@ -447,7 +447,8 @@ PROPERTY_IMPL(kVampGroup, kKeyPluginIdKey, QString, analyzerKeyPluginId, QString
 
 QVariantList QmlConfigProxy::availableBeatPlugins() const {
     QVariantList plugins;
-    for (const auto& info : AnalyzerBeats::availablePlugins()) {
+    const auto available = AnalyzerBeats::availablePlugins();
+    for (const auto& info : available) {
         plugins.append(QVariantMap{
                 {QStringLiteral("name"), info.name()},
                 {QStringLiteral("id"), info.id()},
@@ -458,7 +459,8 @@ QVariantList QmlConfigProxy::availableBeatPlugins() const {
 
 QVariantList QmlConfigProxy::availableKeyPlugins() const {
     QVariantList plugins;
-    for (const auto& info : AnalyzerKey::availablePlugins()) {
+    const auto available = AnalyzerKey::availablePlugins();
+    for (const auto& info : available) {
         plugins.append(QVariantMap{
                 {QStringLiteral("name"), info.name()},
                 {QStringLiteral("id"), info.id()},

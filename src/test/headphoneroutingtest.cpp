@@ -17,7 +17,8 @@ AudioOutput output(AudioPath::AudioPathType type, unsigned char channelBase) {
 
 int headphoneBase(const QMultiHash<SoundDeviceId, AudioOutput>& outputs,
         const SoundDeviceId& id) {
-    for (const AudioOutput& out : outputs.values(id)) {
+    const QList<AudioOutput> forDevice = outputs.values(id);
+    for (const AudioOutput& out : forDevice) {
         if (out.getType() == AudioPath::AudioPathType::Headphones) {
             return out.getChannelGroup().getChannelBase();
         }

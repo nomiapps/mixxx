@@ -35,9 +35,17 @@ const QString kSynthGroup = QStringLiteral("[Synth1]");
 const QString kSeqGroup = QStringLiteral("[Sequencer1]");
 const QString kSamplerGroup = QStringLiteral("[Sampler1]");
 
-class EngineSequencerTest : public SignalPathTest {
+// BaseSignalPathTest rather than SignalPathTest, whose only addition is loading
+// a track into three decks, which these tests do not want.
+class EngineSequencerTest : public BaseSignalPathTest {
   protected:
     void SetUp() override {
+        // The base has to run: it creates the RubberBandWorkerPool, and a deck
+        // that loads a track -- as EngineSequencerSamplerTest's do -- reaches
+        // for it. Skipped, a Debug build stops on the missing singleton; a
+        // release build, with the assertion compiled out, carries on
+        // regardless, which is why only the coverage job ever saw it.
+        BaseSignalPathTest::SetUp();
         m_pOutput = SampleUtil::alloc(kMaxEngineSamples);
         m_pSynth = new EngineSynth(
                 ChannelHandleAndGroup(ChannelHandle(), kSynthGroup), m_pEffectsManager.get());
@@ -58,6 +66,7 @@ class EngineSequencerTest : public SignalPathTest {
         delete m_pSeq;
         delete m_pSynth;
         SampleUtil::free(m_pOutput);
+        BaseSignalPathTest::TearDown();
     }
 
     void setSynth(const char* key, double value) {

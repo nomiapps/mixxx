@@ -3916,6 +3916,19 @@ else()
   find_package(QT 5.12 NAMES Qt5 COMPONENTS Core REQUIRED)
 endif()
 if(QML)
+  # The New UI's QML needs Qt 6.6: its Shapes set preferredRendererType to reach
+  # the CurveRenderer, and on an older Qt that property does not exist, so every
+  # type carrying it fails to load rather than falling back. It still builds --
+  # this is a runtime requirement of the skin, not of the C++ -- so say it once
+  # here instead of failing the configure. The tests that load New UI QML skip
+  # themselves below 6.6; see src/test/newuiqmlqtversion.h.
+  if(QT_VERSION VERSION_LESS 6.6)
+    message(
+      WARNING
+      "Qt ${QT_VERSION}: the New UI's QML will not load. It needs Qt 6.6 for "
+      "Shape.preferredRendererType. Mixxx builds, and the legacy skins run."
+    )
+  endif()
   list(APPEND QT_EXTRA_COMPONENTS "LabsQmlModels")
   list(APPEND QT_EXTRA_COMPONENTS "Multimedia")
   list(APPEND QT_EXTRA_COMPONENTS "Quick")

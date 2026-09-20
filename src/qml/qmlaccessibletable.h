@@ -92,7 +92,7 @@ class AccessibleTable : public QAccessibleQuickItem, public QAccessibleTableInte
     // For the cells and the watcher.
     QQuickTableView* view() const;
     QAbstractItemModel* model() const;
-    QItemSelectionModel* selection() const;
+    QItemSelectionModel* selectionModel() const;
     /// Model column of table column `column`, or -1.
     int modelColumn(int column) const;
     /// Table column of model column `column`, or -1 when it is hidden.
