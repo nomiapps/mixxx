@@ -3923,8 +3923,17 @@ if(QML)
   list(APPEND QT_EXTRA_COMPONENTS "QuickControls2Impl")
   list(APPEND QT_EXTRA_COMPONENTS "QuickDialogs2")
   list(APPEND QT_EXTRA_COMPONENTS "QuickLayouts")
-  # QuickPrivate: the library table's accessible interface subclasses QAccessibleQuickItem.
-  list(APPEND QT_EXTRA_COMPONENTS "QuickPrivate")
+  # QuickPrivate: the library table's accessible interface subclasses
+  # QAccessibleQuickItem. Qt installs a QuickPrivate CMake package, but Debian
+  # and Ubuntu do not ship one for Qt 6.4 (Ubuntu 24.04): there
+  # qt6-declarative-private-dev carries the private headers on their own, and
+  # only modules that are libraries in their own right -- QuickShapesPrivate
+  # below is one -- get a config file. Take the component where it exists, and
+  # fall back to QtQuick's private include directories where it does not.
+  find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS QuickPrivate)
+  if(Qt${QT_VERSION_MAJOR}QuickPrivate_FOUND)
+    list(APPEND QT_EXTRA_COMPONENTS "QuickPrivate")
+  endif()
   list(APPEND QT_EXTRA_COMPONENTS "QuickShapesPrivate")
   list(APPEND QT_EXTRA_COMPONENTS "QuickTemplates2")
   list(APPEND QT_EXTRA_COMPONENTS "QuickWidgets")
@@ -4003,6 +4012,21 @@ if(QML)
         PUBLIC Qt${QT_VERSION_MAJOR}::${component}
       )
     endforeach()
+  endif()
+  if(NOT Qt${QT_VERSION_MAJOR}QuickPrivate_FOUND)
+    # See the QuickPrivate note above: qmlaccessibletable.cpp includes QtQuick
+    # private headers that are installed without a CMake package to carry them.
+    if(NOT Qt${QT_VERSION_MAJOR}Quick_PRIVATE_INCLUDE_DIRS)
+      message(
+        FATAL_ERROR
+        "QtQuick private headers not found. Install qt6-declarative-private-dev, "
+        "or your distribution's equivalent."
+      )
+    endif()
+    target_include_directories(
+      mixxx-qml-lib
+      PUBLIC ${Qt${QT_VERSION_MAJOR}Quick_PRIVATE_INCLUDE_DIRS}
+    )
   endif()
   set_target_properties(mixxx-qml-lib PROPERTIES AUTOMOC ON)
   set_source_files_properties(
