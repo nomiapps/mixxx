@@ -7,6 +7,7 @@ Item {
     id: root
 
     required property var capabilities
+    property var contextMenu: null
     property alias drag: dragHandler
     readonly property var library: Mixxx.Library
     // The row's key as text, in the app's notation, read when the context
@@ -18,6 +19,11 @@ Item {
     // mixes with it. Relayed by SourceTree.qml up to Library.qml.
     signal keySearchRequested(string keyText, bool compatible)
 
+    function openContextMenu() {
+        if (!root.contextMenu)
+            root.contextMenu = contextMenuComponent.createObject(root);
+        root.contextMenu.popup();
+    }
     function hasCapabilities(caps) {
         return (root.capabilities & caps) == caps;
     }
@@ -115,201 +121,211 @@ Item {
         acceptedButtons: Qt.LeftButton | Qt.RightButton
 
         onLongPressed: mouse => {
-            contextMenu.popup();
+            root.openContextMenu();
         }
         onTapped: (eventPoint, button) => {
             if (button === Qt.RightButton) {
-                contextMenu.popup();
+                root.openContextMenu();
             }
         }
     }
-    LibraryMenu {
-        id: contextMenu
-
-        title: qsTr("File")
-
-        // The key entries name the key, which means hydrating the track (see
-        // rowTrack). Doing that in a binding would hydrate every row as it is
-        // laid out -- the freeze rowTrack() exists to avoid -- so it happens
-        // once here, when the menu is actually opening.
-        onAboutToShow: {
-            const track = root.rowTrack();
-            root.menuKeyText = track ? track.keyText : "";
-        }
+    // The context menu is built the first time it is opened, not with the
+    // cell. Every cell of every row carries one of these, and the menu is
+    // about sixty objects -- nested menus, the deck and sampler items -- so
+    // building it eagerly was most of what it cost to lay out a screenful of
+    // rows: ~4 ms a cell, half a second for 13 rows here, seconds for a
+    // maximised window on the Surface.
+    Component {
+        id: contextMenuComponent
 
         LibraryMenu {
-            enabled: {
-                hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToDeck) || hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToSampler) || hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToPreviewDeck);
+            id: contextMenu
+
+            title: qsTr("File")
+
+            // The key entries name the key, which means hydrating the track (see
+            // rowTrack). Doing that in a binding would hydrate every row as it is
+            // laid out -- the freeze rowTrack() exists to avoid -- so it happens
+            // once here, when the menu is actually opening.
+            onAboutToShow: {
+                const track = root.rowTrack();
+                root.menuKeyText = track ? track.keyText : "";
             }
-            title: qsTr("Load to")
 
             LibraryMenu {
-                id: loadToDeckMenu
+                enabled: {
+                    hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToDeck) || hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToSampler) || hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToPreviewDeck);
+                }
+                title: qsTr("Load to")
 
-                enabled: hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToDeck)
-                title: qsTr("Deck")
+                LibraryMenu {
+                    id: loadToDeckMenu
+
+                    enabled: hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToDeck)
+                    title: qsTr("Deck")
+
+                    Instantiator {
+                        model: 4
+
+                        delegate: LibraryMenuItem {
+                            required property int index
+
+                            readonly property int menuIndex: index
+
+                            text: qsTr("Deck %1").arg(index + 1)
+
+                            onTriggered: Mixxx.PlayerManager.getPlayer(`[Channel${index + 1}]`).loadTrack(root.rowTrack())
+                        }
+
+                        onObjectAdded: (index, object) => root.insertMenuItemInOrder(loadToDeckMenu, object)
+                        onObjectRemoved: (index, object) => loadToDeckMenu.removeItem(object)
+                    }
+                }
+                // This was a title with nothing under it: "Load to > Sampler"
+                // opened an empty sliver of a menu, so the library could not put a
+                // track in a sampler at all. Same shape as the deck menu above,
+                // except the count comes from [App],num_samplers -- main.qml raises
+                // it after the skin loads, so a constant here would be a guess.
+                LibraryMenu {
+                    id: loadToSamplerMenu
+
+                    enabled: hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToSampler)
+                    title: qsTr("Sampler")
+
+                    Instantiator {
+                        model: Math.max(0, numSamplersControl.value)
+
+                        delegate: LibraryMenuItem {
+                            required property int index
+
+                            readonly property int menuIndex: index
+
+                            text: qsTr("Sampler %1").arg(index + 1)
+
+                            onTriggered: Mixxx.PlayerManager.getPlayer(`[Sampler${index + 1}]`).loadTrack(root.rowTrack())
+                        }
+
+                        onObjectAdded: (index, object) => root.insertMenuItemInOrder(loadToSamplerMenu, object)
+                        onObjectRemoved: (index, object) => loadToSamplerMenu.removeItem(object)
+                    }
+                }
+
+                // Instantiator {
+                //     id: recentFilesInstantiator
+                //     model: settings.recentFiles
+                //     delegate: MenuItem {
+                //         text: settings.displayableFilePath(modelData)
+                //         onTriggered: loadFile(modelData)
+                //     }
+
+                //     onObjectAdded: (index, object) => recentFilesMenu.insertItem(index, object)
+                //     onObjectRemoved: (index, object) => recentFilesMenu.removeItem(object)
+                // }
+            }
+            LibraryMenu {
+                id: addToPlaylistMenu
+
+                enabled: {
+                    hasCapabilities(Mixxx.LibraryTrackListModel.Capability.AddToTrackSet);
+                }
+                title: qsTr("Add to playlists")
+
+                LibraryMenuSeparator {
+                }
+                LibraryMenuItem {
+                    enabled: false // TODO implement
+                    text: qsTr("Create New Playlist")
+                }
+            }
+            LibraryMenu {
+                id: addToCrateMenu
+
+                // Refreshed each time the submenu opens so new crates show up.
+                property var crates: []
+
+                enabled: {
+                    hasCapabilities(Mixxx.LibraryTrackListModel.Capability.AddToTrackSet);
+                }
+                title: qsTr("Crates")
+
+                onAboutToShow: crates = library.crates()
 
                 Instantiator {
-                    model: 4
+                    model: addToCrateMenu.crates
 
                     delegate: LibraryMenuItem {
                         required property int index
+                        required property var modelData
 
                         readonly property int menuIndex: index
 
-                        text: qsTr("Deck %1").arg(index + 1)
+                        enabled: !modelData.locked
+                        text: modelData.name
 
-                        onTriggered: Mixxx.PlayerManager.getPlayer(`[Channel${index + 1}]`).loadTrack(root.rowTrack())
+                        onTriggered: library.addTrackToCrate(root.rowTrack(), modelData.id)
                     }
 
-                    onObjectAdded: (index, object) => root.insertMenuItemInOrder(loadToDeckMenu, object)
-                    onObjectRemoved: (index, object) => loadToDeckMenu.removeItem(object)
+                    onObjectAdded: (index, object) => root.insertMenuItemInOrder(addToCrateMenu, object)
+                    onObjectRemoved: (index, object) => addToCrateMenu.removeItem(object)
+                }
+                LibraryMenuSeparator {
+                }
+                LibraryMenuItem {
+                    enabled: false // TODO implement
+                    text: qsTr("Create New Crate")
                 }
             }
-            // This was a title with nothing under it: "Load to > Sampler"
-            // opened an empty sliver of a menu, so the library could not put a
-            // track in a sampler at all. Same shape as the deck menu above,
-            // except the count comes from [App],num_samplers -- main.qml raises
-            // it after the skin loads, so a constant here would be a guess.
             LibraryMenu {
-                id: loadToSamplerMenu
+                id: analyzeMenu
 
-                enabled: hasCapabilities(Mixxx.LibraryTrackListModel.Capability.LoadToSampler)
-                title: qsTr("Sampler")
+                enabled: {
+                    hasCapabilities(Mixxx.LibraryTrackListModel.Capability.EditMetadata) || hasCapabilities(Mixxx.LibraryTrackListModel.Capability.Analyze);
+                }
+                title: qsTr("Analyze")
 
-                Instantiator {
-                    model: Math.max(0, numSamplersControl.value)
+                LibraryMenuItem {
+                    text: qsTr("Analyze")
 
-                    delegate: LibraryMenuItem {
-                        required property int index
-
-                        readonly property int menuIndex: index
-
-                        text: qsTr("Sampler %1").arg(index + 1)
-
-                        onTriggered: Mixxx.PlayerManager.getPlayer(`[Sampler${index + 1}]`).loadTrack(root.rowTrack())
+                    onTriggered: {
+                        library.analyze(root.rowTrack());
                     }
-
-                    onObjectAdded: (index, object) => root.insertMenuItemInOrder(loadToSamplerMenu, object)
-                    onObjectRemoved: (index, object) => loadToSamplerMenu.removeItem(object)
                 }
-            }
+                LibraryMenuItem {
+                    text: qsTr("Analyze all in view")
 
-            // Instantiator {
-            //     id: recentFilesInstantiator
-            //     model: settings.recentFiles
-            //     delegate: MenuItem {
-            //         text: settings.displayableFilePath(modelData)
-            //         onTriggered: loadFile(modelData)
-            //     }
-
-            //     onObjectAdded: (index, object) => recentFilesMenu.insertItem(index, object)
-            //     onObjectRemoved: (index, object) => recentFilesMenu.removeItem(object)
-            // }
-        }
-        LibraryMenu {
-            id: addToPlaylistMenu
-
-            enabled: {
-                hasCapabilities(Mixxx.LibraryTrackListModel.Capability.AddToTrackSet);
-            }
-            title: qsTr("Add to playlists")
-
-            LibraryMenuSeparator {
-            }
-            LibraryMenuItem {
-                enabled: false // TODO implement
-                text: qsTr("Create New Playlist")
-            }
-        }
-        LibraryMenu {
-            id: addToCrateMenu
-
-            // Refreshed each time the submenu opens so new crates show up.
-            property var crates: []
-
-            enabled: {
-                hasCapabilities(Mixxx.LibraryTrackListModel.Capability.AddToTrackSet);
-            }
-            title: qsTr("Crates")
-
-            onAboutToShow: crates = library.crates()
-
-            Instantiator {
-                model: addToCrateMenu.crates
-
-                delegate: LibraryMenuItem {
-                    required property int index
-                    required property var modelData
-
-                    readonly property int menuIndex: index
-
-                    enabled: !modelData.locked
-                    text: modelData.name
-
-                    onTriggered: library.addTrackToCrate(root.rowTrack(), modelData.id)
+                    onTriggered: {
+                        tableView.model.analyzeAll();
+                    }
                 }
-
-                onObjectAdded: (index, object) => root.insertMenuItemInOrder(addToCrateMenu, object)
-                onObjectRemoved: (index, object) => addToCrateMenu.removeItem(object)
+                LibraryMenuItem {
+                    enabled: false // TODO implement
+                    text: qsTr("Reanalyze")
+                }
+                LibraryMenuItem {
+                    enabled: false // TODO implement
+                    text: qsTr("Reanalyze (constant BPM)")
+                }
+                LibraryMenuItem {
+                    enabled: false // TODO implement
+                    text: qsTr("Reanalyze (variable BPM)")
+                }
             }
             LibraryMenuSeparator {
             }
+            // Same searches the Camelot wheel runs on a click; disabled, with the
+            // generic wording, when the row has no key to search on.
             LibraryMenuItem {
-                enabled: false // TODO implement
-                text: qsTr("Create New Crate")
-            }
-        }
-        LibraryMenu {
-            id: analyzeMenu
+                enabled: root.menuKeyText.length > 0
+                text: root.menuKeyText.length > 0 ? qsTr("Find tracks in %1").arg(root.menuKeyText) : qsTr("Find tracks in this key")
 
-            enabled: {
-                hasCapabilities(Mixxx.LibraryTrackListModel.Capability.EditMetadata) || hasCapabilities(Mixxx.LibraryTrackListModel.Capability.Analyze);
-            }
-            title: qsTr("Analyze")
-
-            LibraryMenuItem {
-                text: qsTr("Analyze")
-
-                onTriggered: {
-                    library.analyze(root.rowTrack());
-                }
+                onTriggered: root.keySearchRequested(root.menuKeyText, false)
             }
             LibraryMenuItem {
-                text: qsTr("Analyze all in view")
+                enabled: root.menuKeyText.length > 0
+                text: root.menuKeyText.length > 0 ? qsTr("Find keys compatible with %1").arg(root.menuKeyText) : qsTr("Find compatible keys")
 
-                onTriggered: {
-                    tableView.model.analyzeAll();
-                }
+                onTriggered: root.keySearchRequested(root.menuKeyText, true)
             }
-            LibraryMenuItem {
-                enabled: false // TODO implement
-                text: qsTr("Reanalyze")
-            }
-            LibraryMenuItem {
-                enabled: false // TODO implement
-                text: qsTr("Reanalyze (constant BPM)")
-            }
-            LibraryMenuItem {
-                enabled: false // TODO implement
-                text: qsTr("Reanalyze (variable BPM)")
-            }
-        }
-        LibraryMenuSeparator {
-        }
-        // Same searches the Camelot wheel runs on a click; disabled, with the
-        // generic wording, when the row has no key to search on.
-        LibraryMenuItem {
-            enabled: root.menuKeyText.length > 0
-            text: root.menuKeyText.length > 0 ? qsTr("Find tracks in %1").arg(root.menuKeyText) : qsTr("Find tracks in this key")
-
-            onTriggered: root.keySearchRequested(root.menuKeyText, false)
-        }
-        LibraryMenuItem {
-            enabled: root.menuKeyText.length > 0
-            text: root.menuKeyText.length > 0 ? qsTr("Find keys compatible with %1").arg(root.menuKeyText) : qsTr("Find compatible keys")
-
-            onTriggered: root.keySearchRequested(root.menuKeyText, true)
         }
     }
     Mixxx.ControlProxy {
