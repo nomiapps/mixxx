@@ -53,6 +53,7 @@ CmdlineArgs::CmdlineArgs()
           m_startAutoDJ(false),
           m_rescanLibrary(false),
           m_controllerDebug(false),
+          m_mmccPort(0),
           m_controllerAbortOnWarning(false),
           m_developer(false),
           m_stats(false),
@@ -410,6 +411,17 @@ bool CmdlineArgs::parse(const QStringList& arguments, CmdlineArgs::ParseMode mod
                             : QString());
     parser.addOption(controllerPreviewScreens);
 
+    const QCommandLineOption mmccPort(QStringLiteral("mmcc-port"),
+            forUserFeedback ? QCoreApplication::translate("CmdlineArgs",
+                                      "Starts the MMCC adapter, a control "
+                                      "server for the MMCC hub, on this "
+                                      "port of the loopback interface "
+                                      "(1-65535, the MMCC default is 47021). "
+                                      "Off unless given.")
+                            : QString(),
+            QStringLiteral("port"));
+    parser.addOption(mmccPort);
+
     if (forUserFeedback) {
         // We know form the first path, that there will be likely an error message, check again.
         // This is not the case if the user uses a Qt internal option that is unknown
@@ -475,6 +487,17 @@ bool CmdlineArgs::parse(const QStringList& arguments, CmdlineArgs::ParseMode mod
     m_useLegacySpinny = parser.isSet(enableLegacySpinny);
     m_controllerDebug = parser.isSet(controllerDebug) || parser.isSet(controllerDebugDeprecated);
     m_controllerPreviewScreens = parser.isSet(controllerPreviewScreens);
+    if (parser.isSet(mmccPort)) {
+        bool ok = false;
+        const int port = parser.value(mmccPort).toInt(&ok);
+        if (ok && port >= 1 && port <= 65535) {
+            m_mmccPort = port;
+        } else {
+            fputs("\nmmcc-port wasn't a port from 1 to 65535!\n"
+                  "The MMCC adapter stays off.\n",
+                    stdout);
+        }
+    }
     m_controllerAbortOnWarning = parser.isSet(controllerAbortOnWarning);
     m_developer = parser.isSet(developer);
     m_stats = parser.isSet(stats);

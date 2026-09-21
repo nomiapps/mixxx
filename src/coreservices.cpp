@@ -33,6 +33,7 @@
 #include "library/trackcollectionmanager.h"
 #include "mixer/playerinfo.h"
 #include "mixer/playermanager.h"
+#include "mmcc/mmccadapter.h"
 #include "moc_coreservices.cpp"
 #include "preferences/dialog/dlgpreferences.h"
 #include "preferences/settingsmanager.h"
@@ -811,6 +812,15 @@ void CoreServices::initialize(QApplication* pApp) {
         }
     }
 
+    // Off unless --mmcc-port was given: without it no server object exists.
+    // Created last, when every deck, sampler and effect unit has its controls.
+    if (m_cmdlineArgs.getMmccPort() > 0) {
+        mmcc::MmccAdapterConfig mmccConfig;
+        mmccConfig.port = static_cast<quint16>(m_cmdlineArgs.getMmccPort());
+        m_pMmccAdapter = std::make_unique<mmcc::MmccAdapter>(
+                mmccConfig, &PlayerInfo::instance());
+    }
+
     m_isInitialized = true;
 
     ControllerScriptEngineBase::registerPlayerManager(getPlayerManager());
@@ -926,6 +936,10 @@ void CoreServices::finalize() {
 
     Timer t("CoreServices::~CoreServices");
     t.start();
+
+    // The MMCC adapter stops accepting and closes its sockets before anything
+    // it reads from is torn down.
+    m_pMmccAdapter.reset();
 
 #ifdef MIXXX_USE_QML
     // Delete all the QML singletons in order to prevent controller leaks

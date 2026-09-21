@@ -1514,6 +1514,9 @@ add_library(
   src/mixer/wavetablelibrary.cpp
   src/mixxxapplication.cpp
   src/mixxxmainwindow.cpp
+  src/mmcc/mmccadapter.cpp
+  src/mmcc/mmccpathtable.cpp
+  src/mmcc/mmccsession.cpp
   src/musicbrainz/chromaprinter.cpp
   src/musicbrainz/crc.cpp
   src/musicbrainz/gzip.cpp
@@ -2977,6 +2980,7 @@ if(BUILD_TESTING)
     #src/test/metaknob_link_test.cpp
     src/test/midicontrollertest.cpp
     src/test/mixxxtest.cpp
+    src/test/mmccadapter_test.cpp
     src/test/mock_networkaccessmanager.cpp
     src/test/musicbrainzrecordingstasktest.cpp
     src/test/performancetimer_test.cpp

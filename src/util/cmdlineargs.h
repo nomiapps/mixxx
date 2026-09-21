@@ -42,6 +42,10 @@ class CmdlineArgs final {
     bool getControllerPreviewScreens() const {
         return m_controllerPreviewScreens;
     }
+    /// The loopback port of the MMCC adapter; 0 means the adapter is off.
+    int getMmccPort() const {
+        return m_mmccPort;
+    }
     bool getControllerAbortOnWarning() const {
         return m_controllerAbortOnWarning;
     }
@@ -115,6 +119,7 @@ class CmdlineArgs final {
     bool m_rescanLibrary;
     bool m_controllerDebug;
     bool m_controllerPreviewScreens;
+    int m_mmccPort;                  // 0 = no MMCC adapter
     bool m_controllerAbortOnWarning; // Controller Engine will be stricter
     bool m_developer; // Developer Mode
     bool m_stats;     // Enable stats collection

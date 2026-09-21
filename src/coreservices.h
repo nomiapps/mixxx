@@ -25,6 +25,10 @@ class SkinControls;
 class ControlPushButton;
 struct LibraryScanResultSummary;
 
+namespace mmcc {
+class MmccAdapter;
+} // namespace mmcc
+
 namespace mixxx {
 
 class ControlIndicatorTimer;
@@ -147,6 +151,10 @@ class CoreServices : public QObject {
     std::shared_ptr<mixxx::ScreensaverManager> m_pScreensaverManager;
 
     std::unique_ptr<SkinControls> m_pSkinControls;
+    // The MMCC adapter (--mmcc-port). Null unless the option was given. A
+    // main-thread object over controls the engine, the effects and the
+    // players own, so finalize() drops it before any of them.
+    std::unique_ptr<mmcc::MmccAdapter> m_pMmccAdapter;
     std::unique_ptr<ControlPushButton> m_pTouchShift;
 
     Timer m_runtime_timer;
