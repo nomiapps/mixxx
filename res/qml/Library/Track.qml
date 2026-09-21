@@ -101,6 +101,12 @@ Item {
     DragHandler {
         id: dragHandler
 
+        // Not touch. A finger swiping up the table landed on a row and started
+        // a track drag-and-drop instead of scrolling -- grabToImage, then a
+        // system QDrag, on every swipe -- and scrolling the library on the
+        // Surface's touchscreen crashed Mixxx that way, twice in a row.
+        // Touch still loads a track by double tap or the long-press menu.
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad | PointerDevice.Stylus
         target: value
     }
     TapHandler {
