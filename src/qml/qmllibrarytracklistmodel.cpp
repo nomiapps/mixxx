@@ -110,23 +110,21 @@ QVariant QmlLibraryTrackListModel::data(const QModelIndex& proxyIndex, int role)
                         .toDouble());
     }
     case CoverArt: {
-        QString location;
-        if (pTrackTableModel != nullptr) {
-            location = QIdentityProxyModel::data(
-                    proxyIndex.siblingAtColumn(pTrackTableModel->fieldIndex(
-                            ColumnCache::COLUMN_TRACKLOCATIONSTABLE_LOCATION)),
-                    Qt::DisplayRole)
-                               .toString();
-        } else if (pTrackModel != nullptr) {
-            auto pTrack = pTrackModel->getTrack(
-                    QIdentityProxyModel::mapToSource(proxyIndex));
-            location = pTrack->getCoverInfo().coverLocation;
-        }
-        if (location.isEmpty()) {
+        // From the cover columns the library already holds for this row. The
+        // URL used to carry only the track location, so the image provider had
+        // to load the whole Track to learn where its cover was -- a blocking
+        // call into the GUI thread that read the database and opened the audio
+        // file, for every cover cell the table laid out, and for rows with no
+        // cover at all. On an SD card that made the library crawl.
+        if (pTrackModel == nullptr) {
             return {};
         }
-
-        return AsyncImageProvider::trackLocationToCoverArtUrl(location);
+        const CoverInfo coverInfo = pTrackModel->getCoverInfo(
+                QIdentityProxyModel::mapToSource(proxyIndex));
+        if (!coverInfo.hasImage()) {
+            return {};
+        }
+        return AsyncImageProvider::coverInfoToCoverArtUrl(coverInfo);
     }
     case FileURL: {
         if (pTrackModel == nullptr) {

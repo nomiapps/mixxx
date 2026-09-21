@@ -73,6 +73,11 @@ class AsyncImageProvider : public QQuickAsyncImageProvider {
     static const QString kProviderName;
     static QUrl trackLocationToCoverArtUrl(const QString& trackLocation);
     static QString coverArtUrlIdToTrackLocation(const QString& coverArtUrlId);
+    /// A URL that carries everything needed to load the cover, so loading it
+    /// never has to look up the track. The image digest is part of it, so a
+    /// changed cover is a new URL and is not served from Qt's image cache.
+    static QUrl coverInfoToCoverArtUrl(const CoverInfo& coverInfo);
+    static CoverInfo coverArtUrlIdToCoverInfo(const QString& coverArtUrlId);
 
   private:
     QThreadPool pool;
