@@ -1721,9 +1721,6 @@ add_library(
   src/waveform/renderers/waveformrendererhsv.cpp
   src/waveform/renderers/waveformrendererpreroll.cpp
   src/waveform/renderers/waveformrendererrgb.cpp
-  src/waveform/renderers/waveformfilteredcolumns.cpp
-  src/waveform/renderers/waveformstemcolumns.cpp
-  src/waveform/renderers/waveformtextureimage.cpp
   src/waveform/renderers/waveformrenderersignalbase.cpp
   src/waveform/renderers/waveformrenderersimplesignal.cpp
   src/waveform/renderers/waveformrendermark.cpp
@@ -3977,6 +3974,44 @@ if(QT_EXTRA_COMPONENTS)
   endforeach()
 endif()
 
+# The waveform helpers that both renderer stacks share: the widget renderers in
+# mixxx-lib and the scene-graph ones in mixxx-qml-lib. They were in mixxx-lib,
+# and mixxx-qml-lib calls them, but only mixxx-lib -> mixxx-qml-lib can be
+# declared (the other way pulls mixxx-lib's GL rendergraph into a target built
+# for the scene graph). So CMake linked mixxx-lib first, and a single-pass
+# linker -- GNU ld.bfd, which the Flatpak build uses -- never went back for
+# objects nothing in mixxx-lib asks for itself. mold, lld and MSVC do not care
+# about the order, which is why only the aarch64 Flatpak failed.
+#
+# A library of their own, below both, has no cycle to resolve. They are pure
+# functions over WaveformData, needing Qt and headers but nothing of mixxx-lib's
+# own code, so they can live under it.
+add_library(
+  mixxx-waveform-helpers
+  STATIC
+  EXCLUDE_FROM_ALL
+  src/waveform/renderers/waveformfilteredcolumns.cpp
+  src/waveform/renderers/waveformstemcolumns.cpp
+  src/waveform/renderers/waveformtextureimage.cpp
+)
+target_include_directories(
+  mixxx-waveform-helpers
+  PUBLIC src "${CMAKE_CURRENT_BINARY_DIR}/src"
+)
+target_link_libraries(
+  mixxx-waveform-helpers
+  PUBLIC Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui
+)
+# As rendergraph_gl and rendergraph_sg do: packWaveformTexture's
+# VERIFY_OR_DEBUG_ASSERT must still assert in a Debug build now that it is
+# compiled here, not in mixxx-lib.
+target_compile_definitions(
+  mixxx-waveform-helpers
+  PUBLIC $<$<CONFIG:Debug>:MIXXX_DEBUG_ASSERTIONS_ENABLED>
+)
+mixxx_target_warnings_fatal(mixxx-waveform-helpers PRIVATE)
+target_link_libraries(mixxx-lib PUBLIC mixxx-waveform-helpers)
+
 if(QT_KNOWN_POLICY_QTP0002 AND ANDROID)
   qt6_policy(SET QTP0002 NEW)
 endif()
@@ -4067,6 +4102,8 @@ if(QML)
       res/qml/Mixxx/PlayerDropArea.qml
   )
   target_link_libraries(mixxx-lib PRIVATE mixxx-qml-lib)
+  # See mixxx-waveform-helpers: declared here so it links after this library.
+  target_link_libraries(mixxx-qml-lib PRIVATE mixxx-waveform-helpers)
 
   # FIXME: Currently we need to add these include directories due to
   # QTBUG-87221. We should figure out a better way to fix this.
@@ -5430,6 +5467,8 @@ endif()
 find_package(Microsoft.GSL CONFIG)
 if(Microsoft.GSL_FOUND)
   target_link_libraries(mixxx-lib PRIVATE Microsoft.GSL::GSL)
+  # util/macros.h, which waveform.h reaches through audio/signalinfo.h.
+  target_link_libraries(mixxx-waveform-helpers PRIVATE Microsoft.GSL::GSL)
   if(QML)
     target_link_libraries(mixxx-qml-lib PRIVATE Microsoft.GSL::GSL)
     target_link_libraries(mixxx-qml-libplugin PRIVATE Microsoft.GSL::GSL)
