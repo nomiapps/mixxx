@@ -3,11 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-// QmlLibraryProxy::get() returns a Library*, and emitting its signal needs the
-// complete type, not the forward declaration the proxy header carries.
-#include "library/library.h"
 #include "moc_qmlwaveformoverview.cpp"
-#include "qmllibraryproxy.h"
 #include "qmlplayerproxy.h"
 #include "qmltrackproxy.h"
 #include "track/track.h"
@@ -80,17 +76,18 @@ void QmlWaveformOverview::setTrack(QmlTrackProxy* pTrack) {
                 this,
                 &QmlWaveformOverview::slotWaveformUpdated);
 
-        // Ask for the summary when the track has never been analysed. paint()
-        // draws nothing without one and nothing else was requesting it, so an
-        // unanalysed track showed an empty overview and went on showing it.
-        // The waveform display beside it asks for its own data exactly this
-        // way, which is why that one filled in and only the overview stayed
-        // blank. The analyser reports progress through waveformSummaryUpdated,
-        // connected just above, so the overview draws as it is generated.
-        const TrackPointer pTrackInternal = pTrack->internal();
-        if (!pTrackInternal->getWaveformSummary() && pTrackInternal->getId().isValid()) {
-            emit QmlLibraryProxy::get() -> analyzeTracks({pTrackInternal->getId()});
-        }
+        // Do not ask the library to analyse the track here. Every overview sits
+        // on a deck or sampler, and every player already analyses what it loads
+        // (PlayerManager::slotAnalyzeTrack), reporting progress through
+        // waveformSummaryUpdated, connected just above, so the overview draws
+        // as the waveform is generated.
+        //
+        // Asking the library as well made it worse, not better. Its batch
+        // analysis took the track first and hung its unfinished waveform on it;
+        // the player's analyser then saw a waveform, skipped generating one,
+        // and went on to beats and key -- and the library pauses its own
+        // analysis for as long as a player's analyser is busy. So the waveform
+        // stood half-drawn or blank until the deck's analysis finished.
     }
     slotWaveformUpdated();
 }
