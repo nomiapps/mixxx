@@ -632,6 +632,9 @@ class Track : public QObject {
     ConstWaveformPointer m_waveformSummary;
 
     mixxx::BeatsImporterPointer m_pBeatsImporterPending;
+    /// A BPM that could not be turned into a beat grid yet because
+    /// the sample rate was still unknown, see trySetBpmWhileLocked()
+    mixxx::Bpm m_pendingBpm;
     std::unique_ptr<mixxx::CueInfoImporter> m_pCueInfoImporterPending;
 
     friend class TrackDAO;

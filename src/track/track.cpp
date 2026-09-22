@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <atomic>
 #include <cmath>
+#include <utility>
 
 #include "library/library_prefs.h"
 #include "moc_track.cpp"
@@ -112,6 +113,11 @@ Track::~Track() {
     if (m_pBeatsImporterPending && !m_pBeatsImporterPending->isEmpty()) {
         kLogger.warning()
                 << "Import of beats is still pending and discarded";
+    }
+    if (m_pendingBpm.isValid()) {
+        kLogger.warning()
+                << "Setting of BPM" << m_pendingBpm
+                << "is still pending and discarded";
     }
     if (m_pCueInfoImporterPending && !m_pCueInfoImporterPending->isEmpty()) {
         kLogger.warning()
@@ -392,8 +398,24 @@ bool Track::trySetBpmWhileLocked(mixxx::Bpm bpm) {
     if (!bpm.isValid()) {
         // If the user sets the BPM to an invalid value, we assume
         // they want to clear the beatgrid.
+        m_pendingBpm = mixxx::Bpm{};
         return trySetBeatsWhileLocked(nullptr);
     } else if (!m_pBeats) {
+        if (!getSampleRate().isValid()) {
+            // A beat grid cannot be created without the sample rate, which
+            // is still unknown e.g. when the BPM has been imported from file
+            // tags while the audio properties could not be read (seen with
+            // STEM files, #16846). Keep the BPM until the audio stream has
+            // been opened, see updateStreamInfoFromSource().
+            if (kLogger.debugEnabled()) {
+                kLogger.debug()
+                        << "Setting BPM" << bpm
+                        << "is pending until the actual sample rate becomes available:"
+                        << getLocation();
+            }
+            m_pendingBpm = bpm;
+            return false;
+        }
         // No beat grid available -> create and initialize
         mixxx::audio::FramePos cuePosition = m_record.getMainCuePosition();
         if (!cuePosition.isValid()) {
@@ -1260,7 +1282,8 @@ Track::ImportStatus Track::tryImportBeats(
 
 Track::ImportStatus Track::getBeatsImportStatus() const {
     const auto locked = lockMutex(&m_qMutex);
-    return (!m_pBeatsImporterPending || m_pBeatsImporterPending->isEmpty())
+    return ((!m_pBeatsImporterPending || m_pBeatsImporterPending->isEmpty()) &&
+                   !m_pendingBpm.isValid())
             ? ImportStatus::Complete
             : ImportStatus::Pending;
 }
@@ -1918,12 +1941,13 @@ void Track::updateStreamInfoFromSource(
     bool updated = m_record.updateStreamInfoFromSource(streamInfo);
 
     const bool importBeats = m_pBeatsImporterPending && !m_pBeatsImporterPending->isEmpty();
+    const bool setPendingBpm = m_pendingBpm.isValid();
     const bool importCueInfos = m_pCueInfoImporterPending && !m_pCueInfoImporterPending->isEmpty();
 #ifdef __STEM__
     const bool importStemInfos = mixxx::StemInfoImporter::maybeStemFile(getLocation());
 #endif
 
-    if (!importBeats && !importCueInfos
+    if (!importBeats && !setPendingBpm && !importCueInfos
 #ifdef __STEM__
             && !importStemInfos
 #endif
@@ -1941,6 +1965,17 @@ void Track::updateStreamInfoFromSource(
         kLogger.debug() << "Finishing deferred import of beats because stream "
                            "audio properties are available now";
         beatsImported = importPendingBeatsWhileLocked();
+    }
+
+    if (setPendingBpm) {
+        // Imported beats take precedence over a BPM that was
+        // pending on the sample rate
+        const auto pendingBpm = std::exchange(m_pendingBpm, mixxx::Bpm{});
+        if (!m_pBeats) {
+            kLogger.debug() << "Setting deferred BPM because stream "
+                               "audio properties are available now";
+            beatsImported |= trySetBpmWhileLocked(pendingBpm);
+        }
     }
 
     auto cuesImported = false;

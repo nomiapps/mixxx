@@ -147,4 +147,56 @@ TEST_F(TrackUpdateTest, parseModifiedDirtyAgain) {
     EXPECT_EQ(coverInfoBefore, coverInfoAfter);
 }
 
+TEST_F(TrackUpdateTest, importBpmWithoutValidSampleRate) {
+    // Importing metadata that carries a valid BPM while the audio
+    // properties are unknown must neither crash nor drop the BPM.
+    // Seen with STEM files whose audio properties cannot be parsed
+    // (https://github.com/mixxxdj/mixxx/issues/16846).
+    auto pTrack = newTestTrack();
+    ASSERT_FALSE(pTrack->getSampleRate().isValid());
+
+    mixxx::TrackMetadata importedMetadata;
+    importedMetadata.refTrackInfo().setBpm(mixxx::Bpm(128.0));
+    pTrack->replaceMetadataFromSource(
+            std::move(importedMetadata),
+            QDateTime::currentDateTimeUtc());
+
+    // The beat grid is created as soon as the sample rate is known
+    EXPECT_EQ(nullptr, pTrack->getBeats());
+    EXPECT_EQ(Track::ImportStatus::Pending, pTrack->getBeatsImportStatus());
+
+    // Opening the audio stream provides the actual sample rate
+    ASSERT_NE(nullptr, SoundSourceProxy(pTrack).openAudioSource());
+    ASSERT_TRUE(pTrack->getSampleRate().isValid());
+
+    EXPECT_EQ(Track::ImportStatus::Complete, pTrack->getBeatsImportStatus());
+    ASSERT_NE(nullptr, pTrack->getBeats());
+    EXPECT_EQ(pTrack->getSampleRate(), pTrack->getBeats()->getSampleRate());
+    EXPECT_DOUBLE_EQ(128.0, pTrack->getBpm());
+}
+
+TEST_F(TrackUpdateTest, importBpmWithoutValidSampleRateYieldsToBeats) {
+    // Beats that arrive before the sample rate is known win over
+    // a BPM that is still waiting for it.
+    auto pTrack = newTestTrack();
+    ASSERT_FALSE(pTrack->getSampleRate().isValid());
+
+    mixxx::TrackMetadata importedMetadata;
+    importedMetadata.refTrackInfo().setBpm(mixxx::Bpm(128.0));
+    pTrack->replaceMetadataFromSource(
+            std::move(importedMetadata),
+            QDateTime::currentDateTimeUtc());
+    EXPECT_EQ(Track::ImportStatus::Pending, pTrack->getBeatsImportStatus());
+
+    const auto pBeats = mixxx::Beats::fromConstTempo(
+            mixxx::audio::SampleRate(44100),
+            mixxx::audio::kStartFramePos,
+            mixxx::Bpm(100.0));
+    EXPECT_TRUE(pTrack->trySetBeats(pBeats));
+    ASSERT_NE(nullptr, SoundSourceProxy(pTrack).openAudioSource());
+
+    EXPECT_EQ(Track::ImportStatus::Complete, pTrack->getBeatsImportStatus());
+    EXPECT_EQ(pBeats, pTrack->getBeats());
+}
+
 // TODO: Add tests for SoundSourceProxy::UpdateTrackFromSourceMode::Newer
