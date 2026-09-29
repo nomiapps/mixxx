@@ -1203,6 +1203,7 @@ add_library(
   src/control/controlttrotary.cpp
   src/controllers/controller.cpp
   src/controllers/controllerenumerator.cpp
+  src/controllers/controllerhotplugwatcher.cpp
   src/controllers/controllerinputmappingtablemodel.cpp
   src/controllers/controllerlearningeventfilter.cpp
   src/controllers/controllermanager.cpp
@@ -4882,6 +4883,9 @@ elseif(WIN32)
         gdi32 # libshout
     )
   endif()
+  # Controller hotplug: RegisterDeviceNotification (user32) and the live WinMM
+  # MIDI device list (winmm), called directly rather than through a library.
+  target_link_libraries(mixxx-lib PRIVATE user32 winmm)
 endif()
 
 if(APPLE OR WIN32)

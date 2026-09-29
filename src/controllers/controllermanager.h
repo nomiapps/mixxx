@@ -1,7 +1,10 @@
 #pragma once
 
+#include <QMap>
 #include <QMutex>
+#include <QSet>
 #include <QSharedPointer>
+#include <QStringList>
 #include <QTimer>
 #include <memory>
 #include <vector>
@@ -12,6 +15,7 @@
 
 // Forward declaration(s)
 class Controller;
+class ControllerHotplugWatcher;
 class ControllerLearningEventFilter;
 class MappingInfoEnumerator;
 class LegacyControllerMapping;
@@ -52,6 +56,13 @@ class ControllerManager : public QObject {
     void requestShutdown();
     void requestInitialize();
     void mappingApplied(bool applied);
+    /// Controllers plugged in while Mixxx runs. `opened`: rescanned and running
+    /// their mapping. `notOpened`: seen, but not enabled or without a mapping,
+    /// or, when `rescanned` is false, left alone because a controller already
+    /// in use would have been reopened by the rescan.
+    void controllersPluggedIn(const QStringList& opened,
+            const QStringList& notOpened,
+            bool rescanned);
 
   public slots:
     void slotApplyMapping(Controller* pController,
@@ -69,9 +80,16 @@ class ControllerManager : public QObject {
     void slotShutdown();
     /// Calls poll() on all devices that have isPolling() true.
     void slotPollDevices();
+    /// The OS reported a device change: start (or restart) the settle timer.
+    void slotHotplugEvent();
+    /// Compare what is plugged in now with the last scan, and rescan if a
+    /// controller arrived.
+    void slotCheckForNewDevices();
 
   private:
     void updateControllerList();
+    /// Union of every enumerator's presentDevices().
+    QMap<QString, QString> presentDevices() const;
     void startPolling();
     void stopPolling();
     void pollIfAnyControllersOpen();
@@ -100,4 +118,19 @@ class ControllerManager : public QObject {
     QSharedPointer<MappingInfoEnumerator> m_pMainThreadSystemMappingEnumerator;
     /// Accessed only from the ControllerManager thread via slotPollDevices().
     bool m_skipPoll;
+
+    // Hotplug. All of it lives on the ControllerManager thread.
+    std::unique_ptr<ControllerHotplugWatcher> m_pHotplugWatcher;
+    /// Collects a burst of OS device events (one USB device raises several) into
+    /// one check, and retries while the device is still settling.
+    QTimer m_hotplugTimer;
+    int m_hotplugChecksLeft;
+    /// False until the first slotSetUpDevices(): before it there is no baseline,
+    /// and startup opens every controller anyway.
+    bool m_hotplugArmed;
+    /// presentDevices() as of the last scan, and the ids from it seen missing
+    /// since. A device back after being missing was replugged: its Controller
+    /// is dead and must be rebuilt.
+    QMap<QString, QString> m_presentAtLastScan;
+    QSet<QString> m_absentSinceLastScan;
 };

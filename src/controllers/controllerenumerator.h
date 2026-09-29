@@ -1,7 +1,9 @@
 #pragma once
 
 #include <QList>
+#include <QMap>
 #include <QObject>
+#include <QString>
 
 class Controller;
 
@@ -18,4 +20,13 @@ class ControllerEnumerator : public QObject {
     virtual ~ControllerEnumerator();
 
     virtual QList<Controller*> queryDevices() = 0;
+
+    /// The devices this enumerator would offer right now, keyed by an id that
+    /// stays the same while a device stays plugged in, and mapped to the name its
+    /// Controller would get. Read without touching any Controller, so it can run
+    /// whenever the OS reports a device change. An enumerator that cannot tell
+    /// returns nothing; its devices are then picked up only by a rescan.
+    virtual QMap<QString, QString> presentDevices() const {
+        return {};
+    }
 };

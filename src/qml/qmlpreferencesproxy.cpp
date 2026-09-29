@@ -650,6 +650,11 @@ QmlControllerManagerProxy::QmlControllerManagerProxy(
             &ControllerManager::devicesChanged,
             this,
             &QmlControllerManagerProxy::refreshKnownDevices);
+
+    connect(m_pControllerManager.get(),
+            &ControllerManager::controllersPluggedIn,
+            this,
+            &QmlControllerManagerProxy::controllersPluggedIn);
 }
 
 void QmlControllerManagerProxy::loadMappingFromEnumerator(

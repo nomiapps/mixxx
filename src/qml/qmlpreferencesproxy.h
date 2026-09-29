@@ -387,6 +387,10 @@ class QmlControllerManagerProxy : public QObject {
 
   signals:
     void deviceListChanged();
+    /// Forwarded from ControllerManager: controllers plugged in while Mixxx runs.
+    void controllersPluggedIn(const QStringList& opened,
+            const QStringList& notOpened,
+            bool rescanned);
 
   private:
     static inline std::shared_ptr<ControllerManager> s_pControllerManager;

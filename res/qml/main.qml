@@ -1061,6 +1061,20 @@ ApplicationWindow {
 
             target: Mixxx.SoundManager
         }
+        // A controller plugged in while Mixxx runs: picked up without a
+        // restart, and said so, because otherwise nothing on screen changes.
+        Connections {
+            function onControllersPluggedIn(opened, notOpened, rescanned) {
+                if (opened.length > 0)
+                    audioToast.show(qsTr("%1 connected").arg(opened.join(", ")), 5000);
+                else if (rescanned)
+                    audioToast.show(qsTr("%1 plugged in. Set it up in Settings > Controllers.").arg(notOpened.join(", ")), 10000);
+                else
+                    audioToast.show(qsTr("%1 plugged in. To use it, press Rescan in Settings > Controllers (this restarts the controller in use).").arg(notOpened.join(", ")), 12000);
+            }
+
+            target: Mixxx.ControllerManager
+        }
     }
     Skin.KeywheelPopup {
         id: keywheelPopup

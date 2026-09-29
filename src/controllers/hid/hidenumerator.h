@@ -12,6 +12,7 @@ class HidEnumerator : public ControllerEnumerator {
     ~HidEnumerator() override;
 
     QList<Controller*> queryDevices() override;
+    QMap<QString, QString> presentDevices() const override;
 
   private:
     QList<Controller*> m_devices;

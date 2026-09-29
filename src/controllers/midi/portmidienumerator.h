@@ -11,6 +11,7 @@ class PortMidiEnumerator : public MidiEnumerator {
     ~PortMidiEnumerator() override;
 
     QList<Controller*> queryDevices() override;
+    QMap<QString, QString> presentDevices() const override;
 
   private:
     QList<Controller*> m_devices;

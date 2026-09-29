@@ -24,8 +24,12 @@ namespace hid {
 #ifndef __ANDROID__
 constexpr unsigned short kGenericDesktopUsagePage = 0x01;
 
+constexpr unsigned short kGenericDesktopPointerUsage = 0x01;
 constexpr unsigned short kGenericDesktopMouseUsage = 0x02;
 constexpr unsigned short kGenericDesktopKeyboardUsage = 0x06;
+constexpr unsigned short kGenericDesktopSystemControlUsage = 0x80;
+constexpr unsigned short kConsumerUsagePage = 0x0C;
+constexpr unsigned short kDigitizerUsagePage = 0x0D;
 #endif
 
 // Apple has two two different vendor IDs which are used for different devices.
@@ -115,7 +119,44 @@ bool recognizeDevice(const mixxx::hid::DeviceInfo& deviceInfo) {
     return true;
 }
 
+#ifndef __ANDROID__
+/// Keyboards, mice, touch screens, pens and media keys. They come and go on their
+/// own (a detachable keyboard, a Bluetooth mouse waking up) and are never DJ
+/// controllers, but recognizeDevice() lets most of them through in developer
+/// mode. Hotplug ignores them, because the rescan it triggers reopens every
+/// controller.
+bool isComputerInputDevice(const mixxx::hid::DeviceInfo& deviceInfo) {
+    const unsigned short usagePage = deviceInfo.getUsagePage();
+    const unsigned short usage = deviceInfo.getUsage();
+    if (usagePage == mixxx::hid::kGenericDesktopUsagePage) {
+        return usage == mixxx::hid::kGenericDesktopPointerUsage ||
+                usage == mixxx::hid::kGenericDesktopMouseUsage ||
+                usage == mixxx::hid::kGenericDesktopKeyboardUsage ||
+                usage == mixxx::hid::kGenericDesktopSystemControlUsage;
+    }
+    return usagePage == mixxx::hid::kConsumerUsagePage ||
+            usagePage == mixxx::hid::kDigitizerUsagePage;
+}
+#endif
+
 } // namespace
+
+QMap<QString, QString> HidEnumerator::presentDevices() const {
+    QMap<QString, QString> devices;
+#ifndef __ANDROID__
+    hid_device_info* pDeviceInfoList = hid_enumerate(0x0, 0x0);
+    for (const auto* pDeviceInfo = pDeviceInfoList; pDeviceInfo; pDeviceInfo = pDeviceInfo->next) {
+        const auto deviceInfo = mixxx::hid::DeviceInfo(*pDeviceInfo);
+        if (!recognizeDevice(deviceInfo) || isComputerInputDevice(deviceInfo)) {
+            continue;
+        }
+        devices.insert(QStringLiteral("hid:") + QString(deviceInfo.pathRaw()),
+                deviceInfo.formatName());
+    }
+    hid_free_enumeration(pDeviceInfoList);
+#endif
+    return devices;
+}
 
 HidEnumerator::~HidEnumerator() {
     qDebug() << "Deleting HID devices...";

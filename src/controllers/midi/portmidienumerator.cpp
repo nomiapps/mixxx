@@ -9,15 +9,24 @@
 #include "moc_portmidienumerator.cpp"
 #include "util/cmdlineargs.h"
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+// After windows.h
+#include <mmsystem.h>
+#endif
+
 namespace {
 
-bool recognizeDevice(const PmDeviceInfo& deviceInfo, UserSettingsPointer pConfig) {
+bool recognizeDeviceName(const QString& name, UserSettingsPointer pConfig) {
     // In developer mode we show the MIDI Through Port, otherwise ignore it
     // since it routinely causes trouble.
     return CmdlineArgs::Instance().getDeveloper() ||
             pConfig->getValue(kMidiThroughCfgKey, false) ||
-            !QLatin1String(deviceInfo.name)
-                     .startsWith(kMidiThroughPortPrefix, Qt::CaseInsensitive);
+            !name.startsWith(kMidiThroughPortPrefix, Qt::CaseInsensitive);
+}
+
+bool recognizeDevice(const PmDeviceInfo& deviceInfo, UserSettingsPointer pConfig) {
+    return recognizeDeviceName(QString::fromLocal8Bit(deviceInfo.name), pConfig);
 }
 
 // Some platforms format MIDI device names as "deviceName MIDI ###" where
@@ -121,6 +130,28 @@ PortMidiEnumerator::~PortMidiEnumerator() {
     }
 }
 
+QMap<QString, QString> PortMidiEnumerator::presentDevices() const {
+    QMap<QString, QString> devices;
+#ifdef Q_OS_WIN
+    // PortMidi reads WinMM, and WinMM's list is live, unlike PortMidi's own, which
+    // is fixed until Pm_Initialize runs again (see queryDevices()). Only inputs:
+    // queryDevices() builds one Controller per input, named after it.
+    const UINT count = midiInGetNumDevs();
+    for (UINT i = 0; i < count; ++i) {
+        MIDIINCAPSW caps{};
+        if (midiInGetDevCapsW(i, &caps, sizeof(caps)) != MMSYSERR_NOERROR) {
+            continue;
+        }
+        const QString name = QString::fromWCharArray(caps.szPname);
+        if (!recognizeDeviceName(name, m_pConfig)) {
+            continue;
+        }
+        devices.insert(QStringLiteral("midi:") + name, name);
+    }
+#endif
+    return devices;
+}
+
 bool shouldLinkInputToOutput(const QString& input_name,
         const QString& output_name) {
     // Early exit.
@@ -182,14 +213,26 @@ bool shouldLinkInputToOutput(const QString& input_name,
 QList<Controller*> PortMidiEnumerator::queryDevices() {
     qDebug() << "Scanning PortMIDI devices:";
 
-    int iNumDevices = Pm_CountDevices();
-
     QListIterator<Controller*> dev_it(m_devices);
     while (dev_it.hasNext()) {
         delete dev_it.next();
     }
 
     m_devices.clear();
+
+    // PortMidi reads the device list once, in Pm_Initialize, so without a restart
+    // a rescan only ever finds the devices that were there when Mixxx started: a
+    // controller plugged in (or back in) later stays invisible. Every stream was
+    // closed with the controllers deleted above, which PortMidi requires. This
+    // always runs on the ControllerManager thread, the thread that first
+    // initialized PortMidi, as macOS requires.
+    Pm_Terminate();
+    PmError initError = Pm_Initialize();
+    if (initError != pmNoError) {
+        qWarning() << "PortMidi error:" << Pm_GetErrorText(initError);
+    }
+
+    int iNumDevices = Pm_CountDevices();
 
     const PmDeviceInfo* inputDeviceInfo = nullptr;
     const PmDeviceInfo* outputDeviceInfo = nullptr;

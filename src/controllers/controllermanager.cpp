@@ -2,8 +2,10 @@
 
 #include <QSet>
 #include <QThread>
+#include <algorithm>
 
 #include "controllers/controller.h"
+#include "controllers/controllerhotplugwatcher.h"
 #include "controllers/controllerlearningeventfilter.h"
 #include "controllers/controllermappinginfoenumerator.h"
 #include "controllers/defs_controllers.h"
@@ -71,6 +73,18 @@ QFileInfo findMappingFile(const QString& pathOrFilename, const QStringList& path
 // kept for backwards compatibility.
 const QString kSettingsGroup = QLatin1String("[ControllerPreset]");
 
+/// How long after the last OS device event to look at what is plugged in. A USB
+/// controller raises a burst of events (its USB, audio, MIDI and HID interfaces)
+/// over a second or so, and its MIDI port can show up in WinMM after the last one.
+constexpr mixxx::Duration kHotplugSettleTime = mixxx::Duration::fromMillis(1500);
+/// Checks per burst, kHotplugSettleTime apart, before giving up on a device
+/// that has not shown up yet.
+constexpr int kHotplugChecks = 3;
+
+bool isControllerEnabled(const UserSettingsPointer& pConfig, const QString& name) {
+    return pConfig->getValue(ConfigKey(QStringLiteral("[Controller]"), sanitizeDeviceName(name)), 0);
+}
+
 } // anonymous namespace
 
 QString firstAvailableFilename(QSet<QString>& filenames,
@@ -100,7 +114,10 @@ ControllerManager::ControllerManager(UserSettingsPointer pConfig)
                   std::make_unique<ControllerLearningEventFilter>()),
           m_pollTimer(this),
           m_pThread(std::make_unique<QThread>()),
-          m_skipPoll(false) {
+          m_skipPoll(false),
+          m_hotplugTimer(this),
+          m_hotplugChecksLeft(0),
+          m_hotplugArmed(false) {
     qRegisterMetaType<std::shared_ptr<LegacyControllerMapping>>(
             "std::shared_ptr<LegacyControllerMapping>");
 
@@ -113,6 +130,13 @@ ControllerManager::ControllerManager(UserSettingsPointer pConfig)
 
     m_pollTimer.setInterval(kPollInterval.toIntegerMillis());
     connect(&m_pollTimer, &QTimer::timeout, this, &ControllerManager::slotPollDevices);
+
+    m_hotplugTimer.setSingleShot(true);
+    m_hotplugTimer.setInterval(kHotplugSettleTime.toIntegerMillis());
+    connect(&m_hotplugTimer,
+            &QTimer::timeout,
+            this,
+            &ControllerManager::slotCheckForNewDevices);
 
     m_pThread->setObjectName("ControllerManager");
 
@@ -183,12 +207,26 @@ void ControllerManager::slotInitialize() {
         m_enumerators.push_back(std::make_unique<HidEnumerator>());
 #endif
     } // Mutex locker released here
+
+    // Created here, not in the constructor, so that it belongs to this thread:
+    // its OS notifications are delivered by this thread's event loop.
+    m_pHotplugWatcher = std::make_unique<ControllerHotplugWatcher>();
+    connect(m_pHotplugWatcher.get(),
+            &ControllerHotplugWatcher::devicesChanged,
+            this,
+            &ControllerManager::slotHotplugEvent);
+    qDebug() << "Controller hotplug watcher active:" << m_pHotplugWatcher->isActive();
+
     emit initialized();
 }
 
 void ControllerManager::slotShutdown() {
     DEBUG_ASSERT_THIS_QOBJECT_THREAD_AFFINITY();
     stopPolling();
+
+    // Before the enumerators go, and on this thread, which owns its window.
+    m_hotplugTimer.stop();
+    m_pHotplugWatcher.reset();
 
     // Clear m_enumerators before deleting the enumerators to prevent other code
     // paths from accessing them during teardown.
@@ -212,8 +250,9 @@ void ControllerManager::updateControllerList() {
     // the Controllers settings page after replugging a device. Every Controller is
     // destroyed and rebuilt here, so anything holding one must rebuild on
     // devicesChanged() and must not assume its pointers survive. DlgPrefControllers
-    // and QmlControllerManagerProxy both do; there is still no automatic hotplug, so
-    // a device that appears while Mixxx runs is picked up only by a rescan.
+    // and QmlControllerManagerProxy both do. A device plugged in while Mixxx runs
+    // triggers this through slotCheckForNewDevices() where the OS says so
+    // (Windows), and otherwise only through a rescan.
     auto locker = lockMutex(&m_mutex);
     if (m_enumerators.empty()) {
         qWarning() << "updateControllerList called but no enumerators have been added!";
@@ -246,6 +285,99 @@ QList<Controller*> ControllerManager::getControllers() const {
     return m_controllers;
 }
 
+QMap<QString, QString> ControllerManager::presentDevices() const {
+    DEBUG_ASSERT_THIS_QOBJECT_THREAD_AFFINITY();
+    auto locker = lockMutex(&m_mutex);
+    std::vector<ControllerEnumerator*> enumerators;
+    enumerators.reserve(m_enumerators.size());
+    for (const auto& pEnumerator : m_enumerators) {
+        enumerators.push_back(pEnumerator.get());
+    }
+    locker.unlock();
+
+    QMap<QString, QString> devices;
+    for (const ControllerEnumerator* pEnumerator : enumerators) {
+        devices.insert(pEnumerator->presentDevices());
+    }
+    return devices;
+}
+
+void ControllerManager::slotHotplugEvent() {
+    DEBUG_ASSERT_THIS_QOBJECT_THREAD_AFFINITY();
+    if (!m_hotplugArmed) {
+        return;
+    }
+    m_hotplugChecksLeft = kHotplugChecks;
+    m_hotplugTimer.start();
+}
+
+void ControllerManager::slotCheckForNewDevices() {
+    DEBUG_ASSERT_THIS_QOBJECT_THREAD_AFFINITY();
+    const QMap<QString, QString> present = presentDevices();
+
+    for (auto it = m_presentAtLastScan.cbegin(); it != m_presentAtLastScan.cend(); ++it) {
+        if (!present.contains(it.key())) {
+            m_absentSinceLastScan.insert(it.key());
+        }
+    }
+    // Only arrivals count. A device that leaves is left alone: its Controller
+    // stays, and gets rebuilt when the device comes back.
+    QStringList arrived;
+    for (auto it = present.cbegin(); it != present.cend(); ++it) {
+        if ((!m_presentAtLastScan.contains(it.key()) ||
+                    m_absentSinceLastScan.contains(it.key())) &&
+                !arrived.contains(it.value())) {
+            arrived.append(it.value());
+        }
+    }
+    if (arrived.isEmpty()) {
+        // One USB device raises several events, and its MIDI port can reach
+        // WinMM after the last of them. Look again before giving up.
+        if (--m_hotplugChecksLeft > 0) {
+            m_hotplugTimer.start();
+        }
+        return;
+    }
+    m_hotplugChecksLeft = 0;
+
+    // A rescan closes and reopens every controller, which restarts their
+    // mappings. Worth it for a controller the user has set up, and harmless
+    // when none is open. Otherwise, mid-set, say what was seen and leave the
+    // rescan to the user.
+    bool anyEnabled = false;
+    for (const QString& name : std::as_const(arrived)) {
+        anyEnabled = anyEnabled || isControllerEnabled(m_pConfig, name);
+    }
+    bool anyOpen = false;
+    for (const Controller* pController : getControllers()) {
+        anyOpen = anyOpen || pController->isOpen();
+    }
+    if (!anyEnabled && anyOpen) {
+        qInfo() << "Controller hotplug:" << arrived
+                << "plugged in; not rescanning while a controller is in use";
+        m_presentAtLastScan = present;
+        m_absentSinceLastScan.clear();
+        emit controllersPluggedIn({}, arrived, false);
+        return;
+    }
+
+    qInfo() << "Controller hotplug:" << arrived << "plugged in, rescanning";
+    slotSetUpDevices();
+
+    QStringList opened;
+    QStringList notOpened;
+    const QList<Controller*> controllers = getControllers();
+    for (const QString& name : std::as_const(arrived)) {
+        const bool isOpen = std::any_of(controllers.cbegin(),
+                controllers.cend(),
+                [&name](const Controller* pController) {
+                    return pController->getName() == name && pController->isOpen();
+                });
+        (isOpen ? opened : notOpened).append(name);
+    }
+    emit controllersPluggedIn(opened, notOpened, true);
+}
+
 QList<Controller*> ControllerManager::getControllerList(bool bOutputDevices, bool bInputDevices) {
     qDebug() << "ControllerManager::getControllerList";
 
@@ -274,6 +406,12 @@ QString ControllerManager::getConfiguredMappingFileForDevice(const QString& name
 void ControllerManager::slotSetUpDevices() {
     DEBUG_ASSERT_THIS_QOBJECT_THREAD_AFFINITY();
     qDebug() << "ControllerManager: Setting up devices";
+
+    // The baseline hotplug compares against. Taken before the scan, so a device
+    // that arrives during it still counts as new afterwards.
+    m_presentAtLastScan = presentDevices();
+    m_absentSinceLastScan.clear();
+    m_hotplugArmed = true;
 
     updateControllerList();
     const QList<Controller*> deviceList = getControllerList(false, true);
