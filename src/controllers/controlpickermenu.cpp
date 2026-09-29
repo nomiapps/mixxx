@@ -19,7 +19,8 @@ const QString kAppGroup = QStringLiteral("[App]");
 } // namespace
 
 ControlPickerMenu::ControlPickerMenu(QWidget* pParent)
-        : QMenu(pParent) {
+        : QMenu(pParent),
+          m_populated(false) {
     m_effectMainOutputStr = tr("Main Output");
     m_effectHeadphoneOutputStr = tr("Headphone Output");
     m_deckStr = tr("Deck %1");
@@ -49,6 +50,20 @@ ControlPickerMenu::ControlPickerMenu(QWidget* pParent)
     // TODO(ronso0) "translate" legacy 'Master' to 'Main' in main branch?
     m_otherGroupsTrMap.insert("Master", "Master");
 
+    connect(this, &QMenu::aboutToShow, this, &ControlPickerMenu::ensurePopulated);
+}
+
+void ControlPickerMenu::ensurePopulated() const {
+    if (m_populated) {
+        return;
+    }
+    auto* pThis = const_cast<ControlPickerMenu*>(this);
+    // Set first, populate() goes through the same accessors
+    pThis->m_populated = true;
+    pThis->populate();
+}
+
+void ControlPickerMenu::populate() {
     // Mixer Controls
     QMenu* pMixerMenu = addSubmenu(tr("Mixer"));
     // Crossfader / Orientation
@@ -2085,13 +2100,16 @@ int ControlPickerMenu::addAvailableControl(const ConfigKey& key,
 }
 
 bool ControlPickerMenu::controlExists(const ConfigKey& key) const {
+    ensurePopulated();
     return m_titlesByKey.contains(key);
 }
 
 QString ControlPickerMenu::descriptionForConfigKey(const ConfigKey& key) const {
+    ensurePopulated();
     return m_descriptionsByKey.value(key, QString());
 }
 
 QString ControlPickerMenu::controlTitleForConfigKey(const ConfigKey& key) const {
+    ensurePopulated();
     return m_titlesByKey.value(key, QString());
 }

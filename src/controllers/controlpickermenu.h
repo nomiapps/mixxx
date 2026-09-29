@@ -12,6 +12,7 @@ class ControlPickerMenu : public QMenu {
     virtual ~ControlPickerMenu();
 
     const QList<ConfigKey>& controlsAvailable() const {
+        ensurePopulated();
         return m_controlsAvailable;
     }
 
@@ -36,6 +37,11 @@ class ControlPickerMenu : public QMenu {
     void controlChosen(int controlIndex);
 
   private:
+    // The menu holds thousands of actions and every controller preference page
+    // owns one, so it is built on first use instead of in the constructor.
+    void ensurePopulated() const;
+    void populate();
+
     QMenu* addSubmenu(QString title, QMenu* pParent = NULL);
     void addSingleControl(const QString& group,
             const QString& control,
@@ -140,4 +146,6 @@ class ControlPickerMenu : public QMenu {
 
     QMap<QString, QString> m_numGroupsTrMap;
     QMap<QString, QString> m_otherGroupsTrMap;
+
+    bool m_populated;
 };
