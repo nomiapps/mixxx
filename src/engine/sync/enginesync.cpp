@@ -471,8 +471,10 @@ void EngineSync::notifyScratching(Syncable* pSyncable, bool scratching) {
             auto* engineBuffer = pSyncable->getChannel()->getEngineBuffer();
             DEBUG_ASSERT(engineBuffer);
 
-            const auto playPos = engineBuffer->getVisualPlayPos();
             const auto trackEnd = engineBuffer->getTrackEndPosition().value();
+            // The play position as a fraction of the track, which is what
+            // slotControlSeek() takes.
+            const auto playPos = engineBuffer->getExactPlayPos().value() / trackEnd;
             const auto trackSampleRate = engineBuffer->getTrackSampleRate();
             const auto bpmValue = pSyncable->getBpm().value();
             const auto abletonBpmValue = m_pAbletonLink->getBpm().value();

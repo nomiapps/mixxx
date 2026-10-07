@@ -16,6 +16,7 @@
 #include "library/library.h"
 #include "mixer/basetrackplayer.h"
 #include "moc_qmlwaveformdisplay.cpp"
+#include "qml/qmlconfigproxy.h"
 #include "qml/qmlplayerproxy.h"
 #include "qmllibraryproxy.h"
 #include "rendergraph/context.h"
@@ -29,6 +30,8 @@ namespace {
 // Start at a 60 Hz frame time; slotFrameSwapped() adapts this to the actual
 // refresh rate of the screen the window is on.
 constexpr int kDefaultSyncIntervalMicros = 16667;
+constexpr int kDefaultFrameRate = 60;
+constexpr int kMicrosPerSecond = 1'000'000;
 } // namespace
 
 namespace mixxx {
@@ -38,6 +41,7 @@ QmlWaveformDisplay::QmlWaveformDisplay(QQuickItem* parent)
         : QQuickItem(parent),
           WaveformWidgetRenderer(),
           m_syncInterval(kDefaultSyncIntervalMicros),
+          m_frameRate(kDefaultFrameRate),
           m_pPlayer(nullptr),
           m_pTrack(nullptr),
           m_visualPlayPosition(QSharedPointer<VisualPlayPosition>::create()) {
@@ -56,12 +60,34 @@ QmlWaveformDisplay::QmlWaveformDisplay(QQuickItem* parent)
             0.0);
     setFlag(QQuickItem::ItemHasContents, true);
 
+    m_frameRateTimer.setSingleShot(true);
+    m_frameRateTimer.setTimerType(Qt::PreciseTimer);
+    connect(&m_frameRateTimer, &QTimer::timeout, this, [this]() {
+        m_frameRequestTimer.restart();
+        update();
+    });
+
     connect(this,
             &QmlWaveformDisplay::windowChanged,
             this,
             &QmlWaveformDisplay::slotWindowChanged,
             Qt::DirectConnection);
     slotWindowChanged(window());
+}
+
+void QmlWaveformDisplay::setFrameRate(int frameRate) {
+    const int clampedFrameRate = std::clamp(frameRate, 1, 240);
+    if (m_frameRate == clampedFrameRate) {
+        return;
+    }
+    m_frameRate = clampedFrameRate;
+    // m_syncInterval is not set from this: it is the measured frame period of
+    // the screen, kept by slotFrameSwapped() on the render thread.
+    if (window()) {
+        m_frameRateTimer.stop();
+        requestUpdateAtFrameRate();
+    }
+    emit frameRateChanged();
 }
 
 QmlWaveformDisplay::~QmlWaveformDisplay() {
@@ -78,6 +104,118 @@ void QmlWaveformDisplay::componentComplete() {
                  << m_waveformRenderers.count() << "renderer(s)";
     } else {
         qWarning() << "QmlWaveformDisplay initialised with neither a track nor a group!";
+    }
+
+    if (auto* pConfig = qobject_cast<QmlConfigProxy*>(QmlConfigProxyBase::s_pInstance)) {
+        const auto refreshRenderers = [this]() {
+            this->refreshRenderers();
+        };
+        constexpr auto connectionType = Qt::QueuedConnection;
+        connect(pConfig,
+                &QmlConfigProxy::waveformDefaultZoomChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformPlayMarkerPositionChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformEnabledChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformFrameRateChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformUntilMarkShowBeatsChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformUntilMarkShowTimeChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformUntilMarkAlignChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformUntilMarkTextPointSizeChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformUntilMarkTextHeightLimitChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformVisualGainAllChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformVisualGainLowChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformVisualGainMediumChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformVisualGainHighChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformEndOfTrackWarningTimeChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformTypeChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformOptionsChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformBeatGridAlphaChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformStemOpacityChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformStemOutlineOpacityChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformStemReorderOnChangeChanged,
+                this,
+                refreshRenderers,
+                connectionType);
+        connect(pConfig,
+                &QmlConfigProxy::waveformStemSplitTracksChanged,
+                this,
+                refreshRenderers,
+                connectionType);
     }
     QQuickItem::componentComplete();
 }
@@ -144,8 +282,6 @@ void QmlWaveformDisplay::setStaticTrack(QmlTrackProxy* track) {
 }
 
 void QmlWaveformDisplay::slotWindowChanged(QQuickWindow* window) {
-    m_rendererStack.clear();
-
     m_dirtyFlag.setFlag(DirtyFlag::Window, true);
     if (window) {
         // Direct so it runs on the render thread the moment the frame ends.
@@ -157,17 +293,28 @@ void QmlWaveformDisplay::slotWindowChanged(QQuickWindow* window) {
                 &QQuickWindow::afterFrameEnd,
                 this,
                 &QmlWaveformDisplay::slotFrameSwapped,
-                Qt::DirectConnection);
+                static_cast<Qt::ConnectionType>(
+                        Qt::DirectConnection | Qt::UniqueConnection));
     }
     m_timer.restart();
+    m_frameRateTimer.stop();
+    m_frameRequestTimer.restart();
 }
 
 void QmlWaveformDisplay::setOptions(mixxx::qml::WaveformRendererSignalBaseOptions options) {
     m_options = options;
     emit optionsChanged(options);
-    m_rendererStack.clear();
 
     m_dirtyFlag.setFlag(DirtyFlag::Window, true);
+    update();
+}
+
+void QmlWaveformDisplay::refreshRenderers() {
+    // Renderer objects and their render-graph nodes live on the scene-graph
+    // thread. Only mark the item dirty here; updatePaintNode() clears and
+    // rebuilds the stack on that thread.
+    m_dirtyFlag.setFlag(DirtyFlag::Window, true);
+    update();
 }
 
 std::chrono::microseconds QmlWaveformDisplay::fromTimerToNextSync(const PerformanceTimer& timer) {
@@ -192,10 +339,45 @@ void QmlWaveformDisplay::slotFrameSwapped() {
     }
 
     // Continuous redraw. Requested right at frame end, while the render
-    // thread is idle, so the sync it triggers never waits on a vblank; vsync
-    // throttles it to the screen's refresh rate. QQuickItem::update() is
-    // GUI-thread only, hence queued.
-    QMetaObject::invokeMethod(this, &QQuickItem::update, Qt::QueuedConnection);
+    // thread is idle, so the sync it triggers never waits on a vblank.
+    // QQuickItem::update() and the frame rate timer are GUI-thread only,
+    // hence queued.
+    QMetaObject::invokeMethod(this,
+            &QmlWaveformDisplay::requestUpdateAtFrameRate,
+            Qt::QueuedConnection);
+}
+
+void QmlWaveformDisplay::requestUpdateAtFrameRate() {
+    if (!window()) {
+        return;
+    }
+
+    // The [Waveform] frame rate is a ceiling. At or above the rate the screen
+    // is measured to refresh at there is nothing to hold back: vsync already
+    // throttles the redraw to the screen.
+    const qint64 intervalMicros = kMicrosPerSecond / std::max(1, m_frameRate);
+    if (intervalMicros <= m_syncInterval.count()) {
+        m_frameRateTimer.stop();
+        update();
+        return;
+    }
+
+    if (!m_frameRequestTimer.isValid()) {
+        m_frameRequestTimer.start();
+    }
+
+    const qint64 elapsedMicros = m_frameRequestTimer.nsecsElapsed() / 1000;
+    if (elapsedMicros >= intervalMicros) {
+        m_frameRateTimer.stop();
+        m_frameRequestTimer.restart();
+        update();
+        return;
+    }
+
+    const qint64 remainingMicros = intervalMicros - elapsedMicros;
+    const int remainingMillis = static_cast<int>(
+            std::max<qint64>(1, (remainingMicros + 999) / 1000));
+    m_frameRateTimer.start(remainingMillis);
 }
 
 void QmlWaveformDisplay::geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry) {
@@ -239,6 +421,9 @@ QSGNode* QmlWaveformDisplay::updatePaintNode(QSGNode* node, UpdatePaintNodeData*
 
         m_rendererStack.clear();
         for (auto* pQmlRenderer : std::as_const(m_waveformRenderers)) {
+            if (!pQmlRenderer->isEnabled()) {
+                continue;
+            }
             if (!pQmlRenderer->isSupported()) {
                 qWarning() << "Ignoring the unsupported" << pQmlRenderer << "renderer";
                 continue;
@@ -258,6 +443,12 @@ QSGNode* QmlWaveformDisplay::updatePaintNode(QSGNode* node, UpdatePaintNodeData*
         pBgNode->appendChildNode(pTopNode);
         pClipNode->appendChildNode(pBgNode);
         init();
+        // The track can be assigned before the scene-graph renderer stack is
+        // created. Replay it after renderer initialization so marks and STEM
+        // renderers receive their onSetTrack() setup on the render thread.
+        if (getTrackInfo()) {
+            setTrack(getTrackInfo());
+        }
     }
 
     if (m_dirtyFlag.testFlag(DirtyFlag::Background)) {
@@ -392,6 +583,13 @@ void QmlWaveformDisplay::renderers_append(
     }
     pWaveform->m_dirtyFlag.setFlag(DirtyFlag::Window, true);
     pWaveform->m_waveformRenderers.append(value);
+    QObject::connect(value,
+            &QmlWaveformRendererFactory::enabledChanged,
+            pWaveform,
+            [pWaveform]() {
+                pWaveform->m_dirtyFlag.setFlag(DirtyFlag::Window, true);
+                pWaveform->update();
+            });
 }
 
 // Static

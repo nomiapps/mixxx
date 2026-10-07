@@ -24,6 +24,7 @@
 #endif
 #include "controllers/softtakeover.h"
 #include "helpers/log_test.h"
+#include "preferences/keydetectionsettings.h"
 #include "preferences/usersettings.h"
 #ifdef MIXXX_USE_QML
 #include "qml/qmlmixxxcontrollerscreen.h"
@@ -102,6 +103,11 @@ class ControllerScriptEngineLegacyTest : public ControllerScriptEngineLegacy,
                 m_pSoundManager.get(),
                 m_pEffectsManager.get(),
                 m_pEngine.get());
+
+        // Background key analysis would otherwise race with tests that set keys
+        // manually and overwrite them once the analysis finishes.
+        KeyDetectionSettings keyDetectionSettings(config());
+        keyDetectionSettings.setKeyDetectionEnabled(false);
 
         m_pPlayerManager->addConfiguredDecks();
         m_pPlayerManager->addSampler();
@@ -1040,7 +1046,7 @@ TEST_F(ControllerScriptEngineLegacyTest, JavascriptPlayerProxy_Stems) {
     EXPECT_EQ(evaluate("player.stemLabels.length").toInt(), 0);
     EXPECT_EQ(evaluate("player.stemColors.length").toInt(), 0);
 
-    loadTrackSync("stems/sin_AAC_256kbps_VBR.stem.mp4");
+    loadTrackSync("stems/stem01/sin_AAC_256kbps_VBR.stem.mp4");
 
     const QStringList expectedLabels = {"Drums", "Bass", "Synths", "Vox"};
     const QStringList expectedColors = {"#fd4a4a", "#ffff00", "#00e8e8", "#ad65ff"};

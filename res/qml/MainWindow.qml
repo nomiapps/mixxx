@@ -1,0 +1,1038 @@
+import "." as Skin
+import Mixxx 1.0 as Mixxx
+import QtQuick 2.12
+import QtQuick.Controls
+import QtQuick.Layouts
+import QtQuick.Window
+import QtQuick.Shapes
+import Qt5Compat.GraphicalEffects
+import "Theme"
+
+Item {
+    id: root
+
+    required property ApplicationWindow applicationWindow
+    property alias menuBar: nativeApplicationMenuLoader.item
+
+    property alias editDeck: editDeckButton.checked
+    property var focusedDeck: null
+    property alias maximizeLibrary: maximizeLibraryButton.checked
+    readonly property int numDecks: 4
+    readonly property int numPreviewDecks: 1
+    readonly property int numSamplers: 16
+    readonly property int waveformOverviewTypeRgb: 2
+    readonly property bool show4decks: show4DecksButton.checked && show4DecksButton.visible
+    property alias showAux: showAuxButton.checked
+    property alias showEffects: showEffectsButton.checked
+    property alias showSamplers: showSamplersButton.checked
+    property alias showSequencer: showSequencerButton.checked
+    property alias showSynth: showSynthButton.checked
+
+    Loader {
+        id: nativeApplicationMenuLoader
+
+        // Three cases, not two. macOS puts the menu in the system bar, so it
+        // always loads. A Linux desktop with a global menu bar does the same,
+        // except in fullscreen where there is no bar to put it in. Everywhere
+        // else -- Windows, and Linux without the AppMenu registrar -- the menu
+        // belongs IN the window.
+        //
+        // That third case went missing when this became conditional upstream
+        // (b8d97012bc): supportsGlobalMenuBar only ever returns true for a
+        // Linux DBus AppMenu registrar, so on Windows the loader never ran,
+        // `menuBar` stayed null, and the application menu did not exist at
+        // all. Alt had nothing to open and no mnemonic had a target.
+        active: Qt.platform.os === "osx" || root.applicationWindow.visibility !== Window.FullScreen
+
+        sourceComponent: Skin.MainMenuBar {
+            actions: applicationMenuActions
+        }
+    }
+    Skin.ApplicationMenuCommands {
+        id: applicationMenuCommands
+
+        applicationWindow: root.applicationWindow
+        keywheelOpened: keywheelPopup.opened
+
+        onShowDeveloperToolsRequested: {
+            devToolsWindow.show();
+            devToolsWindow.raise();
+            devToolsWindow.requestActivate();
+        }
+        // F12 toggles: the wheel is a thing you glance at between mixes, so
+        // the key that puts it up should be the key that takes it away.
+        onShowKeywheelRequested: {
+            if (keywheelPopup.opened) {
+                keywheelPopup.close();
+            } else {
+                keywheelPopup.open();
+            }
+        }
+    }
+    Skin.ApplicationMenuActions {
+        id: applicationMenuActions
+
+        applicationWindow: root.applicationWindow
+        commands: applicationMenuCommands
+        numberOfDecks: root.show4decks ? root.numDecks : 2
+
+        onPreferencesRequested: {
+            if (!settingsPopup.opened) {
+                settingsPopup.open();
+            }
+        }
+        onFocusLibrarySearchRequested: {
+            if (library.item) {
+                library.item.focusSearch();
+            }
+        }
+    }
+    Skin.LibraryScanSummaryDialog {
+    }
+    Mixxx.ControlProxy {
+        group: "[App]"
+        key: "num_decks"
+
+        onInitializedChanged: {
+            value = root.numDecks;
+        }
+    }
+    Mixxx.ControlProxy {
+        group: "[App]"
+        key: "num_samplers"
+
+        onInitializedChanged: {
+            value = root.numSamplers;
+        }
+    }
+    Mixxx.ControlProxy {
+        group: "[App]"
+        key: "num_preview_decks"
+
+        onInitializedChanged: {
+            value = root.numPreviewDecks;
+        }
+    }
+    Mixxx.ControlProxy {
+        group: "[Waveform]"
+        key: "WaveformOverviewType"
+
+        onInitializedChanged: {
+            value = root.waveformOverviewTypeRgb;
+        }
+    }
+    Column {
+        id: content
+
+        anchors.fill: parent
+
+        move: Transition {
+            NumberAnimation {
+                duration: 150
+                properties: "x,y"
+            }
+        }
+
+        Rectangle {
+            id: toolbar
+
+            color: Theme.toolbarBackgroundColor
+            height: 36
+            radius: 1
+            width: parent.width
+
+            RowLayout {
+                // The row used to fill the bar edge to edge, so the first
+                // button sat against the window frame and the settings gear
+                // against the other side, with the buttons touching each other
+                // in between.
+                anchors.fill: parent
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                spacing: 4
+
+                Skin.Button {
+                    id: show4DecksButton
+
+                    activeColor: Theme.white
+                    checkable: true
+                    text: "4 Decks"
+                    visible: root.height > 515
+                }
+                Skin.Button {
+                    id: maximizeLibraryButton
+
+                    activeColor: Theme.white
+                    checkable: true
+                    text: "Library"
+
+                    onCheckedChanged: () => {
+                        showMaximizedLibrary.value = this.checked;
+                    }
+
+                    Mixxx.ControlProxy {
+                        id: showMaximizedLibrary
+
+                        group: "[Skin]"
+                        key: "show_maximized_library"
+
+                        onValueChanged: () => {
+                            maximizeLibraryButton.checked = this.value;
+                        }
+                    }
+                }
+                Skin.Button {
+                    id: showEffectsButton
+
+                    activeColor: Theme.white
+                    checkable: true
+                    text: "Effects"
+                }
+                Skin.Button {
+                    id: showAuxButton
+
+                    activeColor: Theme.white
+                    checkable: true
+                    text: "Aux"
+                }
+                Skin.Button {
+                    id: showSamplersButton
+
+                    activeColor: Theme.white
+                    checkable: true
+                    text: "Sampler"
+                }
+                Skin.LinkButton {}
+                Skin.Button {
+                    id: showSynthButton
+
+                    activeColor: Theme.white
+                    checkable: true
+                    text: "Synth"
+                }
+                Skin.Button {
+                    id: showSequencerButton
+
+                    activeColor: Theme.white
+                    checkable: true
+                    text: "Sequencer"
+                }
+                Item {
+                    Layout.fillWidth: true
+                }
+                Skin.Button {
+                    id: editDeckButton
+
+                    activeColor: Theme.white
+                    checkable: true
+                    text: "Edit"
+                }
+                // --- Edge surface (begin) ---
+                Skin.Button {
+                    id: showEdgeSurfaceButton
+
+                    activeColor: Theme.white
+                    checkable: true
+                    checked: edgeSurfaceWindow.visible
+                    text: "Edge"
+
+                    function toggleEdgeSurface() {
+                        if (edgeSurfaceWindow.visible)
+                            edgeSurfaceWindow.close();
+                        else
+                            edgeSurfaceWindow.show();
+                    }
+
+                    onClicked: toggleEdgeSurface()
+
+                    Skin.EdgeSurface {
+                        id: edgeSurfaceWindow
+                    }
+                    Connections {
+                        function onShowEdgeSurfaceRequested() {
+                            showEdgeSurfaceButton.toggleEdgeSurface();
+                        }
+
+                        target: applicationMenuCommands
+                    }
+                }
+                // --- Edge surface (end) ---
+                Skin.Button {
+                    id: showDevToolsButton
+
+                    activeColor: Theme.white
+                    checkable: true
+                    checked: devToolsWindow.visible
+                    text: "Develop"
+
+                    onClicked: {
+                        if (devToolsWindow.visible)
+                            devToolsWindow.close();
+                        else
+                            devToolsWindow.show();
+                    }
+
+                    DeveloperToolsWindow {
+                        id: devToolsWindow
+
+                        height: 480
+                        width: 640
+                    }
+                }
+                Skin.Button {
+                    id: showPreferencesButton
+
+                    activeColor: Theme.white
+                    checked: settingsPopup.opened
+                    icon.height: 16
+                    icon.source: "images/gear.svg"
+                    icon.width: 16
+                    implicitWidth: implicitHeight
+                    // An unlabelled gear whose press-and-hold opens a different and much
+                    // larger preferences system is not something anyone finds by accident.
+                    ToolTip.delay: 500
+                    ToolTip.text: qsTr("Preferences (Ctrl+P) — hold for the legacy dialog")
+                    ToolTip.visible: hovered
+
+                    onClicked: {
+                        if (!settingsPopup.opened) {
+                            settingsPopup.open();
+                        }
+                    }
+                    onPressAndHold: {
+                        Mixxx.PreferencesDialog.show();
+                    }
+                }
+            }
+        }
+        SplitView {
+            id: splitView
+
+            height: parent.height - y
+            orientation: Qt.Vertical
+            width: parent.width
+
+            handle: Rectangle {
+                id: handleDelegate
+
+                property color handleColor: SplitHandle.pressed || SplitHandle.hovered ? Theme.libraryPanelSplitterHandleActive : Theme.libraryPanelSplitterHandle
+                property int handleSize: SplitHandle.pressed || SplitHandle.hovered ? 6 : 3
+
+                clip: true
+                color: Theme.libraryPanelSplitterBackground
+                implicitHeight: 4
+                implicitWidth: 8
+
+                containmentMask: Item {
+                    height: 8
+                    width: splitView.width
+                    x: (handleDelegate.width - width) / 2
+                }
+
+                RowLayout {
+                    anchors.centerIn: parent
+
+                    Repeater {
+                        model: 3
+
+                        Rectangle {
+                            color: handleColor
+                            height: handleSize
+                            radius: handleSize
+                            width: handleSize
+                        }
+                    }
+                }
+            }
+
+            Item {
+                id: waveforms
+
+                // Total height of the per-deck stem strips currently shown
+                // (each is 0 px unless a stem track is loaded on that deck).
+                // The waveforms give up this height, and the pane grows by
+                // it so the waveforms keep their size when strips appear.
+                readonly property real stemStripsHeight: deck3stems.height + deck1stems.height + deck2stems.height + deck4stems.height
+
+                SplitView.fillHeight: !library.active
+                SplitView.preferredHeight: library.active ? 120 + waveforms.stemStripsHeight : undefined
+                visible: !root.maximizeLibrary
+
+                FadeBehavior on visible {
+                    fadeTarget: waveforms
+                }
+
+                Loader {
+                    id: deck3waveform
+
+                    readonly property string group: "[Channel3]"
+
+                    active: root.show4decks
+                    anchors.top: parent.top
+                    height: (parent.height - waveforms.stemStripsHeight) / 4
+                    width: root.width
+
+                    sourceComponent: Component {
+                        Skin.WaveformDisplay {
+                            group: deck3waveform.group
+
+                            FadeBehavior on visible {
+                                fadeTarget: deck3waveform
+                            }
+                        }
+                    }
+                }
+                Skin.StemStrip {
+                    id: deck3stems
+
+                    active: root.show4decks
+                    anchors.top: deck3waveform.bottom
+                    group: deck3waveform.group
+                    width: root.width
+                }
+                Skin.WaveformDisplay {
+                    id: deck1waveform
+
+                    anchors.top: root.show4decks ? deck3stems.bottom : parent.top
+                    group: "[Channel1]"
+                    height: (parent.height - waveforms.stemStripsHeight) / (root.show4decks ? 4 : 2)
+                    width: root.width
+                }
+                Skin.StemStrip {
+                    id: deck1stems
+
+                    anchors.top: deck1waveform.bottom
+                    group: deck1waveform.group
+                    width: root.width
+                }
+                Skin.StemStrip {
+                    id: deck2stems
+
+                    anchors.bottom: root.show4decks ? deck4waveform.top : parent.bottom
+                    group: deck2waveform.group
+                    width: root.width
+                }
+                Skin.WaveformDisplay {
+                    id: deck2waveform
+
+                    anchors.bottom: deck2stems.top
+                    group: "[Channel2]"
+                    height: (parent.height - waveforms.stemStripsHeight) / (root.show4decks ? 4 : 2)
+                    width: root.width
+                }
+                Skin.StemStrip {
+                    id: deck4stems
+
+                    active: root.show4decks
+                    anchors.bottom: parent.bottom
+                    group: deck4waveform.group
+                    width: root.width
+                }
+                Loader {
+                    id: deck4waveform
+
+                    readonly property string group: "[Channel4]"
+
+                    active: root.show4decks
+                    anchors.bottom: deck4stems.top
+                    height: (parent.height - waveforms.stemStripsHeight) / 4
+                    width: root.width
+
+                    sourceComponent: Component {
+                        Skin.WaveformDisplay {
+                            group: deck4waveform.group
+
+                            FadeBehavior on visible {
+                                fadeTarget: deck4waveform
+                            }
+                        }
+                    }
+                }
+                Rectangle {
+                    width: 125
+                    // Behind the waveforms rather than over them: these edge fades are
+                    // later siblings, so they painted on top of the stem lane labels and
+                    // washed them out. The waveform background is transparent, so the fade still
+                    // reads at the edges from behind.
+                    z: -1
+
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+
+                        GradientStop {
+                            color: Theme.darkGray
+                            position: 0
+                        }
+                        GradientStop {
+                            color: 'transparent'
+                            position: 1
+                        }
+                    }
+
+                    anchors {
+                        bottom: parent.bottom
+                        left: parent.left
+                        top: parent.top
+                    }
+                }
+                Rectangle {
+                    width: 125
+                    // Behind the waveforms rather than over them: these edge fades are
+                    // later siblings, so they painted on top of the stem lane labels and
+                    // washed them out. The waveform background is transparent, so the fade still
+                    // reads at the edges from behind.
+                    z: -1
+
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+
+                        GradientStop {
+                            color: 'transparent'
+                            position: 0
+                        }
+                        GradientStop {
+                            color: Theme.darkGray
+                            position: 1
+                        }
+                    }
+
+                    anchors {
+                        bottom: parent.bottom
+                        right: parent.right
+                        top: parent.top
+                    }
+                }
+            }
+            Item {
+                SplitView.fillHeight: library.active
+                SplitView.maximumHeight: library.active ? undefined : mixer.height
+                SplitView.minimumHeight: mixer.height
+
+                Deck {
+                    id: deck1
+
+                    editMode: root.editDeck
+                    group: "[Channel1]"
+                    height: root.maximizeLibrary ? 80 : root.show4decks ? mixer.height / 2 : mixer.height
+                    minimized: root.maximizeLibrary
+
+                    Behavior on height {
+                        SpringAnimation {
+                            id: deck1HeightAnimation
+
+                            damping: 0.2
+                            duration: 500
+                            spring: 2
+                        }
+                    }
+                    states: [
+                        State {
+                            when: root.maximizeLibrary
+
+                            AnchorChanges {
+                                anchors.right: parent.horizontalCenter
+                                target: deck1
+                            }
+                        }
+                    ]
+
+                    onToggleFocus: {
+                        root.focusedDeck = (root.focusedDeck === deck1) ? null : deck1;
+                    }
+
+                    anchors {
+                        left: parent.left
+                        right: mixer.left
+                        top: parent.top
+                    }
+                }
+                Mixer {
+                    id: mixer
+
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    groups: [deck1.group, deck2.group, deck3.group, deck4.group]
+                    show4decks: root.show4decks
+                    visible: !root.maximizeLibrary
+
+                    Behavior on height {
+                        SpringAnimation {
+                            id: mixerHeightAnimation
+
+                            damping: 0.2
+                            duration: 500
+                            spring: 2
+                        }
+                    }
+                    states: [
+                        State {
+                            when: root.focusedDeck === deck1 && root.width < 1400 && !root.maximizeLibrary
+
+                            AnchorChanges {
+                                anchors.horizontalCenter: parent.right
+                                target: mixer
+                            }
+                            PropertyChanges {
+                                target: deck1
+                                width: root.width - (mixer.width / 2)
+                            }
+                        },
+                        State {
+                            when: root.focusedDeck === deck2 && root.width < 1400 && !root.maximizeLibrary
+
+                            AnchorChanges {
+                                anchors.horizontalCenter: parent.left
+                                target: mixer
+                            }
+                            PropertyChanges {
+                                target: deck2
+                                width: root.width - (mixer.width / 2)
+                            }
+                        },
+                        State {
+                            when: (!root.focusedDeck || root.width > 1400) && !root.maximizeLibrary
+
+                            AnchorChanges {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                target: mixer
+                            }
+                            PropertyChanges {
+                                target: deck1
+                                width: (root.width - mixer.width) / 2
+                            }
+                            PropertyChanges {
+                                target: deck2
+                                width: (root.width - mixer.width) / 2
+                            }
+                        },
+                        State {
+                            when: root.maximizeLibrary
+
+                            AnchorChanges {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                target: mixer
+                            }
+                            PropertyChanges {
+                                target: deck1
+                                width: root.width / 2
+                            }
+                            PropertyChanges {
+                                target: deck2
+                                width: root.width / 2
+                            }
+                        }
+                    ]
+                    transitions: Transition {
+                        AnchorAnimation {
+                            duration: 200
+                        }
+                    }
+                    FadeBehavior on visible {
+                        fadeTarget: mixer
+                    }
+                }
+                Deck {
+                    id: deck2
+
+                    editMode: root.editDeck
+                    group: "[Channel2]"
+                    height: root.maximizeLibrary ? 80 : root.show4decks ? mixer.height / 2 : mixer.height
+                    minimized: root.maximizeLibrary
+
+                    Behavior on height {
+                        SpringAnimation {
+                            id: deck2HeightAnimation
+
+                            damping: 0.2
+                            duration: 500
+                            spring: 2
+                        }
+                    }
+                    states: [
+                        State {
+                            when: root.maximizeLibrary
+
+                            AnchorChanges {
+                                anchors.left: parent.horizontalCenter
+                                target: deck2
+                            }
+                        }
+                    ]
+
+                    onToggleFocus: {
+                        root.focusedDeck = (root.focusedDeck === deck2) ? null : deck2;
+                    }
+
+                    anchors {
+                        left: mixer.right
+                        right: parent.right
+                        top: parent.top
+                    }
+                }
+                Loader {
+                    id: deck3
+
+                    readonly property string group: "[Channel3]"
+
+                    active: root.show4decks
+                    height: active ? (root.maximizeLibrary ? 80 : mixer.height / 2) : 0
+
+                    Behavior on height {
+                        SpringAnimation {
+                            id: deck3HeightAnimation
+
+                            damping: 0.2
+                            duration: 500
+                            spring: 2
+                        }
+                    }
+                    sourceComponent: Component {
+                        Deck {
+                            anchors.bottom: parent.bottom
+                            anchors.left: parent.left
+                            editMode: root.editDeck
+                            group: deck3.group
+                            minimized: root.maximizeLibrary
+                        }
+                    }
+                    states: [
+                        State {
+                            when: root.maximizeLibrary
+
+                            AnchorChanges {
+                                anchors.right: parent.horizontalCenter
+                                target: deck3
+                            }
+                        }
+                    ]
+
+                    anchors {
+                        left: parent.left
+                        right: mixer.left
+                        top: deck1.bottom
+                    }
+                }
+                Loader {
+                    id: deck4
+
+                    readonly property string group: "[Channel4]"
+
+                    active: root.show4decks
+                    height: active ? (root.maximizeLibrary ? 80 : mixer.height / 2) : 0
+
+                    Behavior on height {
+                        SpringAnimation {
+                            id: deck4HeightAnimation
+
+                            damping: 0.2
+                            duration: 500
+                            spring: 2
+                        }
+                    }
+                    sourceComponent: Component {
+                        Deck {
+                            anchors.bottom: parent.bottom
+                            anchors.right: parent.right
+                            editMode: root.editDeck
+                            group: deck4.group
+                            minimized: root.maximizeLibrary
+                        }
+                    }
+                    states: [
+                        State {
+                            when: root.maximizeLibrary
+
+                            AnchorChanges {
+                                anchors.left: parent.horizontalCenter
+                                target: deck4
+                            }
+                        }
+                    ]
+
+                    anchors {
+                        left: mixer.right
+                        right: parent.right
+                        top: deck2.bottom
+                    }
+                }
+
+                Skin.SamplerRow {
+                    id: samplers
+
+                    clip: true
+                    height: visible ? implicitHeight : 0
+                    samplerCount: 8
+                    visible: root.showSamplers && !root.maximizeLibrary
+                    width: parent.width
+
+                    anchors {
+                        top: mixer.bottom
+                    }
+
+                    Skin.FadeBehavior on visible {
+                        fadeTarget: samplers
+                    }
+                }
+                Skin.EffectRow {
+                    id: effects
+
+                    clip: true
+                    height: visible ? implicitHeight : 0
+                    visible: root.showEffects && !root.maximizeLibrary
+                    width: parent.width
+
+                    anchors {
+                        top: samplers.bottom
+                    }
+
+                    Skin.FadeBehavior on visible {
+                        fadeTarget: effects
+                    }
+                }
+                Skin.MicAuxRow {
+                    id: micAux
+
+                    clip: true
+                    height: visible ? implicitHeight : 0
+                    visible: root.showAux && !root.maximizeLibrary
+                    width: parent.width
+
+                    anchors {
+                        top: effects.bottom
+                    }
+
+                    Skin.FadeBehavior on visible {
+                        fadeTarget: micAux
+                    }
+                }
+                Skin.SynthRow {
+                    id: synth
+
+                    clip: true
+                    height: visible ? implicitHeight : 0
+                    visible: root.showSynth && !root.maximizeLibrary
+                    width: parent.width
+
+                    anchors {
+                        top: micAux.bottom
+                    }
+
+                    Skin.FadeBehavior on visible {
+                        fadeTarget: synth
+                    }
+                }
+                Skin.SequencerRow {
+                    id: sequencer
+
+                    clip: true
+                    height: visible ? implicitHeight : 0
+                    visible: root.showSequencer && !root.maximizeLibrary
+                    width: parent.width
+
+                    anchors {
+                        top: synth.bottom
+                    }
+
+                    Skin.FadeBehavior on visible {
+                        fadeTarget: sequencer
+                    }
+                }
+                Loader {
+                    id: library
+
+                    active: root.maximizeLibrary || root.height - mixer.height >= 400
+                    width: parent.width
+
+                    sourceComponent: Component {
+                        Skin.Library {
+                            id: mainLibrary
+
+                            anchors.fill: parent
+
+                            // One search across this library and the Edge surface's
+                            // (edgeSurfaceWindow.librarySearch). Read on creation too:
+                            // this Loader drops the library when the window gets short.
+                            Component.onCompleted: mainLibrary.setSearchText(edgeSurfaceWindow.librarySearch)
+                            onSearchTextChanged: edgeSurfaceWindow.librarySearch = mainLibrary.searchText
+
+                            Connections {
+                                function onLibrarySearchChanged() {
+                                    mainLibrary.setSearchText(edgeSurfaceWindow.librarySearch);
+                                }
+
+                                target: edgeSurfaceWindow
+                            }
+                        }
+                    }
+                    states: [
+                        State {
+                            when: root.maximizeLibrary && root.show4decks
+
+                            AnchorChanges {
+                                anchors.top: deck4.bottom
+                                target: library
+                            }
+                        },
+                        State {
+                            when: root.maximizeLibrary && !root.show4decks
+
+                            AnchorChanges {
+                                anchors.top: deck1.bottom
+                                target: library
+                            }
+                        },
+                        State {
+                            when: !root.maximizeLibrary && root.height - mixer.height < 400
+
+                            PropertyChanges {
+                                target: library
+                                visible: false
+                            }
+                        }
+                    ]
+
+                    anchors {
+                        bottom: parent.bottom
+                        // The last row above it, so a new row does not end up
+                        // underneath the library.
+                        top: sequencer.bottom
+                    }
+                }
+            }
+        }
+    }
+    // The sound engine's watchdog reopened (or failed to reopen) a device
+    // whose stream stopped calling back. Without this the only trace is a
+    // line in mixxx.log, and a silent Mixxx looks like a broken one. Also
+    // where Mixxx says it routed a controller's headphones.
+    Rectangle {
+        id: audioToast
+
+        function show(message, durationMs) {
+            audioToastText.text = message;
+            opacity = 1;
+            audioToastTimer.interval = durationMs ?? 8000;
+            audioToastTimer.restart();
+        }
+        function showHeadphonesRouted(deviceName) {
+            audioToast.show(qsTr("Headphones set to outputs 3-4 of %1, the controller's headphone jack. Change it in Settings > Sound hardware.").arg(deviceName), 15000);
+        }
+
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: 12
+        border.color: Theme.amber
+        border.width: 1
+        color: Theme.knobBackgroundColor
+        height: 32
+        opacity: 0
+        radius: 4
+        visible: opacity > 0
+        width: Math.min(audioToastText.implicitWidth + 24, parent.width - 24)
+        z: 30
+
+        // Mixxx routed a DJ controller's headphones while starting up, before
+        // this window could hear the signal: say so now, and for long enough
+        // to be read once the window has settled.
+        Component.onCompleted: {
+            const deviceName = Mixxx.SoundManager.takeHeadphonesRoutedNotice();
+            if (deviceName)
+                audioToast.showHeadphonesRouted(deviceName);
+        }
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 150
+            }
+        }
+
+        Text {
+            id: audioToastText
+
+            anchors.fill: parent
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            color: Theme.deckTextColor
+            elide: Text.ElideRight
+            font.pixelSize: 12
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+        Timer {
+            id: audioToastTimer
+
+            interval: 8000
+
+            onTriggered: audioToast.opacity = 0
+        }
+        Connections {
+            function onAudioStalled(deviceNames, recovered) {
+                audioToast.show(recovered ? qsTr("Audio restarted: %1 stopped responding").arg(deviceNames) : qsTr("Audio stopped: %1 stopped responding and could not be reopened. See Settings > Sound hardware.").arg(deviceNames));
+            }
+            function onHeadphonesRouted(deviceName) {
+                audioToast.showHeadphonesRouted(deviceName);
+            }
+
+            target: Mixxx.SoundManager
+        }
+        // A controller plugged in while Mixxx runs: picked up without a
+        // restart, and said so, because otherwise nothing on screen changes.
+        Connections {
+            function onControllersPluggedIn(opened, notOpened, rescanned) {
+                if (opened.length > 0)
+                    audioToast.show(qsTr("%1 connected").arg(opened.join(", ")), 5000);
+                else if (rescanned)
+                    audioToast.show(qsTr("%1 plugged in. Set it up in Settings > Controllers.").arg(notOpened.join(", ")), 10000);
+                else
+                    audioToast.show(qsTr("%1 plugged in. To use it, press Rescan in Settings > Controllers (this restarts the controller in use).").arg(notOpened.join(", ")), 12000);
+            }
+
+            target: Mixxx.ControllerManager
+        }
+    }
+    Skin.KeywheelPopup {
+        id: keywheelPopup
+
+        librarySearchText: library.item ? library.item.searchText : ""
+        numDecks: root.show4decks ? root.numDecks : 2
+
+        // Nothing to filter while the library is unloaded (the window too
+        // short to show it); the click is then simply ignored.
+        onKeySearchRequested: (code, compatible) => {
+            if (library.item) {
+                library.item.searchKey(code, compatible);
+            }
+        }
+    }
+    Skin.Settings {
+        id: settingsPopup
+
+        height: Math.min(840, parent.height)
+        modal: true
+        width: Math.min(1400, parent.width)
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - height) / 2)
+
+        Overlay.modal: Rectangle {
+            id: overlayModal
+
+            readonly property bool hasHardwareAcceleration: Mixxx.Config.useAcceleration
+            property real radius: 12
+
+            anchors.fill: parent
+            color: Qt.alpha('#00000010', hasHardwareAcceleration ? 1.0 : 0.6)
+
+            Repeater {
+                model: hasHardwareAcceleration ? 1 : 0
+
+                GaussianBlur {
+                    anchors.fill: overlayModal
+                    deviation: 4
+                    radius: Math.max(0, overlayModal.radius)
+                    samples: 16
+                    source: content
+                }
+            }
+        }
+    }
+}

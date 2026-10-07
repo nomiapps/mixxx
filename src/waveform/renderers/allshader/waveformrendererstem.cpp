@@ -51,6 +51,13 @@ void WaveformRendererStem::onSetup(const QDomNode&) {
 bool WaveformRendererStem::init() {
     m_pStemGain.clear();
     m_pStemMute.clear();
+
+    // Keep a valid drawing order even for displays that provide a static track
+    // without a channel group. The stem data itself is independent of the
+    // per-stem volume/mute controls, so those controls are optional.
+    m_stackOrder.resize(mixxx::kMaxSupportedStems);
+    std::iota(m_stackOrder.begin(), m_stackOrder.end(), 0);
+
     if (m_waveformRenderer->getGroup().isEmpty()) {
         return true;
     }
@@ -72,9 +79,6 @@ bool WaveformRendererStem::init() {
         m_pStemGain.back()->connectValueChanged(this, bringToForeground);
         m_pStemMute.back()->connectValueChanged(this, bringToForeground);
     }
-
-    m_stackOrder.resize(mixxx::kMaxSupportedStems);
-    std::iota(m_stackOrder.begin(), m_stackOrder.end(), 0);
 
 #ifndef __SCENEGRAPH__
     auto* pWaveformWidgetFactory = WaveformWidgetFactory::instance();
@@ -164,6 +168,9 @@ bool WaveformRendererStem::preprocessInner() {
     // Represents the # of visual frames per horizontal pixel.
     const double visualIncrementPerPixel =
             (lastVisualFrame - firstVisualFrame) / static_cast<double>(stripLength);
+    if (visualIncrementPerPixel == 0.0) {
+        return false;
+    }
 
     // Per-band gain from the EQ knobs.
     float allGain(1.0);
@@ -203,6 +210,9 @@ bool WaveformRendererStem::preprocessInner() {
     for (int visualIdx = 0; visualIdx < stripLength; visualIdx++) {
         int stemLayer = 0;
         for (int stemIdx : std::as_const(m_stackOrder)) {
+            if (stemIdx >= stemInfo.size()) {
+                continue;
+            }
             // Stem is drawn twice with different opacity level, this allow to
             // see the maximum signal by transparency
             for (int layerIdx = 0; layerIdx < 2; layerIdx++) {

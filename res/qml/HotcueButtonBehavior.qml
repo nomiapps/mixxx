@@ -6,6 +6,8 @@ import "Theme"
 Skin.ControlProxyButtonBehavior {
     id: root
 
+    anchors.fill: parent
+
     required property int hotcueNumber
     property color fallbackColor: Theme.red
     readonly property color hotcueColor: {

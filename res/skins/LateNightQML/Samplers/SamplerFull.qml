@@ -19,7 +19,9 @@ Controls.Panel {
     property bool show8Hotcues: true
     property bool showFxAssignments: true
     readonly property int tempoGainVuWidth: 52
-    readonly property bool useFilteredOverview: Math.round(waveformOverviewTypeControl.value) === 0
+    readonly property bool useFilteredOverview: waveformOverviewType === 0
+    readonly property bool useHsvOverview: waveformOverviewType === 1
+    readonly property int waveformOverviewType: Mixxx.Config.waveformOverviewType
     property bool waveformsActive: true
 
     bottomBorderColor: LateNightTheme.mixerPanelBorderBottom
@@ -189,7 +191,7 @@ Controls.Panel {
                                         introOutroMarkerColor: LateNightTheme.waveformIntroOutroColor
                                         loopMarkerColor: LateNightTheme.waveformLoopColor
                                         playPositionMarkerColor: LateNightTheme.waveformPlayPositionColor.toString()
-                                        renderer: root.useFilteredOverview ? Mixxx.WaveformOverview.Renderer.Filtered : Mixxx.WaveformOverview.Renderer.RGB
+                                        renderer: root.useFilteredOverview ? Mixxx.WaveformOverview.Renderer.Filtered : root.useHsvOverview ? Mixxx.WaveformOverview.Renderer.HSV : Mixxx.WaveformOverview.Renderer.RGB
                                     }
                                 }
                             }
@@ -323,7 +325,7 @@ Controls.Panel {
                             spacing: 0
 
                             Repeater {
-                                model: root.show8Hotcues ? 8 : 4
+                                model: 8
 
                                 SamplerHotcueButton {
                                     required property int index
@@ -332,9 +334,10 @@ Controls.Panel {
                                     Layout.minimumHeight: 0
                                     Layout.minimumWidth: 0
                                     Layout.preferredHeight: 26 * samplerButtonsRow.buttonScale
-                                    Layout.preferredWidth: 26 * samplerButtonsRow.buttonScale
+                                    Layout.preferredWidth: root.show8Hotcues || index < 4 ? 26 * samplerButtonsRow.buttonScale : 0
                                     group: root.group
                                     hotcueNumber: index + 1
+                                    visible: root.show8Hotcues || index < 4
                                 }
                             }
                             Item {

@@ -100,9 +100,8 @@ bool WaveformRendererSlipMode::preprocessInner() {
     TrackPointer pTrack = m_waveformRenderer->getTrackInfo();
     const bool isStemTrack = pTrack && pTrack->hasStem() &&
             pTrack->getWaveform() && pTrack->getWaveform()->hasStem();
-    // The factory singleton only exists in the QWidget UI; null in the QML UI.
-    const bool splitStemTracks = isStemTrack && m_pWaveformWidgetFactory &&
-            m_pWaveformWidgetFactory->isStemSplitTracks();
+    const bool splitStemTracks = isStemTrack && WaveformWidgetFactory::isCreated() &&
+            WaveformWidgetFactory::instance()->isStemSplitTracks();
 
     const int elapsed = m_timer.elapsed().toIntegerMillis() % kBlinkingPeriodMillis;
 

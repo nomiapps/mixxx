@@ -59,12 +59,8 @@ bool WaveformRenderBeat::preprocessInner() {
 
     const bool isStemTrack = trackInfo && trackInfo->hasStem() &&
             trackInfo->getWaveform() && trackInfo->getWaveform()->hasStem();
-    // WaveformWidgetFactory is only created by the QWidget main window, so
-    // under --qml / --new-ui it is null and dereferencing it crashed on
-    // every stem track load. Plain tracks were unaffected because the
-    // deref sits behind the isStemTrack short-circuit.
-    const bool splitStemTracks = isStemTrack && m_pWaveformWidgetFactory &&
-            m_pWaveformWidgetFactory->isStemSplitTracks();
+    const bool splitStemTracks = isStemTrack && WaveformWidgetFactory::isCreated() &&
+            WaveformWidgetFactory::instance()->isStemSplitTracks();
 
     auto positionType = m_isSlipRenderer ? ::WaveformRendererAbstract::Slip
                                          : ::WaveformRendererAbstract::Play;
@@ -84,7 +80,7 @@ bool WaveformRenderBeat::preprocessInner() {
 
     if (!m_color.alpha()) {
         // Don't render the beatgrid lines is there are fully transparent
-        return true;
+        return false;
     }
 
     const float devicePixelRatio = m_waveformRenderer->getDevicePixelRatio();

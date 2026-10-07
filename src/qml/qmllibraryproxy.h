@@ -97,6 +97,8 @@ class QmlLibraryProxy : public QObject {
     Q_PROPERTY(bool libraryScanActive READ libraryScanActive NOTIFY libraryScanActiveChanged)
     Q_PROPERTY(bool enginePrimeExportAvailable READ enginePrimeExportAvailable CONSTANT)
     Q_PROPERTY(QVariantList smartCrates READ smartCrates NOTIFY smartCratesChanged)
+    Q_PROPERTY(QString waveformCacheDiskUsage READ waveformCacheDiskUsage NOTIFY
+                    waveformCacheDiskUsageChanged)
     QML_NAMED_ELEMENT(Library)
     QML_SINGLETON
 
@@ -128,6 +130,12 @@ class QmlLibraryProxy : public QObject {
         PurgeTracks
     };
     Q_ENUM(SourceRemovalType);
+    enum class JumpDirection {
+        Impossible,
+        Forward,
+        Backward,
+    };
+    Q_ENUM(JumpDirection);
 
     explicit QmlLibraryProxy(QObject* parent = nullptr);
     ~QmlLibraryProxy() override;
@@ -140,6 +148,12 @@ class QmlLibraryProxy : public QObject {
     static Library* get() {
         return s_pLibrary.get();
     }
+
+    QString waveformCacheDiskUsage() const {
+        return m_waveformCacheDiskUsage;
+    }
+    Q_INVOKABLE void refreshWaveformCacheDiskUsage();
+    Q_INVOKABLE bool clearCachedWaveforms();
 
     QQmlListProperty<QmlLibrarySource> sources() {
         return {this,
@@ -212,6 +226,10 @@ class QmlLibraryProxy : public QObject {
             const QString& group,
             int hotcueNumber,
             const QString& action);
+    Q_INVOKABLE mixxx::qml::QmlLibraryProxy::JumpDirection deckHotcueJumpDirection(
+            mixxx::qml::QmlTrackProxy* track,
+            const QString& group,
+            int hotcueNumber) const;
     Q_INVOKABLE void cleanupDeckHotcuePopup(
             mixxx::qml::QmlTrackProxy* track,
             int hotcueNumber);
@@ -223,6 +241,7 @@ class QmlLibraryProxy : public QObject {
     // re-run: a smart crate holds a query, not a track list, and a track edited into
     // or out of that query belongs in or out of the crate immediately.
     void libraryTracksChanged();
+    void waveformCacheDiskUsageChanged();
     void libraryScanSummaryAvailable(
             const QString& title,
             const QString& text,
@@ -235,6 +254,8 @@ class QmlLibraryProxy : public QObject {
     static inline std::shared_ptr<Library> s_pLibrary;
 
     QVariantList m_smartCrates;
+
+    QString m_waveformCacheDiskUsage;
 
     /// This needs to be a plain pointer because it's used as a `Q_PROPERTY` member variable.
     QmlLibraryTrackListModel* m_pModelProperty;

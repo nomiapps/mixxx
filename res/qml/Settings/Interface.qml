@@ -13,7 +13,6 @@ Category {
 
     function load() {
         loadInterface();
-        loadWaveform();
         loadDeck();
         errorMessage.text = "";
     }
@@ -79,16 +78,9 @@ Category {
         jumpPaletteInput.currentIndex = colorPane.jumpPaletteColorIndex;
         themeColorTab.dirty = false;
     }
-    function loadWaveform() {
-        // Waveform tab
-        highDetailInput.selected = (Mixxx.Config.waveformOptions & Mixxx.WaveformDisplay.HighDetail) ? "on" : "off";
-        waveformTab.dirty = false;
-    }
     function resetDeck() {
     }
     function resetInterface() {
-    }
-    function resetWaveform() {
     }
     function saveDeck() {
         Mixxx.Config.controlCueDefault = cueModeInput.currentIndex;
@@ -149,19 +141,10 @@ Category {
         // jumpPaletteInput.value =
         loadInterface();
     }
-    function saveWaveform() {
-        // waveform_options is a bit set shared with the legacy preferences dialog.
-        // Only the high detail bit is ours to write: the other one, split stereo,
-        // is ignored by the filtered renderer the QML decks draw with, so it stays
-        // exactly as we found it rather than being silently cleared here.
-        const options = Mixxx.Config.waveformOptions;
-        Mixxx.Config.waveformOptions = highDetailInput.selected === "on" ? options | Mixxx.WaveformDisplay.HighDetail : options & ~Mixxx.WaveformDisplay.HighDetail;
-        loadWaveform();
-    }
 
     label: "Interface"
     selectedIndex: 0
-    tabs: ["theme & color", "waveform", "decks"]
+    tabs: ["theme & color", "decks"]
 
     Component.onCompleted: {
         root.load();
@@ -927,102 +910,16 @@ Category {
             }
         }
         Mixxx.SettingGroup {
-            id: waveformTab
-
-            property bool dirty: false
-
-            anchors.fill: parent
-            label: "Waveform"
-            visible: root.selectedIndex == 1
-
-            onActivated: {
-                root.selectedIndex = 1;
-            }
-
-            ScrollView {
-                // Anchor to the TAB, not to buttonActions: that lives on the
-                // Category root, so from inside a tab it is an uncle, not a
-                // sibling, and Qt refuses the anchor outright -- leaving the
-                // ScrollView with no height and letting it grow to its content,
-                // which is why wrapping the tabs appeared to do nothing at all.
-                // Reading its height for the margin is fine; only anchoring is
-                // restricted to a parent or sibling.
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: buttonActions.height + 18
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.topMargin: 20
-                // ScrollView does not clip by default, so without this the
-                // content draws straight past the viewport instead of being
-                // scrolled inside it -- which is exactly what wrapping the tab
-                // in a ScrollView appeared not to fix.
-                clip: true
-                spacing: 0
-
-                ColumnLayout {
-                    spacing: 0
-                    width: root.width - 10
-
-                    GridLayout {
-                        id: waveformPane
-
-                        Layout.fillWidth: true
-                        columnSpacing: 20
-                        columns: 2
-                        rowSpacing: 15
-
-                        RowLayout {
-                            Layout.leftMargin: 14
-                            // Half the tab, not half this pane: the pane sizes itself from
-                            // its rows, so a row measured against the pane is a loop, and
-                            // Qt Quick Layouts aborts the rearrange after two passes.
-                            Layout.preferredWidth: (waveformTab.width - 56) * 0.5
-                            Layout.rightMargin: 14
-
-                            Mixxx.SettingParameter {
-                                Layout.fillWidth: true
-                                label: "High detail waveform"
-
-                                Text {
-                                    anchors.fill: parent
-                                    color: Theme.white
-                                    elide: Text.ElideRight
-                                    font.pixelSize: 14
-                                    font.weight: Font.Medium
-                                    horizontalAlignment: Text.AlignLeft
-                                    text: parent.label
-                                    verticalAlignment: Text.AlignVCenter
-                                }
-                            }
-                            RatioChoice {
-                                id: highDetailInput
-
-                                options: ["on", "off"]
-                                tooltips: ["Draws every pixel from the sample under it, in a shader", "Draws the waveform from cached tiles, which scroll"]
-
-                                onSelectedChanged: waveformTab.dirty = true
-                            }
-                        }
-                    }
-                    Item {
-                        Layout.fillHeight: true
-                        Layout.fillWidth: true
-                    }
-                }
-            }
-        }
-        Mixxx.SettingGroup {
             id: decksTab
 
             property bool dirty: false
 
             anchors.fill: parent
             label: "Decks"
-            visible: root.selectedIndex == 2
+            visible: root.selectedIndex == 1
 
             onActivated: {
-                root.selectedIndex = 2;
+                root.selectedIndex = 1;
             }
 
             ScrollView {
@@ -1794,9 +1691,6 @@ Category {
                     root.resetInterface();
                     break;
                 case 1:
-                    root.resetWaveform();
-                    break;
-                case 0:
                     root.resetDeck();
                     break;
                 }
@@ -1815,7 +1709,7 @@ Category {
                 text: ""
             }
             SettingComponents.FormButton {
-                enabled: root.selectedIndex == 0 && themeColorTab.dirty || root.selectedIndex == 1 && waveformTab.dirty || root.selectedIndex == 2 && decksTab.dirty
+                enabled: root.selectedIndex == 0 && themeColorTab.dirty || root.selectedIndex == 1 && decksTab.dirty
                 opacity: enabled ? 1.0 : 0.5
                 text: "Cancel"
 
@@ -1825,16 +1719,13 @@ Category {
                         root.loadInterface();
                         break;
                     case 1:
-                        root.loadWaveform();
-                        break;
-                    case 2:
                         root.loadDeck();
                         break;
                     }
                 }
             }
             SettingComponents.FormButton {
-                enabled: root.selectedIndex == 0 && themeColorTab.dirty || root.selectedIndex == 1 && waveformTab.dirty || root.selectedIndex == 2 && decksTab.dirty
+                enabled: root.selectedIndex == 0 && themeColorTab.dirty || root.selectedIndex == 1 && decksTab.dirty
                 opacity: enabled ? 1.0 : 0.5
                 // Was `root.hasChanges`, which Category does not define, so this was
                 // always undefined -- the Save button never highlighted, and once it fed
@@ -1849,9 +1740,6 @@ Category {
                         root.saveInterface();
                         break;
                     case 1:
-                        root.saveWaveform();
-                        break;
-                    case 2:
                         root.saveDeck();
                         break;
                     }

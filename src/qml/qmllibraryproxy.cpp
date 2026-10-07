@@ -6,11 +6,14 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLocale>
 #include <QQmlEngine>
+#include <QSqlDatabase>
 #include <QStringList>
 #include <cmath>
 
 #include "control/controlobject.h"
+#include "library/dao/analysisdao.h"
 #include "library/library.h"
 #include "library/library_prefs.h"
 #include "library/librarytablemodel.h"
@@ -29,6 +32,7 @@
 #include "track/cue.h"
 #include "track/track.h"
 #include "util/assert.h"
+#include "util/db/dbconnectionpooled.h"
 
 namespace mixxx {
 namespace qml {
@@ -227,6 +231,44 @@ QmlLibraryProxy::QmlLibraryProxy(QObject* parent)
 }
 
 QmlLibraryProxy::~QmlLibraryProxy() = default;
+
+void QmlLibraryProxy::refreshWaveformCacheDiskUsage() {
+    VERIFY_OR_DEBUG_ASSERT(s_pLibrary && QmlConfigProxy::get()) {
+        return;
+    }
+
+    AnalysisDao analysisDao(QmlConfigProxy::get());
+    const QSqlDatabase dbConnection =
+            mixxx::DbConnectionPooled(s_pLibrary->dbConnectionPool());
+    const size_t byteCount =
+            analysisDao.getDiskUsageInBytes(
+                    dbConnection, AnalysisDao::TYPE_WAVEFORM) +
+            analysisDao.getDiskUsageInBytes(
+                    dbConnection, AnalysisDao::TYPE_WAVESUMMARY);
+    const QString diskUsage =
+            QLocale().formattedDataSize(byteCount, 1, QLocale::DataSizeSIFormat);
+    if (m_waveformCacheDiskUsage == diskUsage) {
+        return;
+    }
+    m_waveformCacheDiskUsage = diskUsage;
+    emit waveformCacheDiskUsageChanged();
+}
+
+bool QmlLibraryProxy::clearCachedWaveforms() {
+    VERIFY_OR_DEBUG_ASSERT(s_pLibrary && QmlConfigProxy::get()) {
+        return false;
+    }
+
+    AnalysisDao analysisDao(QmlConfigProxy::get());
+    const QSqlDatabase dbConnection =
+            mixxx::DbConnectionPooled(s_pLibrary->dbConnectionPool());
+    const bool waveformDeleted = analysisDao.deleteAnalysesByType(
+            dbConnection, AnalysisDao::TYPE_WAVEFORM);
+    const bool summaryDeleted = analysisDao.deleteAnalysesByType(
+            dbConnection, AnalysisDao::TYPE_WAVESUMMARY);
+    refreshWaveformCacheDiskUsage();
+    return waveformDeleted && summaryDeleted;
+}
 
 void QmlLibraryProxy::deliverPendingLibraryScanSummary() {
     const auto pendingResult = m_pTrackCollectionManager->takePendingLibraryScanSummary();
@@ -525,7 +567,7 @@ bool QmlLibraryProxy::setDeckHotcueType(
         int hotcueNumber,
         const QString& action) {
     const CuePointer pCue = findDeckHotcue(track, hotcueNumber);
-    if (!track || !track->internal() || !pCue) {
+    if (!pCue) {
         return false;
     }
 
@@ -623,6 +665,36 @@ bool QmlLibraryProxy::setDeckHotcueType(
     }
 
     return false;
+}
+
+QmlLibraryProxy::JumpDirection QmlLibraryProxy::deckHotcueJumpDirection(
+        QmlTrackProxy* track,
+        const QString& group,
+        int hotcueNumber) const {
+    const CuePointer pCue = findDeckHotcue(track, hotcueNumber);
+    if (!pCue) {
+        return JumpDirection::Impossible;
+    }
+
+    if (pCue->getType() == mixxx::CueType::HotCue) {
+        const Cue::StartAndEndPositions cueStartEnd = pCue->getStartAndEndPosition();
+        auto newPosition = cueStartEnd.endPosition;
+        if (!newPosition.isValid()) {
+            newPosition = getCurrentPlayPositionWithQuantize(track->internal(), group);
+        }
+        if (!newPosition.isValid() ||
+                std::abs(newPosition - cueStartEnd.startPosition) <=
+                        kMinimumAudibleLoopSizeFrames) {
+            return JumpDirection::Impossible;
+        }
+        return newPosition < cueStartEnd.startPosition
+                ? JumpDirection::Forward
+                : JumpDirection::Backward;
+    }
+
+    const bool isForward = pCue->getType() != mixxx::CueType::Jump ||
+            pCue->getPosition() > pCue->getEndPosition();
+    return isForward ? JumpDirection::Forward : JumpDirection::Backward;
 }
 
 void QmlLibraryProxy::cleanupDeckHotcuePopup(

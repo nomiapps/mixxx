@@ -20,10 +20,13 @@ Skin.ComboBox {
         currentIndex = 0;
     }
 
+    readonly property string observedEffectId: root.slot?.effectId ?? ""
+
     model: Mixxx.EffectsManager.visibleEffectsModel
     textRole: "display"
 
     Component.onCompleted: syncCurrentEffect()
+    onObservedEffectIdChanged: syncCurrentEffect()
     onActivated: index => {
         const effectId = model.get(index).effectId || "";
         if (slot.effectId !== effectId) {
@@ -32,11 +35,4 @@ Skin.ComboBox {
     }
     onCountChanged: syncCurrentEffect()
 
-    Connections {
-        function onEffectIdChanged() {
-            root.syncCurrentEffect();
-        }
-
-        target: root.slot
-    }
 }
