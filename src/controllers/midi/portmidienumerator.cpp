@@ -213,17 +213,12 @@ bool shouldLinkInputToOutput(const QString& input_name,
 QList<Controller*> PortMidiEnumerator::queryDevices() {
     qDebug() << "Scanning PortMIDI devices:";
 
-    QListIterator<Controller*> dev_it(m_devices);
-    while (dev_it.hasNext()) {
-        delete dev_it.next();
-    }
-
-    m_devices.clear();
+    retireDevices(&m_devices);
 
     // PortMidi reads the device list once, in Pm_Initialize, so without a restart
     // a rescan only ever finds the devices that were there when Mixxx started: a
     // controller plugged in (or back in) later stays invisible. Every stream was
-    // closed with the controllers deleted above, which PortMidi requires. This
+    // closed with the controllers retired above, which PortMidi requires. This
     // always runs on the ControllerManager thread, the thread that first
     // initialized PortMidi, as macOS requires.
     Pm_Terminate();

@@ -2925,6 +2925,8 @@ if(BUILD_TESTING)
     src/test/channelhandle_test.cpp
     src/test/chrono_clock_resolution_test.cpp
     src/test/clapbackend_test.cpp
+    src/test/controllerenumerator_test.cpp
+    src/test/controllermanager_test.cpp
     src/test/colorconfig_test.cpp
     src/test/colormapperjsproxy_test.cpp
     src/test/colorpalette_test.cpp

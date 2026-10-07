@@ -169,6 +169,9 @@ HidEnumerator::~HidEnumerator() {
 QList<Controller*> HidEnumerator::queryDevices() {
     qInfo() << "Scanning USB HID devices";
 
+    // Without this every rescan would add a second controller for each device.
+    retireDevices(&m_devices);
+
 #ifdef __ANDROID__
     QJniObject context = QNativeInterface::QAndroidApplication::context();
     QJniObject USB_SERVICE =

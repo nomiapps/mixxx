@@ -209,6 +209,8 @@ class Controller : public QObject {
     friend class ControllerJSProxy;
     // accesses lots of our stuff, but in the same thread
     friend class ControllerManager;
+    // closes the controllers a rescan replaces
+    friend class ControllerEnumerator;
     // For testing
     friend class MappingTestFixture;
     friend class MidiControllerTest;

@@ -228,12 +228,20 @@ Category {
         anchors.rightMargin: 14
 
         Skin.FormButton {
+            enabled: !root.manager.rescanning
             opacity: enabled ? 1.0 : 0.5
-            text: "Rescan"
+            text: root.manager.rescanning ? "Scanning…" : "Rescan"
 
             onPressed: {
                 root.rescan();
             }
+        }
+        // Reopening a controller can take seconds, with nothing else to show for it.
+        BusyIndicator {
+            Layout.preferredHeight: 26
+            Layout.preferredWidth: 26
+            running: root.manager.rescanning
+            visible: running
         }
         Skin.FormButton {
             backgroundColor: Theme.warningColor

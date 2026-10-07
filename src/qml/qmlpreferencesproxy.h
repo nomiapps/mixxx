@@ -292,6 +292,11 @@ class QmlControllerDeviceProxy : public QObject {
     Controller* internal() const {
         return m_pInternal;
     }
+    /// Lets go of the controller, for a card that is about to be deleted
+    /// because a rescan replaced its device.
+    void forgetController() {
+        m_pInternal = nullptr;
+    }
 
     std::shared_ptr<LegacyControllerMapping> instanceFor(const QString& mappingPath) const;
     void setInstanceFor(const QString& mappingPath, std::shared_ptr<LegacyControllerMapping>);
@@ -345,6 +350,9 @@ class QmlControllerManagerProxy : public QObject {
     Q_PROPERTY(QList<QmlControllerDeviceProxy*> unknownDevices MEMBER
                     m_unknownDevicesFound NOTIFY deviceListChanged)
     Q_PROPERTY(bool showControllerScreen MEMBER s_controllerPreviewScreens CONSTANT)
+    /// True from a rescan being asked for, or starting by itself when a
+    /// controller is plugged in, until every enabled controller is open again.
+    Q_PROPERTY(bool rescanning READ isRescanning NOTIFY rescanningChanged)
     QML_SINGLETON
   public:
     explicit QmlControllerManagerProxy(
@@ -355,6 +363,10 @@ class QmlControllerManagerProxy : public QObject {
     QQmlListProperty<QmlControllerDeviceProxy> unknownDevices();
 
     bool isControllerScreenDebug() const;
+
+    bool isRescanning() const {
+        return m_rescanning;
+    }
 
     std::shared_ptr<ControllerManager> internal() const;
 
@@ -387,6 +399,7 @@ class QmlControllerManagerProxy : public QObject {
 
   signals:
     void deviceListChanged();
+    void rescanningChanged();
     /// Forwarded from ControllerManager: controllers plugged in while Mixxx runs.
     void controllersPluggedIn(const QStringList& opened,
             const QStringList& notOpened,
@@ -397,6 +410,7 @@ class QmlControllerManagerProxy : public QObject {
     static inline bool s_controllerPreviewScreens;
 
     void loadMappingFromEnumerator(QSharedPointer<MappingInfoEnumerator> enumerator);
+    void setRescanning(bool rescanning);
 
     /// Which controllers already have a card. Rebuilt from the surviving cards on
     /// every refresh rather than appended to, because a rescan frees every
@@ -409,6 +423,7 @@ class QmlControllerManagerProxy : public QObject {
     QList<QmlControllerDeviceProxy*> m_unknownDevicesFound;
 
     std::shared_ptr<ControllerManager> m_pControllerManager;
+    bool m_rescanning{false};
 };
 
 } // namespace qml

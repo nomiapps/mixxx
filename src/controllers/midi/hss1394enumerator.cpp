@@ -22,6 +22,9 @@ Hss1394Enumerator::~Hss1394Enumerator() {
 // Enumerate the HSS1394 MIDI devices
 QList<Controller*> Hss1394Enumerator::queryDevices() {
     qDebug() << "Scanning HSS1394 devices:";
+
+    // Without this every rescan would add a second controller for each device.
+    retireDevices(&m_devices);
     using namespace hss1394;
 
     hss1394::uint uNodes = Node::Instance()->GetNodeCount();

@@ -152,7 +152,7 @@ Item {
         id: searchField
 
         anchors.left: parent.left
-        anchors.right: rescanButton.left
+        anchors.right: libraryScanSpinner.visible ? libraryScanSpinner.left : rescanButton.left
         anchors.rightMargin: 6
         anchors.top: parent.top
         anchors.topMargin: 4
@@ -221,6 +221,18 @@ Item {
                 onTapped: root.clearSearch()
             }
         }
+    }
+    // A scan of a large library runs for minutes; the button text alone is easy to miss.
+    BusyIndicator {
+        id: libraryScanSpinner
+
+        anchors.right: rescanButton.left
+        anchors.rightMargin: 6
+        anchors.verticalCenter: rescanButton.verticalCenter
+        height: 26
+        running: Mixxx.Library.libraryScanActive
+        visible: running
+        width: 26
     }
     Skin.FormButton {
         id: rescanButton

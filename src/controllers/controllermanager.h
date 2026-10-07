@@ -6,6 +6,7 @@
 #include <QSharedPointer>
 #include <QStringList>
 #include <QTimer>
+#include <atomic>
 #include <memory>
 #include <vector>
 
@@ -44,14 +45,20 @@ class ControllerManager : public QObject {
     }
     QString getConfiguredMappingFileForDevice(const QString& name) const;
 
-    /// Prevent other parts of Mixxx from having to manually connect to our slots
-    void setUpDevices() { emit requestSetUpDevices(); };
+    /// Prevent other parts of Mixxx from having to manually connect to our slots.
+    /// Requests made while one is already waiting are served by that one scan.
+    void setUpDevices();
 
     static QList<QString> getMappingPaths(UserSettingsPointer pConfig);
 
   signals:
     void initialized();
     void devicesChanged();
+    /// A scan for controllers has begun, and has finished with every enabled
+    /// controller reopened. Emitted for every scan, whether or not it changed
+    /// the list of devices.
+    void scanStarted();
+    void scanFinished();
     void requestSetUpDevices();
     void requestShutdown();
     void requestInitialize();
@@ -85,9 +92,14 @@ class ControllerManager : public QObject {
     /// Compare what is plugged in now with the last scan, and rescan if a
     /// controller arrived.
     void slotCheckForNewDevices();
+    /// Deletes the controllers replaced by the scans up to the given one.
+    void slotDeleteRetiredControllers(quint64 scan);
 
   private:
     void updateControllerList();
+    /// Has the controllers a scan replaced deleted once the main thread has
+    /// handled the devicesChanged() of that scan.
+    void deleteRetiredControllersAfterMainThread(QList<Controller*> retired);
     /// Union of every enumerator's presentDevices().
     QMap<QString, QString> presentDevices() const;
     void startPolling();
@@ -133,4 +145,15 @@ class ControllerManager : public QObject {
     /// is dead and must be rebuilt.
     QMap<QString, QString> m_presentAtLastScan;
     QSet<QString> m_absentSinceLastScan;
+
+    /// True from setUpDevices() until slotSetUpDevices() starts on it.
+    std::atomic<bool> m_setUpRequested;
+    /// The controllers each scan replaced, closed and waiting to be deleted.
+    /// Only touched on the ControllerManager thread.
+    struct RetiredControllers {
+        quint64 scan;
+        QList<Controller*> controllers;
+    };
+    std::vector<RetiredControllers> m_retiredControllers;
+    quint64 m_scanCount;
 };

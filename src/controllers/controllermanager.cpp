@@ -1,5 +1,7 @@
 #include "controllers/controllermanager.h"
 
+#include <QCoreApplication>
+#include <QPointer>
 #include <QSet>
 #include <QThread>
 #include <algorithm>
@@ -117,7 +119,9 @@ ControllerManager::ControllerManager(UserSettingsPointer pConfig)
           m_skipPoll(false),
           m_hotplugTimer(this),
           m_hotplugChecksLeft(0),
-          m_hotplugArmed(false) {
+          m_hotplugArmed(false),
+          m_setUpRequested(false),
+          m_scanCount(0) {
     qRegisterMetaType<std::shared_ptr<LegacyControllerMapping>>(
             "std::shared_ptr<LegacyControllerMapping>");
 
@@ -228,6 +232,12 @@ void ControllerManager::slotShutdown() {
     m_hotplugTimer.stop();
     m_pHotplugWatcher.reset();
 
+    // Before the enumerators, whose libraries these controllers still use.
+    for (const RetiredControllers& retired : std::as_const(m_retiredControllers)) {
+        qDeleteAll(retired.controllers);
+    }
+    m_retiredControllers.clear();
+
     // Clear m_enumerators before deleting the enumerators to prevent other code
     // paths from accessing them during teardown.
     auto locker = lockMutex(&m_mutex);
@@ -248,11 +258,13 @@ void ControllerManager::updateControllerList() {
     DEBUG_ASSERT_THIS_QOBJECT_THREAD_AFFINITY();
     // NOTE: this runs on startup and again whenever a rescan is requested, e.g. from
     // the Controllers settings page after replugging a device. Every Controller is
-    // destroyed and rebuilt here, so anything holding one must rebuild on
-    // devicesChanged() and must not assume its pointers survive. DlgPrefControllers
-    // and QmlControllerManagerProxy both do. A device plugged in while Mixxx runs
-    // triggers this through slotCheckForNewDevices() where the OS says so
-    // (Windows), and otherwise only through a rescan.
+    // replaced here, so anything holding one must let go of it in its handler
+    // of devicesChanged(). DlgPrefControllers and QmlControllerManagerProxy both
+    // do. The replaced controllers are closed at once but deleted only after the
+    // main thread has run those handlers: until then its pointers stay valid.
+    // A device plugged in while Mixxx runs triggers this through
+    // slotCheckForNewDevices() where the OS says so (Windows), and otherwise
+    // only through a rescan.
     auto locker = lockMutex(&m_mutex);
     if (m_enumerators.empty()) {
         qWarning() << "updateControllerList called but no enumerators have been added!";
@@ -267,17 +279,73 @@ void ControllerManager::updateControllerList() {
     locker.unlock();
 
     QList<Controller*> newDeviceList;
+    QList<Controller*> retired;
     for (ControllerEnumerator* pEnumerator : enumerators) {
         newDeviceList.append(pEnumerator->queryDevices());
+        retired.append(pEnumerator->takeRetiredDevices());
     }
 
     locker.relock();
-    if (newDeviceList == m_controllers) {
-        return;
-    }
+    const bool changed = newDeviceList != m_controllers;
     m_controllers = std::move(newDeviceList);
     locker.unlock();
-    emit devicesChanged();
+    if (changed) {
+        emit devicesChanged();
+    }
+    deleteRetiredControllersAfterMainThread(std::move(retired));
+}
+
+void ControllerManager::deleteRetiredControllersAfterMainThread(
+        QList<Controller*> retired) {
+    DEBUG_ASSERT_THIS_QOBJECT_THREAD_AFFINITY();
+    if (retired.isEmpty()) {
+        return;
+    }
+    const quint64 scan = ++m_scanCount;
+    m_retiredControllers.push_back({scan, std::move(retired)});
+
+    QCoreApplication* pApp = QCoreApplication::instance();
+    if (!pApp || pApp->thread() == thread()) {
+        // No other thread to wait for.
+        slotDeleteRetiredControllers(scan);
+        return;
+    }
+    // The main thread runs its events in the order they were posted, so this
+    // reaches it after the devicesChanged() handlers above, and only then
+    // comes back here to delete. ~ControllerManager runs on the main thread
+    // too, so the pointer cannot go stale between the check and the call.
+    QMetaObject::invokeMethod(
+            pApp,
+            [pThis = QPointer<ControllerManager>(this), scan]() {
+                if (pThis) {
+                    QMetaObject::invokeMethod(
+                            pThis.data(),
+                            [pThis, scan]() {
+                                pThis->slotDeleteRetiredControllers(scan);
+                            },
+                            Qt::QueuedConnection);
+                }
+            },
+            Qt::QueuedConnection);
+}
+
+void ControllerManager::slotDeleteRetiredControllers(quint64 scan) {
+    DEBUG_ASSERT_THIS_QOBJECT_THREAD_AFFINITY();
+    auto it = m_retiredControllers.begin();
+    while (it != m_retiredControllers.end()) {
+        if (it->scan > scan) {
+            ++it;
+            continue;
+        }
+        qDeleteAll(it->controllers);
+        it = m_retiredControllers.erase(it);
+    }
+}
+
+void ControllerManager::setUpDevices() {
+    if (!m_setUpRequested.exchange(true)) {
+        emit requestSetUpDevices();
+    }
 }
 
 QList<Controller*> ControllerManager::getControllers() const {
@@ -406,6 +474,9 @@ QString ControllerManager::getConfiguredMappingFileForDevice(const QString& name
 void ControllerManager::slotSetUpDevices() {
     DEBUG_ASSERT_THIS_QOBJECT_THREAD_AFFINITY();
     qDebug() << "ControllerManager: Setting up devices";
+    // From here on a new request means a new scan.
+    m_setUpRequested = false;
+    emit scanStarted();
 
     // The baseline hotplug compares against. Taken before the scan, so a device
     // that arrives during it still counts as new afterwards.
@@ -474,6 +545,7 @@ void ControllerManager::slotSetUpDevices() {
     }
 
     pollIfAnyControllersOpen();
+    emit scanFinished();
 }
 
 void ControllerManager::pollIfAnyControllersOpen() {
@@ -597,6 +669,11 @@ void ControllerManager::slotApplyMapping(Controller* pController,
     DEBUG_ASSERT_THIS_QOBJECT_THREAD_AFFINITY();
     VERIFY_OR_DEBUG_ASSERT(pController) {
         qWarning() << "slotApplyMapping got invalid controller!";
+        return;
+    }
+    // A request that was on its way while a rescan replaced the controller.
+    if (!getControllers().contains(pController)) {
+        qWarning() << "slotApplyMapping: the controller was replaced by a rescan";
         return;
     }
 

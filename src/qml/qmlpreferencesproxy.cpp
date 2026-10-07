@@ -655,6 +655,27 @@ QmlControllerManagerProxy::QmlControllerManagerProxy(
             &ControllerManager::controllersPluggedIn,
             this,
             &QmlControllerManagerProxy::controllersPluggedIn);
+
+    connect(m_pControllerManager.get(),
+            &ControllerManager::scanStarted,
+            this,
+            [this]() {
+                setRescanning(true);
+            });
+    connect(m_pControllerManager.get(),
+            &ControllerManager::scanFinished,
+            this,
+            [this]() {
+                setRescanning(false);
+            });
+}
+
+void QmlControllerManagerProxy::setRescanning(bool rescanning) {
+    if (m_rescanning == rescanning) {
+        return;
+    }
+    m_rescanning = rescanning;
+    emit rescanningChanged();
 }
 
 void QmlControllerManagerProxy::loadMappingFromEnumerator(
@@ -723,7 +744,9 @@ void QmlControllerManagerProxy::refreshKnownDevices() {
             }
             it = devices.erase(it);
             // deleteLater, not delete: QML may still be unwinding a binding on this
-            // card while we are called.
+            // card while we are called. Its controller is deleted as soon as this
+            // handler returns, which can be before the card is, so let go now.
+            pDevice->forgetController();
             pDevice->deleteLater();
         }
     };
@@ -827,7 +850,9 @@ void QmlControllerManagerProxy::refreshKnownDevices() {
 void QmlControllerManagerProxy::rescanDevices() {
     // Asynchronous: this asks the ControllerManager thread to re-enumerate, re-apply
     // mappings and reopen whatever is enabled. The device cards rebuild when it
-    // answers with devicesChanged().
+    // answers with devicesChanged(). Said to be under way from now, not from
+    // when that thread gets to it: it can be busy for seconds.
+    setRescanning(true);
     m_pControllerManager->setUpDevices();
 }
 
