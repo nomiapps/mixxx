@@ -104,7 +104,16 @@ ApplicationWindow {
     // So re-place when the screen changes, and repeat the deferred pass a few
     // times over the first ~1.2s. Placement is deterministic (centre + clamp),
     // so repeated passes converge and the last one wins.
-    onScreenChanged: root.clampOntoScreen()
+    //
+    // Only during that start-up window. After it a screen change means the
+    // user is dragging the window to another monitor, and re-centring and
+    // resizing it under the cursor fights the drag: Windows refuses the
+    // geometry, moves it back, the screen changes again, and the GUI thread
+    // spends the drag doing that instead of drawing.
+    onScreenChanged: {
+        if (clampTimer.running)
+            root.clampOntoScreen();
+    }
 
     Timer {
         id: clampTimer

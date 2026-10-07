@@ -1,7 +1,10 @@
 #pragma once
 
+#include <QMutex>
 #include <QObject>
 #include <QQmlAbstractUrlInterceptor>
+#include <QSet>
+#include <QString>
 
 #include "util/autofilereloader.h"
 
@@ -15,15 +18,18 @@ class QmlAutoReload : public QObject, public QQmlAbstractUrlInterceptor {
 
     QUrl intercept(const QUrl& url, QQmlAbstractUrlInterceptor::DataType type) override;
 
-    void clear() {
-        m_autoReloader.clear();
-    }
+    void clear();
 
   signals:
     void triggered();
 
   private:
     AutoFileReloader m_autoReloader;
+    /// Every local path already looked at. The engine asks about the same URL
+    /// again whenever a binding re-resolves it, from the GUI thread and from
+    /// its type loader thread.
+    QMutex m_mutex;
+    QSet<QString> m_seenPaths;
 };
 
 } // namespace qml
