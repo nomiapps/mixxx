@@ -62,12 +62,17 @@ void VisibleEffectsList::readEffectsXml(
     // New effects will remain hidden since they are neither in the VisibleEffects
     // nor in the newly introduced HiddenEffects list.
     // Unhide all effects that are not in either list.
-    const auto manifests = pBackendManager->getManifestsForBackend(EffectBackendType::BuiltIn);
-    for (const EffectManifestPointer& pManifest : std::as_const(manifests)) {
-        if (!visibleEffects.contains(pManifest) &&
-                !hiddenEffects.contains(pManifest)) {
-            // prepend so un-hidden effects are discoverable
-            visibleEffects.prepend(pManifest);
+    // CLAP plugins are shown as well: the user installed each one on purpose,
+    // unlike the LV2 plugins a Linux distribution may bring by the hundred.
+    for (const EffectBackendType backendType :
+            {EffectBackendType::BuiltIn, EffectBackendType::CLAP}) {
+        const auto manifests = pBackendManager->getManifestsForBackend(backendType);
+        for (const EffectManifestPointer& pManifest : std::as_const(manifests)) {
+            if (!visibleEffects.contains(pManifest) &&
+                    !hiddenEffects.contains(pManifest)) {
+                // prepend so un-hidden effects are discoverable
+                visibleEffects.prepend(pManifest);
+            }
         }
     }
     setList(visibleEffects);

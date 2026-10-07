@@ -2,6 +2,7 @@
 
 #include "control/controlobject.h"
 #include "effects/backends/builtin/builtinbackend.h"
+#include "effects/backends/clap/clapbackend.h"
 #include "effects/backends/effectmanifest.h"
 #include "effects/backends/effectprocessor.h"
 #ifdef __AU_EFFECTS__
@@ -24,6 +25,7 @@ EffectsBackendManager::EffectsBackendManager() {
 #ifdef __LILV__
     addBackend(EffectsBackendPointer(new LV2Backend()));
 #endif
+    addBackend(EffectsBackendPointer(new CLAPBackend()));
 }
 
 void EffectsBackendManager::addBackend(EffectsBackendPointer pBackend) {

@@ -5,6 +5,7 @@
 namespace {
 const QString backendTypeNameAudioUnit = QStringLiteral("AudioUnit");
 const QString backendTypeNameLV2 = QStringLiteral("LV2");
+const QString backendTypeNameCLAP = QStringLiteral("CLAP");
 // QString::tr requires const char[] rather than QString
 //: Backend type for effects that are built into Mixxx.
 constexpr char backendTypeNameBuiltIn[] = QT_TRANSLATE_NOOP("EffectsBackend", "Built-In");
@@ -17,6 +18,8 @@ EffectBackendType EffectsBackend::backendTypeFromString(const QString& typeName)
         return EffectBackendType::LV2;
     } else if (typeName == backendTypeNameAudioUnit) {
         return EffectBackendType::AudioUnit;
+    } else if (typeName == backendTypeNameCLAP) {
+        return EffectBackendType::CLAP;
     } else {
         return EffectBackendType::BuiltIn;
     }
@@ -30,6 +33,8 @@ QString EffectsBackend::backendTypeToString(EffectBackendType backendType) {
         return backendTypeNameAudioUnit;
     case EffectBackendType::LV2:
         return backendTypeNameLV2;
+    case EffectBackendType::CLAP:
+        return backendTypeNameCLAP;
     default:
         return backendTypeNameUnknown;
     }
@@ -45,6 +50,8 @@ QString EffectsBackend::translatedBackendName(EffectBackendType backendType) {
         return backendTypeNameAudioUnit;
     case EffectBackendType::LV2:
         return backendTypeNameLV2;
+    case EffectBackendType::CLAP:
+        return backendTypeNameCLAP;
     default:
         // Clazy's `tr-non-literal` check is a false positive, because the
         // source string has been marked `QT_TR_NOOP`.

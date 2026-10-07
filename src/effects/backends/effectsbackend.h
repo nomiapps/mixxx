@@ -15,7 +15,7 @@ class EffectProcessor;
 /// logic specific to each effect.
 ///
 /// Currently the implemented EffectsBackend subclasses are for the effects
-/// built into Mixxx and LV2 plugins. Other plugin types such as VSTs could be
+/// built into Mixxx, and for LV2 and CLAP plugins. Other plugin types such as VSTs could be
 /// added in the future by creating new subclasses of EffectsBackend,
 /// EffectManifest, EffectState, and EffectProcessorImpl.
 class EffectsBackend {

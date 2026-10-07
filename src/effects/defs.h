@@ -19,6 +19,7 @@ enum class EffectBackendType {
     BuiltIn,
     AudioUnit,
     LV2,
+    CLAP,
     Unknown
 };
 

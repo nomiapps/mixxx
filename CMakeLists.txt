@@ -1286,6 +1286,10 @@ add_library(
   src/effects/backends/builtin/threebandbiquadeqeffect.cpp
   src/effects/backends/builtin/tremoloeffect.cpp
   src/effects/backends/builtin/whitenoiseeffect.cpp
+  src/effects/backends/clap/clapbackend.cpp
+  src/effects/backends/clap/clapeffectprocessor.cpp
+  src/effects/backends/clap/clapmanifest.cpp
+  src/effects/backends/clap/clapplugin.cpp
   src/effects/backends/effectmanifest.cpp
   src/effects/backends/effectmanifestparameter.cpp
   src/effects/backends/effectsbackend.cpp
@@ -2920,6 +2924,7 @@ if(BUILD_TESTING)
     src/test/cache_test.cpp
     src/test/channelhandle_test.cpp
     src/test/chrono_clock_resolution_test.cpp
+    src/test/clapbackend_test.cpp
     src/test/colorconfig_test.cpp
     src/test/colormapperjsproxy_test.cpp
     src/test/colorpalette_test.cpp
@@ -3092,6 +3097,30 @@ if(BUILD_TESTING)
   if(AU_EFFECTS)
     target_sources(mixxx-test PRIVATE src/test/audiounitmanager_test.mm)
   endif()
+
+  # A small CLAP plugin for clapbackend_test.cpp to load, in a folder of its
+  # own so that the test scans nothing else.
+  set(MIXXX_TEST_CLAP_DIR "${CMAKE_CURRENT_BINARY_DIR}/test-clap")
+  add_library(mixxx-test-clap-gain MODULE src/test/clap/testgainplugin.cpp)
+  target_include_directories(
+    mixxx-test-clap-gain
+    SYSTEM
+    PRIVATE lib/clap/include
+  )
+  set_target_properties(
+    mixxx-test-clap-gain
+    PROPERTIES
+      PREFIX ""
+      OUTPUT_NAME "Test Gain"
+      SUFFIX ".clap"
+      LIBRARY_OUTPUT_DIRECTORY "${MIXXX_TEST_CLAP_DIR}"
+      AUTOMOC OFF
+  )
+  add_dependencies(mixxx-test mixxx-test-clap-gain)
+  target_compile_definitions(
+    mixxx-test
+    PRIVATE MIXXX_TEST_CLAP_DIR="${MIXXX_TEST_CLAP_DIR}"
+  )
 
   set_target_properties(mixxx-test PROPERTIES AUTOMOC ON)
   target_link_libraries(
@@ -5003,6 +5032,9 @@ target_link_libraries(mixxx-lib PRIVATE QueenMaryDsp)
 add_library(ReplayGain STATIC EXCLUDE_FROM_ALL lib/replaygain/replaygain.cpp)
 target_include_directories(mixxx-lib SYSTEM PRIVATE lib/replaygain)
 target_link_libraries(mixxx-lib PRIVATE ReplayGain)
+
+# CLAP plugin interface (headers only), for the CLAP effects backend
+target_include_directories(mixxx-lib SYSTEM PUBLIC lib/clap/include)
 
 # Reverb
 add_library(Reverb STATIC EXCLUDE_FROM_ALL lib/reverb/Reverb.cc)
