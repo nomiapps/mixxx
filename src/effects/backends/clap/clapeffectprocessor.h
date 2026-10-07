@@ -41,6 +41,7 @@ class CLAPEffectGroupState final : public EffectState {
             const GroupFeatureState& groupFeatures);
 
   private:
+    void queueParameterValue(clap_id parameterId, double value);
     static uint32_t CLAP_ABI eventCount(const clap_input_events* pList);
     static const clap_event_header* CLAP_ABI eventAt(
             const clap_input_events* pList, uint32_t index);
@@ -48,9 +49,11 @@ class CLAPEffectGroupState final : public EffectState {
     std::unique_ptr<CLAPPluginInstance> m_pInstance;
     const mixxx::audio::SampleRate m_sampleRate;
     QList<clap_id> m_parameterIds;
+    QList<CLAPManifest::FixedParameter> m_fixedParameters;
     // The value each parameter was last sent with.
     std::vector<double> m_sentValues;
-    // Room for one change of every parameter per process call.
+    // Room for one change of every parameter, fixed ones included, per
+    // process call.
     std::vector<clap_event_param_value> m_events;
     uint32_t m_eventCount;
     // The first process call gives the plugin every value. A flag, not a

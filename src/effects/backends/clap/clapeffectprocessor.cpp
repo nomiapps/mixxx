@@ -80,9 +80,10 @@ void CLAPEffectGroupState::load(const CLAPManifestPointer& pManifest) {
             &m_outputPortChannels,
             &m_outputPorts);
     m_parameterIds = pManifest->parameterIds();
+    m_fixedParameters = pManifest->fixedParameters();
     m_sentValues.assign(m_parameterIds.size(), 0.0);
     m_sendAllValues = true;
-    m_events.resize(m_parameterIds.size());
+    m_events.resize(m_parameterIds.size() + m_fixedParameters.size());
     m_pInstance = CLAPPluginInstance::create(pManifest->library(), pManifest->pluginId());
     if (m_pInstance && !m_pInstance->activate(m_sampleRate.toDouble(), kMaxEngineFrames)) {
         qWarning() << "CLAPEffectGroupState: could not activate" << pManifest->name();
@@ -95,13 +96,17 @@ void CLAPEffectGroupState::setParameter(int index, double value) {
         return;
     }
     m_sentValues[index] = value;
+    queueParameterValue(m_parameterIds[index], value);
+}
+
+void CLAPEffectGroupState::queueParameterValue(clap_id parameterId, double value) {
     clap_event_param_value& event = m_events[m_eventCount++];
     event = {};
     event.header.size = sizeof(event);
     event.header.time = 0;
     event.header.space_id = CLAP_CORE_EVENT_SPACE_ID;
     event.header.type = CLAP_EVENT_PARAM_VALUE;
-    event.param_id = m_parameterIds[index];
+    event.param_id = parameterId;
     // -1 addresses every note, port, channel and key.
     event.note_id = -1;
     event.port_index = -1;
@@ -130,6 +135,12 @@ bool CLAPEffectGroupState::process(const CSAMPLE* pInput,
         SINT frames,
         const GroupFeatureState& groupFeatures) {
     const clap_plugin* pPlugin = m_pInstance->plugin();
+
+    if (m_sendAllValues) {
+        for (const CLAPManifest::FixedParameter& fixed : std::as_const(m_fixedParameters)) {
+            queueParameterValue(fixed.id, fixed.value);
+        }
+    }
 
     // note: LOOP VECTORIZED.
     for (SINT i = 0; i < frames; ++i) {

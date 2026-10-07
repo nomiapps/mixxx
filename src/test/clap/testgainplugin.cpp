@@ -1,5 +1,5 @@
 // A minimal CLAP plugin for CLAPBackendTest: a stereo gain with an invert
-// switch, and a sidechain input that is added to the output so that a test
+// switch and its own dry/wet mix, and a sidechain input that is added to the output so that a test
 // can tell the host fed it silence. It is built as its own module and loaded
 // like an installed plugin.
 
@@ -16,7 +16,10 @@ constexpr char kInstrumentPluginId[] = "org.mixxx.test.clap-instrument";
 constexpr clap_id kGainParamId = 7;
 constexpr clap_id kInvertParamId = 9;
 constexpr clap_id kHiddenParamId = 11;
-constexpr uint32_t kParamCount = 3;
+constexpr clap_id kMixParamId = 13;
+constexpr uint32_t kParamCount = 4;
+constexpr double kMixMax = 100.0;
+constexpr double kMixDefault = 30.0;
 constexpr double kGainMin = 0.0;
 constexpr double kGainDefault = 1.0;
 constexpr double kGainMax = 2.0;
@@ -26,6 +29,7 @@ struct GainPlugin {
     clap_plugin plugin;
     double gain = kGainDefault;
     bool invert = false;
+    double mix = kMixDefault;
 };
 
 GainPlugin* self(const clap_plugin* pPlugin) {
@@ -65,6 +69,14 @@ bool CLAP_ABI paramsGetInfo(const clap_plugin*, uint32_t index, clap_param_info*
         pInfo->max_value = 1.0;
         pInfo->default_value = 0.0;
         return true;
+    case 3:
+        pInfo->id = kMixParamId;
+        pInfo->flags = CLAP_PARAM_IS_AUTOMATABLE;
+        std::snprintf(pInfo->name, sizeof(pInfo->name), "Mix");
+        pInfo->min_value = 0.0;
+        pInfo->max_value = kMixMax;
+        pInfo->default_value = kMixDefault;
+        return true;
     default:
         return false;
     }
@@ -77,6 +89,10 @@ bool CLAP_ABI paramsGetValue(const clap_plugin* pPlugin, clap_id id, double* pVa
     }
     if (id == kInvertParamId) {
         *pValue = self(pPlugin)->invert ? 1.0 : 0.0;
+        return true;
+    }
+    if (id == kMixParamId) {
+        *pValue = self(pPlugin)->mix;
         return true;
     }
     return false;
@@ -109,6 +125,8 @@ void applyEvents(GainPlugin* pSelf, const clap_input_events* pEvents) {
             pSelf->gain = pEvent->value;
         } else if (pEvent->param_id == kInvertParamId) {
             pSelf->invert = pEvent->value > 0.5;
+        } else if (pEvent->param_id == kMixParamId) {
+            pSelf->mix = pEvent->value;
         }
     }
 }
@@ -196,12 +214,13 @@ clap_process_status CLAP_ABI pluginProcess(
     GainPlugin* pSelf = self(pPlugin);
     applyEvents(pSelf, pProcess->in_events);
     const float gain = static_cast<float>(pSelf->invert ? -pSelf->gain : pSelf->gain);
+    const float wet = static_cast<float>(pSelf->mix / kMixMax);
     for (uint32_t channel = 0; channel < 2; ++channel) {
         const float* pIn = pProcess->audio_inputs[0].data32[channel];
         const float* pSidechain = pProcess->audio_inputs[kSidechainPort].data32[channel];
         float* pOut = pProcess->audio_outputs[0].data32[channel];
         for (uint32_t i = 0; i < pProcess->frames_count; ++i) {
-            pOut[i] = pIn[i] * gain + pSidechain[i];
+            pOut[i] = pIn[i] * (1.0f - wet) + pIn[i] * gain * wet + pSidechain[i];
         }
     }
     return CLAP_PROCESS_CONTINUE;

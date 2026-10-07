@@ -106,7 +106,7 @@ TEST_F(CLAPBackendTest, ManifestDescribesPlugin) {
     EXPECT_EQ(QStringLiteral("Test Gain"), pManifest->name());
     EXPECT_EQ(QStringLiteral("Mixxx"), pManifest->author());
 
-    // The hidden parameter is left out.
+    // The hidden parameter is left out, and so is the plugin's own mix.
     const auto& parameters = pManifest->parameters();
     ASSERT_EQ(2, parameters.size());
 
@@ -150,6 +150,14 @@ TEST_F(CLAPBackendTest, ParameterChangesReachThePlugin) {
     // Nothing changed: the plugin keeps what it was last given.
     process(EffectEnableState::Enabling);
     expectOutputScaledBy(-2.0f);
+}
+
+TEST_F(CLAPBackendTest, HoldsThePluginsOwnMixFullyWet) {
+    ASSERT_NO_FATAL_FAILURE(createProcessor());
+    // At the plugin's default mix of 30% this would come out at 1.3.
+    m_parameters.value(kGainParameterId)->setValue(2.0);
+    process();
+    expectOutputScaledBy(2.0f);
 }
 
 TEST_F(CLAPBackendTest, ReportsThePluginLatency) {

@@ -26,6 +26,10 @@ class EffectsManager {
     virtual ~EffectsManager();
 
     void setup();
+    /// Once per profile, and only if the first two effect units are empty,
+    /// loads three effects into each so that a controller's effect buttons do
+    /// something from the first start. Call after setup().
+    void loadStarterEffects();
     void addDeck(const ChannelHandleAndGroup& deckHandleGroup);
     void addStem(const ChannelHandleAndGroup& stemHandleGroup);
     void resetStemQuickFxKnob(const ChannelHandleAndGroup& stemHandleGroup);

@@ -2961,6 +2961,7 @@ if(BUILD_TESTING)
     src/test/enginesequencertest.cpp
     src/test/sequencerpatternbanktest.cpp
     src/test/enginesynthtest.cpp
+    src/test/startereffects_test.cpp
     src/test/synthtest.cpp
     src/test/synthpatchbanktest.cpp
     src/test/wavetabletest.cpp

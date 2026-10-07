@@ -3,6 +3,11 @@
 #include <QDir>
 #include <QMetaType>
 
+#include "effects/backends/builtin/echoeffect.h"
+#include "effects/backends/builtin/filtereffect.h"
+#include "effects/backends/builtin/flangereffect.h"
+#include "effects/backends/builtin/phasereffect.h"
+#include "effects/backends/builtin/reverbeffect.h"
 #include "effects/chains/equalizereffectchain.h"
 #include "effects/chains/outputeffectchain.h"
 #include "effects/chains/quickeffectchain.h"
@@ -19,6 +24,41 @@
 namespace {
 const unsigned int kEffectMessagePipeFifoSize = 2048;
 const QString kEffectsXmlFile = QStringLiteral("effects.xml");
+
+const ConfigKey kStarterEffectsLoadedKey(
+        QStringLiteral("[Effects]"), QStringLiteral("StarterEffectsLoaded"));
+// The built-in Filter is a low-pass below the centre of its meta knob and a
+// high-pass above it.
+constexpr double kFilterMetaLowPass = 0.25;
+constexpr double kFilterMetaHighPass = 0.75;
+// Plugins used in place of the built-in effect where they are installed.
+const QString kPluginDelayId = QStringLiteral("com.nomiapps.trackxis.delay");
+const QString kPluginReverbId = QStringLiteral("com.nomiapps.trackxis.reverb");
+
+struct StarterEffect {
+    // Tried first, and skipped when empty or not installed.
+    QString pluginId;
+    QString builtInId;
+    // Negative leaves the effect's own default.
+    double metaParameter;
+};
+
+/// Per effect unit, in slot order. The six are the ones DJ controllers with
+/// dedicated effect buttons print on them.
+QList<QList<StarterEffect>> starterEffects() {
+    return {
+            {
+                    {QString(), FilterEffect::getId(), kFilterMetaHighPass},
+                    {QString(), FilterEffect::getId(), kFilterMetaLowPass},
+                    {QString(), FlangerEffect::getId(), -1.0},
+            },
+            {
+                    {kPluginDelayId, EchoEffect::getId(), -1.0},
+                    {kPluginReverbId, ReverbEffect::getId(), -1.0},
+                    {QString(), PhaserEffect::getId(), -1.0},
+            },
+    };
+}
 } // anonymous namespace
 
 EffectsManager::EffectsManager(
@@ -80,6 +120,50 @@ void EffectsManager::setup() {
     // readEffectsXml() is running is also initialized.
     m_initializedFromEffectsXml = true;
     readEffectsXml();
+}
+
+void EffectsManager::loadStarterEffects() {
+    if (m_pConfig->getValue(kStarterEffectsLoadedKey, false)) {
+        return;
+    }
+    // Whatever is found now, this profile is not asked again: units the user
+    // has filled or emptied since stay as they are.
+    m_pConfig->setValue(kStarterEffectsLoadedKey, true);
+
+    const QList<QList<StarterEffect>> units = starterEffects();
+    for (int unit = 0; unit < units.size(); ++unit) {
+        const EffectChainPointer pChain = m_standardEffectChains.value(unit);
+        if (!pChain || !pChain->isEmpty()) {
+            return;
+        }
+    }
+    for (int unit = 0; unit < units.size(); ++unit) {
+        const EffectChainPointer pChain = m_standardEffectChains.value(unit);
+        const QList<StarterEffect>& effects = units.at(unit);
+        for (int slot = 0; slot < effects.size(); ++slot) {
+            const StarterEffect& effect = effects.at(slot);
+            const EffectSlotPointer pSlot = pChain->getEffectSlot(slot);
+            if (!pSlot) {
+                continue;
+            }
+            EffectManifestPointer pManifest;
+            if (!effect.pluginId.isEmpty()) {
+                pManifest = m_pBackendManager->getManifest(
+                        effect.pluginId, EffectBackendType::CLAP);
+            }
+            if (!pManifest) {
+                pManifest = m_pBackendManager->getManifest(
+                        effect.builtInId, EffectBackendType::BuiltIn);
+            }
+            if (!pManifest) {
+                continue;
+            }
+            pSlot->loadEffectWithDefaults(pManifest);
+            if (effect.metaParameter >= 0.0) {
+                pSlot->setMetaParameter(effect.metaParameter, true);
+            }
+        }
+    }
 }
 
 void EffectsManager::registerInputChannel(const ChannelHandleAndGroup& handle_group) {

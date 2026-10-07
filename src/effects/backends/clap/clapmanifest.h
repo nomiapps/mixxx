@@ -41,6 +41,16 @@ class CLAPManifest : public EffectManifest {
     const QList<clap_id>& parameterIds() const {
         return m_parameterIds;
     }
+    /// A parameter Mixxx sets once and does not offer as a control.
+    struct FixedParameter {
+        clap_id id;
+        double value;
+    };
+    /// The plugin's own dry/wet mix, held fully wet: the effect unit's mix
+    /// knob does that job, and could otherwise only reach the plugin's share.
+    const QList<FixedParameter>& fixedParameters() const {
+        return m_fixedParameters;
+    }
     /// The channel count of every audio input port. The first is the stereo
     /// port Mixxx plays through; any others, such as a sidechain, get silence.
     const QList<uint32_t>& inputPortChannels() const {
@@ -58,6 +68,7 @@ class CLAPManifest : public EffectManifest {
     CLAPLibraryPointer m_pLibrary;
     QByteArray m_pluginId;
     QList<clap_id> m_parameterIds;
+    QList<FixedParameter> m_fixedParameters;
     QList<uint32_t> m_inputPortChannels;
     QList<uint32_t> m_outputPortChannels;
     Status m_status;

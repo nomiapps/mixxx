@@ -612,6 +612,7 @@ void CoreServices::initialize(QApplication* pApp) {
     m_pPlayerManager->addPreviewDeck();
 
     m_pEffectsManager->setup();
+    m_pEffectsManager->loadStarterEffects();
 
 #ifdef __VINYLCONTROL__
     m_pVCManager->init();

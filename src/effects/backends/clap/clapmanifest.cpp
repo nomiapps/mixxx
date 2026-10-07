@@ -1,10 +1,20 @@
 #include "effects/backends/clap/clapmanifest.h"
 
+#include <QStringList>
+
 #include "effects/defs.h"
 
 namespace {
 
 constexpr uint32_t kStereoChannels = 2;
+
+/// What plugins call their own dry/wet mix. CLAP has no flag for it, so the
+/// name is all there is to go by. Its maximum is taken to be fully wet.
+const QStringList kMixParameterNames = {
+        QStringLiteral("mix"),
+        QStringLiteral("dry/wet"),
+        QStringLiteral("wet/dry"),
+};
 constexpr uint32_t kUnusableParameterFlags =
         CLAP_PARAM_IS_HIDDEN | CLAP_PARAM_IS_READONLY | CLAP_PARAM_IS_BYPASS;
 
@@ -94,11 +104,15 @@ void CLAPManifest::readParameters(const CLAPPluginInstance& instance) {
             continue;
         }
         const double defaultValue = qBound(info.min_value, info.default_value, info.max_value);
+        const QString name = QString::fromUtf8(info.name);
+        if (kMixParameterNames.contains(name.trimmed().toLower())) {
+            m_fixedParameters.append({info.id, info.max_value});
+            continue;
+        }
 
         EffectManifestParameterPointer pParameter = addParameter();
         m_parameterIds.append(info.id);
         pParameter->setId(QString::number(info.id));
-        const QString name = QString::fromUtf8(info.name);
         pParameter->setName(name);
         pParameter->setShortName(name);
         pParameter->setUnitsHint(EffectManifestParameter::UnitsHint::Unknown);
