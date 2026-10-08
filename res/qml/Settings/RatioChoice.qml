@@ -1,7 +1,6 @@
 import QtQuick 2.12
 import QtQuick.Controls
 import QtQuick.Shapes
-import Qt5Compat.GraphicalEffects
 import "../Theme"
 import ".." as Skin
 
@@ -254,14 +253,6 @@ Item {
                         text: popup.tooltip
                     }
                 }
-            }
-            DropShadow {
-                anchors.fill: parent
-                color: "#000000"
-                horizontalOffset: 0
-                radius: 8.0
-                source: contentPopup
-                verticalOffset: 0
             }
         }
     }

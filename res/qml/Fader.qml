@@ -1,5 +1,4 @@
 import Edge.Controls 1.0 as EdgeControls
-import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
 import QtQuick.Window 2.12
 import "Theme"
@@ -19,6 +18,9 @@ EdgeControls.Fader {
     property alias fg: handleImage.source
     property alias handleImage: handleImage
     property bool showDefaultHandle: true
+    // The cap no longer has a shadow (it was a shader effect). The property stays
+    // so that callers which set it, upstream's LateNightQML skin among them,
+    // still load.
     property bool showHandleShadow: true
 
     // How much to shrink the cap so it fits the fader across the travel axis.
@@ -82,25 +84,6 @@ EdgeControls.Fader {
             anchors.fill: parent
             fillMode: Image.PreserveAspectFit
             source: handleImage.source
-            visible: !root.showHandleShadow
-        }
-        DropShadow {
-            // Padding and offset shrink with the cap, otherwise a 5 px shadow on a
-            // cap scaled down to 7 px reads as a smudge around it.
-            readonly property real spread: 5 * root.capScale
-
-            color: "#80000000"
-            height: parent.height + spread
-            radius: 5
-            // Shadow the DPR-rasterised copy, not handleImage: that one is the
-            // natural-size probe the handle takes its dimensions from, and as a
-            // texture it is the SVG at 1x, upscaled on a fractional-DPR screen.
-            // handleSharp is hidden whenever this shadow is shown, so it serves
-            // as the source without drawing twice.
-            source: handleSharp
-            verticalOffset: spread
-            visible: root.showHandleShadow
-            width: parent.width + spread
         }
     }
 

@@ -187,6 +187,11 @@ class QmlLibraryProxy : public QObject {
     bool enginePrimeExportAvailable() const;
 
     Q_INVOKABLE void analyze(const mixxx::qml::QmlTrackProxy* track) const;
+    /// A cover art URL whose image comes back cut to a centred square with
+    /// rounded corners: `cornerFraction` is the radius as a fraction of the
+    /// side, 0.5 for a circle. For covers shown round or round-cornered, so
+    /// that no mask has to be laid over the image in QML.
+    Q_INVOKABLE static QUrl roundedCoverArtUrl(const QUrl& coverArtUrl, double cornerFraction);
     Q_INVOKABLE void createCrate();
     Q_INVOKABLE void createPlaylist();
     Q_INVOKABLE void exportLibrary();

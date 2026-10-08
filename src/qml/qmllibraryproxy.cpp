@@ -26,6 +26,7 @@
 #endif
 #include "moc_qmllibraryproxy.cpp"
 #include "preferences/colorpalettesettings.h"
+#include "qml/asyncimageprovider.h"
 #include "qml/qmlconfigproxy.h"
 #include "qml/qmllibrarytracklistmodel.h"
 #include "qmltrackproxy.h"
@@ -333,6 +334,15 @@ QmlLibraryTrackListModel* QmlLibraryProxy::model() const {
             QList<QmlLibraryTrackListColumn*>{}, s_pLibrary->trackTableModel())
             .get();
 }
+// static
+QUrl QmlLibraryProxy::roundedCoverArtUrl(const QUrl& coverArtUrl, double cornerFraction) {
+    if (coverArtUrl.isEmpty() || cornerFraction <= 0.0) {
+        return coverArtUrl;
+    }
+    return QUrl(coverArtUrl.toString() + AsyncImageProvider::kCornerQuery +
+            QString::number(cornerFraction));
+}
+
 void QmlLibraryProxy::analyze(const QmlTrackProxy* track) const {
     VERIFY_OR_DEBUG_ASSERT(track && track->internal()) {
         return;

@@ -5,7 +5,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
 import QtQuick.Shapes
-import Qt5Compat.GraphicalEffects
 import "Theme"
 
 Item {
@@ -1013,26 +1012,11 @@ Item {
         x: Math.round((parent.width - width) / 2)
         y: Math.round((parent.height - height) / 2)
 
+        // A plain dim. This was a blur of the whole window where the GPU
+        // allowed it, and the dim otherwise.
         Overlay.modal: Rectangle {
-            id: overlayModal
-
-            readonly property bool hasHardwareAcceleration: Mixxx.Config.useAcceleration
-            property real radius: 12
-
             anchors.fill: parent
-            color: Qt.alpha('#00000010', hasHardwareAcceleration ? 1.0 : 0.6)
-
-            Repeater {
-                model: hasHardwareAcceleration ? 1 : 0
-
-                GaussianBlur {
-                    anchors.fill: overlayModal
-                    deviation: 4
-                    radius: Math.max(0, overlayModal.radius)
-                    samples: 16
-                    source: content
-                }
-            }
+            color: Qt.alpha('#000000', 0.6)
         }
     }
 }

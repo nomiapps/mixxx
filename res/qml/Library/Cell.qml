@@ -1,4 +1,3 @@
-import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Layouts
 import "../Theme"
@@ -9,7 +8,7 @@ Rectangle {
     // The item to grab for the drag image, built on first use.
     function prepareDragImage() {
         dragImageLoader.active = true;
-        return dragImageLoader.item.effect;
+        return dragImageLoader.item.image;
     }
 
     Drag.dragType: Drag.Automatic
@@ -33,7 +32,7 @@ Rectangle {
         active: false
 
         sourceComponent: Item {
-            readonly property alias effect: dragImageEffect
+            readonly property alias image: dragImageSource
 
             Item {
                 id: dragImageSource
@@ -112,17 +111,6 @@ Rectangle {
                         }
                     }
                 }
-            }
-            DropShadow {
-                id: dragImageEffect
-
-                anchors.fill: dragImageSource
-                color: "#80000000"
-                horizontalOffset: 0
-                radius: 10.0
-                source: dragImageSource
-                verticalOffset: 0
-                visible: false
             }
         }
     }

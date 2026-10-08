@@ -1,4 +1,4 @@
-import Qt5Compat.GraphicalEffects
+import QtQuick.Controls.impl
 import QtQuick 2.12
 import QtQuick.Window 2.12
 import QtQuick.Controls 2.12
@@ -62,11 +62,11 @@ AbstractButton {
             verticalAlignment: Text.AlignVCenter
             visible: root.text != null
         }
-        Image {
-            id: image
-
+        // IconImage tints the icon when it loads it, on the CPU, where this was
+        // an Image under a ColorOverlay shader effect.
+        IconImage {
             anchors.centerIn: parent
-            asynchronous: true
+            color: label.color
             fillMode: Image.PreserveAspectFit
             height: icon.height
             source: icon.source
@@ -75,15 +75,8 @@ AbstractButton {
             // is actually drawn, times the screen's DPR.
             sourceSize.height: height * Screen.devicePixelRatio
             sourceSize.width: width * Screen.devicePixelRatio
-            visible: false
-            width: icon.width
-        }
-        ColorOverlay {
-            anchors.fill: image
-            antialiasing: true
-            color: label.color
-            source: image
             visible: icon.source != null
+            width: icon.width
         }
     }
 }

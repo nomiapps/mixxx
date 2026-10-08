@@ -4,7 +4,7 @@ import QtQuick 2.12
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Shapes
-import Qt5Compat.GraphicalEffects
+import QtQuick.Controls.impl
 import "Theme"
 import "Settings" as Settings
 
@@ -175,10 +175,11 @@ Popup {
                             HoverHandler {
                                 id: rowHover
                             }
-                            Image {
+                            IconImage {
                                 id: handleImage
 
                                 anchors.left: parent.left
+                                color: categoryRow.current ? Theme.blue : Theme.textColor
                                 anchors.leftMargin: 8
                                 anchors.verticalCenter: parent.verticalCenter
                                 fillMode: Image.PreserveAspectFit
@@ -191,21 +192,14 @@ Popup {
                                 // downsample be clean. (Measured with qml.exe: the box was
                                 // already 20 wide -- PreserveAspectFit derives width from the
                                 // height -- so pinning width only makes that explicit.)
+                                // Sidebar icons sit back at 0.7 and lift on hover, full on the
+                                // current row -- same as the browse tree.
+                                opacity: categoryRow.current ? 1 : (rowHover.hovered ? 0.85 : 0.7)
                                 smooth: true
                                 source: "images/gear.svg"
                                 sourceSize.height: 40
                                 sourceSize.width: 40
-                                visible: false
                                 width: 20
-                            }
-                            ColorOverlay {
-                                anchors.fill: handleImage
-                                antialiasing: true
-                                color: categoryRow.current ? Theme.blue : Theme.textColor
-                                // Sidebar icons sit back at 0.7 and lift on hover, full on the
-                                // current row -- same as the browse tree.
-                                opacity: categoryRow.current ? 1 : (rowHover.hovered ? 0.85 : 0.7)
-                                source: handleImage
                             }
                             Text {
                                 anchors.left: handleImage.right

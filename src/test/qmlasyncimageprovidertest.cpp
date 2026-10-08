@@ -9,6 +9,8 @@
 namespace {
 
 using mixxx::qml::fitImageToRequestedSize;
+using mixxx::qml::parseCoverArtRequestId;
+using mixxx::qml::roundImageCorners;
 
 QImage solidImage(int width, int height) {
     QImage image(width, height, QImage::Format_ARGB32);
@@ -76,4 +78,46 @@ TEST(QmlAsyncImageProviderTest, ResamplesSmoothly) {
             EXPECT_LT(value, 255) << "pure white at " << x << "," << y;
         }
     }
+}
+
+// Covers shown round, or with rounded corners, are cut to shape here so that
+// QML needs no shader mask over them.
+TEST(QmlAsyncImageProviderTest, RoundsToACentredCircle) {
+    const QImage rounded = roundImageCorners(solidImage(200, 100), 0.5);
+    ASSERT_EQ(QSize(100, 100), rounded.size());
+    EXPECT_EQ(0, rounded.pixelColor(0, 0).alpha());
+    EXPECT_EQ(0, rounded.pixelColor(99, 99).alpha());
+    EXPECT_EQ(255, rounded.pixelColor(50, 50).alpha());
+    EXPECT_EQ(QColor(Qt::darkCyan), rounded.pixelColor(50, 50));
+    // Just inside the circle on the axes, which a square crop would also keep.
+    EXPECT_EQ(255, rounded.pixelColor(50, 2).alpha());
+}
+
+TEST(QmlAsyncImageProviderTest, RoundsOnlyTheCornersForASmallFraction) {
+    const QImage rounded = roundImageCorners(solidImage(100, 100), 0.1);
+    EXPECT_EQ(0, rounded.pixelColor(0, 0).alpha());
+    // 10 px radius: the edge is whole again past the corner.
+    EXPECT_EQ(255, rounded.pixelColor(20, 0).alpha());
+    EXPECT_EQ(255, rounded.pixelColor(0, 20).alpha());
+}
+
+TEST(QmlAsyncImageProviderTest, LeavesTheImageAloneWithoutAFraction) {
+    const QImage image = solidImage(200, 100);
+    EXPECT_EQ(image, roundImageCorners(image, 0.0));
+}
+
+TEST(QmlAsyncImageProviderTest, ReadsTheCornerFractionOffTheRequestId) {
+    const auto plain = parseCoverArtRequestId(QStringLiteral("coverart/abc"));
+    EXPECT_EQ(QStringLiteral("coverart/abc"), plain.id);
+    EXPECT_DOUBLE_EQ(0.0, plain.cornerFraction);
+
+    const auto circle = parseCoverArtRequestId(QStringLiteral("coverinfo/abc?corner=0.5"));
+    EXPECT_EQ(QStringLiteral("coverinfo/abc"), circle.id);
+    EXPECT_DOUBLE_EQ(0.5, circle.cornerFraction);
+
+    // Never more than a circle, and nonsense is no rounding at all.
+    EXPECT_DOUBLE_EQ(0.5, parseCoverArtRequestId(QStringLiteral("coverart/abc?corner=3")).cornerFraction);
+    const auto junk = parseCoverArtRequestId(QStringLiteral("coverart/abc?corner=round"));
+    EXPECT_EQ(QStringLiteral("coverart/abc"), junk.id);
+    EXPECT_DOUBLE_EQ(0.0, junk.cornerFraction);
 }

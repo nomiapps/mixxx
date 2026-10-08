@@ -4,7 +4,6 @@ import QtQml.Models
 import QtQuick.Layouts
 import QtQuick.Controls 2.15
 import QtQuick.Shapes
-import Qt5Compat.GraphicalEffects
 import "Theme"
 
 Popup {
@@ -76,18 +75,11 @@ Popup {
                 anchors.fill: parent
                 anchors.leftMargin: root.facing == ActionPopup.Facing.Left ? 20 : 0
                 anchors.rightMargin: root.facing == ActionPopup.Facing.Right ? 20 : 0
-                border.width: 0
+                border.color: Theme.panelBorderColor
+                border.width: 1
                 color: Theme.backgroundColor
                 radius: 8
             }
-        }
-        DropShadow {
-            anchors.fill: parent
-            color: "#80000000"
-            horizontalOffset: 0
-            radius: 8.0
-            source: content3
-            verticalOffset: 0
         }
     }
     contentItem: Item {

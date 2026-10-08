@@ -43,6 +43,22 @@ inline QImage fitImageToRequestedSize(const QImage& image, const QSize& requeste
             : image.scaledToHeight(requestedSize.height(), Qt::SmoothTransformation);
 }
 
+/// Cut an image to a centred square with rounded corners, transparent outside
+/// them. `cornerFraction` is the corner radius as a fraction of the side: 0.5
+/// gives a circle. Covers that are shown round (on a platter) or with rounded
+/// corners ask for this through the URL, so that QML needs no mask over the
+/// image: a mask is a shader effect, and those are rebuilt on the GUI thread
+/// every time the window moves to a screen with another scale factor.
+QImage roundImageCorners(const QImage& image, double cornerFraction);
+
+/// A request id is `<prefix>/<base64>` optionally followed by `?corner=<fraction>`.
+/// Returns the id without that suffix, and the fraction (0 when absent or invalid).
+struct CoverArtRequest {
+    QString id;
+    double cornerFraction;
+};
+CoverArtRequest parseCoverArtRequestId(const QString& requestId);
+
 class AsyncImageResponse : public QQuickImageResponse, public QRunnable {
     Q_OBJECT
   public:
@@ -57,6 +73,7 @@ class AsyncImageResponse : public QQuickImageResponse, public QRunnable {
 
   private:
     QString m_id;
+    double m_cornerFraction;
     QSize m_requestedSize;
     std::shared_ptr<TrackCollectionManager> m_pTrackCollectionManager;
 
@@ -71,6 +88,8 @@ class AsyncImageProvider : public QQuickAsyncImageProvider {
             const QString& id, const QSize& requestedSize) override;
 
     static const QString kProviderName;
+    /// The suffix that asks for rounded corners, to append to a cover art URL.
+    static const QString kCornerQuery;
     static QUrl trackLocationToCoverArtUrl(const QString& trackLocation);
     static QString coverArtUrlIdToTrackLocation(const QString& coverArtUrlId);
     /// A URL that carries everything needed to load the cover, so loading it

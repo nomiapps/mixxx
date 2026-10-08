@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import Mixxx 1.0 as Mixxx
 import QtQuick
-import Qt5Compat.GraphicalEffects
 import "Theme"
 
 // A touch vinyl platter: cover art disc rotating at 33 1/3 rpm with the track,
@@ -132,24 +131,12 @@ Item {
 
             anchors.centerIn: parent
             height: width
-            source: root.deckPlayer?.currentTrack?.coverArtUrl ?? ""
+            // Cut to a circle by the image provider.
+            source: Mixxx.Library.roundedCoverArtUrl(root.deckPlayer?.currentTrack?.coverArtUrl ?? "", 0.5)
             // Bounded decode; see the library cell's cover.
             sourceSize.height: 512
             sourceSize.width: 512
-            visible: false
             width: parent.width * 0.5
-        }
-        Rectangle {
-            id: coverMask
-
-            anchors.fill: cover
-            radius: width / 2
-            visible: false
-        }
-        OpacityMask {
-            anchors.fill: cover
-            maskSource: coverMask
-            source: cover
         }
 
         // position indicator stripe

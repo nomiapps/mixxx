@@ -1,5 +1,4 @@
 import Mixxx 1.0 as Mixxx
-import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Window
 import "Theme"
@@ -38,55 +37,51 @@ Rectangle {
 
         target: root.Window.window
     }
+    // The lit part of the meter: the full-height gradient, seen through a
+    // window as tall as the level. This was the gradient under a mask, a
+    // shader effect per meter, redrawn at meter rate.
     Item {
-        id: meterMask
+        id: lit
 
-        anchors.fill: parent
-        visible: false
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.margins: 1
+        anchors.right: parent.right
+        clip: true
+        height: root.level * (root.height - 2 * anchors.margins)
 
         Rectangle {
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.margins: 1
-            anchors.right: parent.right
             antialiasing: false // for performance reasons
-            height: root.level * (parent.height - 2 * anchors.margins)
+            height: root.height
+            // Rounded like the meter itself, so the lit part follows its ends.
             radius: width / 2
-        }
-    }
-    Rectangle {
-        id: meterGradient
+            width: root.width
+            // Placed over the whole meter, whatever the window shows of it.
+            x: -lit.x
+            y: -lit.y
 
-        anchors.fill: parent
-        antialiasing: false // for performance reasons
-        visible: false
-
-        gradient: Gradient {
-            GradientStop {
-                color: Theme.red
-                position: 0.1
-            }
-            GradientStop {
-                color: Theme.yellow
-                position: 0.15
-            }
-            GradientStop {
-                color: Theme.yellow
-                position: 0.25
-            }
-            GradientStop {
-                color: Theme.green
-                position: 0.3
-            }
-            GradientStop {
-                color: Theme.green
-                position: 1
+            gradient: Gradient {
+                GradientStop {
+                    color: Theme.red
+                    position: 0.1
+                }
+                GradientStop {
+                    color: Theme.yellow
+                    position: 0.15
+                }
+                GradientStop {
+                    color: Theme.yellow
+                    position: 0.25
+                }
+                GradientStop {
+                    color: Theme.green
+                    position: 0.3
+                }
+                GradientStop {
+                    color: Theme.green
+                    position: 1
+                }
             }
         }
-    }
-    OpacityMask {
-        anchors.fill: parent
-        maskSource: meterMask
-        source: meterGradient
     }
 }

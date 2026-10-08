@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls 2.12
-import Qt5Compat.GraphicalEffects
 import "Theme"
 
 AbstractButton {
@@ -24,14 +23,6 @@ AbstractButton {
             anchors.fill: parent
             color: root.category == ActionButton.Category.Action ? '#2D4EA1' : root.category == ActionButton.Category.Danger ? '#7D3B3B' : Theme.darkGray3
             radius: 4
-        }
-        DropShadow {
-            anchors.fill: parent
-            color: "#80000000"
-            horizontalOffset: 0
-            radius: 8.0
-            source: content
-            verticalOffset: 0
         }
     }
     contentItem: Item {

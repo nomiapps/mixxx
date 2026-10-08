@@ -1,7 +1,6 @@
 import "." as Skin
 import Mixxx 1.0 as Mixxx
 import Mixxx.Controls 1.0 as MixxxControls
-import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
 import QtQuick.Layouts
 import QtQuick.Shapes
@@ -269,7 +268,6 @@ Item {
             LayoutItem {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                blurRadius: 4
                 editLabel.color: Theme.white
                 editLabel.font.pixelSize: 14
                 editLabel.text: "Waveform overview"
@@ -309,7 +307,6 @@ Item {
             LayoutItem {
                 Layout.fillHeight: true
                 Layout.preferredWidth: 75
-                blurRadius: 4
                 editLabel.color: Theme.white
                 editLabel.text: "Tempo"
                 editOverlay.color: Qt.alpha('black', 0.5)
@@ -402,7 +399,6 @@ Item {
             LayoutItem {
                 Layout.fillWidth: true
                 Layout.minimumHeight: 22
-                blurRadius: 4
                 editLabel.color: Theme.white
                 editLabel.font.pixelSize: 14
                 editLabel.text: "Toolbar"
@@ -420,7 +416,6 @@ Item {
             LayoutItem {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 250
-                blurRadius: 4
                 editLabel.color: Theme.white
                 editLabel.font.pixelSize: 14
                 editLabel.text: "Hotcue & Stem"
@@ -770,7 +765,6 @@ Item {
         id: layoutItem
 
         property var beginDrag: null
-        property int blurRadius: 0
         default property var contentChildren
         property alias editLabel: labelItem
         property alias editOverlay: overlayItem
@@ -830,14 +824,6 @@ Item {
                     children: layoutItem.contentChildren
                 }
             }
-        }
-        GaussianBlur {
-            anchors.fill: layoutItem
-            deviation: 4
-            radius: blurRadius
-            samples: 16
-            source: content
-            visible: root.editMode
         }
         Rectangle {
             id: overlayItem

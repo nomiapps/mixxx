@@ -2,6 +2,8 @@
 
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QPainter>
+#include <QPainterPath>
 
 #include "library/coverartcache.h"
 #include "moc_asyncimageprovider.cpp"
@@ -10,17 +12,55 @@
 namespace {
 const QString kCoverArtPrefix = QStringLiteral("coverart/");
 const QString kCoverInfoPrefix = QStringLiteral("coverinfo/");
-}
+const QChar kQueryDelimiter = QLatin1Char('?');
+constexpr double kMaxCornerFraction = 0.5;
+} // namespace
 
 namespace mixxx {
 
 namespace qml {
 
+QImage roundImageCorners(const QImage& image, double cornerFraction) {
+    if (image.isNull() || cornerFraction <= 0.0) {
+        return image;
+    }
+    const int side = qMin(image.width(), image.height());
+    const QRect square((image.width() - side) / 2, (image.height() - side) / 2, side, side);
+    QImage rounded(side, side, QImage::Format_ARGB32_Premultiplied);
+    rounded.fill(Qt::transparent);
+    const double radius = qMin(cornerFraction, kMaxCornerFraction) * side;
+    QPainterPath shape;
+    shape.addRoundedRect(QRectF(0, 0, side, side), radius, radius);
+    QPainter painter(&rounded);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setClipPath(shape);
+    painter.drawImage(QPoint(0, 0), image, square);
+    return rounded;
+}
+
+CoverArtRequest parseCoverArtRequestId(const QString& requestId) {
+    const qsizetype queryStart = requestId.indexOf(kQueryDelimiter);
+    if (queryStart < 0) {
+        return {requestId, 0.0};
+    }
+    double cornerFraction = 0.0;
+    const QString query = requestId.mid(queryStart);
+    if (query.startsWith(AsyncImageProvider::kCornerQuery)) {
+        bool ok = false;
+        const double value = query.mid(AsyncImageProvider::kCornerQuery.size()).toDouble(&ok);
+        if (ok && value > 0.0) {
+            cornerFraction = qMin(value, kMaxCornerFraction);
+        }
+    }
+    return {requestId.left(queryStart), cornerFraction};
+}
+
 AsyncImageResponse::AsyncImageResponse(
         QString id,
         QSize requestedSize,
         std::shared_ptr<TrackCollectionManager> pTrackCollectionManager)
-        : m_id(std::move(id)),
+        : m_id(parseCoverArtRequestId(id).id),
+          m_cornerFraction(parseCoverArtRequestId(id).cornerFraction),
           m_requestedSize(requestedSize),
           m_pTrackCollectionManager(std::move(pTrackCollectionManager)) {
     setAutoDelete(false);
@@ -37,7 +77,9 @@ void AsyncImageResponse::run() {
         const CoverInfo coverInfo = AsyncImageProvider::coverArtUrlIdToCoverInfo(m_id);
         const CoverInfo::LoadedImage loadedImage = coverInfo.loadImage();
         if (loadedImage.result == CoverInfo::LoadedImage::Result::Ok) {
-            m_image = fitImageToRequestedSize(loadedImage.image, m_requestedSize);
+            m_image = roundImageCorners(
+                    fitImageToRequestedSize(loadedImage.image, m_requestedSize),
+                    m_cornerFraction);
         } else if (loadedImage.result != CoverInfo::LoadedImage::Result::NoImage) {
             qWarning() << "ImageProvider: Failed to load cover art" << loadedImage.location;
         }
@@ -82,7 +124,9 @@ void AsyncImageResponse::run() {
         break;
     case CoverInfo::LoadedImage::Result::Ok:
         DEBUG_ASSERT(!loadedImage.image.isNull());
-        m_image = fitImageToRequestedSize(loadedImage.image, m_requestedSize);
+        m_image = roundImageCorners(
+                fitImageToRequestedSize(loadedImage.image, m_requestedSize),
+                m_cornerFraction);
         break;
     default:
         qWarning() << "ImageProvider: Failed to load cover art" << trackRef;
@@ -108,6 +152,9 @@ QQuickImageResponse* AsyncImageProvider::requestImageResponse(
 
 // static
 const QString AsyncImageProvider::kProviderName = QStringLiteral("mixxx");
+
+// static
+const QString AsyncImageProvider::kCornerQuery = QStringLiteral("?corner=");
 
 // static
 QUrl AsyncImageProvider::trackLocationToCoverArtUrl(const QString& trackLocation) {

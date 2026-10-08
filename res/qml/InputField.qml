@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls 2.15
-import Qt5Compat.GraphicalEffects
 import "Theme"
 
 FocusScope {
@@ -12,27 +11,9 @@ FocusScope {
         id: backgroundInput
         radius: 4
         color: '#232323'
+        border.color: Theme.panelBorderColor
+        border.width: 1
         anchors.fill: parent
-    }
-    DropShadow {
-        id: dropSetting
-        anchors.fill: parent
-        horizontalOffset: 0
-        verticalOffset: 0
-        radius: 4.0
-        color: "#000000"
-        source: backgroundInput
-    }
-    InnerShadow {
-        id: effect2
-        anchors.fill: parent
-        source: dropSetting
-        spread: 0.2
-        radius: 12
-        samples: 24
-        horizontalOffset: 0
-        verticalOffset: 0
-        color: "#353535"
     }
     TextInput {
         id: inputField

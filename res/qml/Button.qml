@@ -1,4 +1,4 @@
-import Qt5Compat.GraphicalEffects
+import QtQuick.Controls.impl
 import QtQuick 2.12
 import QtQuick.Window 2.12
 import QtQuick.Controls 2.12
@@ -65,15 +65,6 @@ AbstractButton {
     contentItem: Item {
         anchors.fill: parent
 
-        Glow {
-            id: labelGlow
-
-            anchors.fill: parent
-            color: label.color
-            radius: 4
-            source: face
-            spread: 0.1
-        }
         Item {
             id: face
 
@@ -107,14 +98,26 @@ AbstractButton {
                     verticalAlignment: Text.AlignVCenter
                     visible: root.text
                     width: Math.max(8, parent.width - 12)
+
+                    // The soft glow of a lit button, in the label's colour. Only
+                    // a pressed or active button has one.
+                    Loader {
+                        active: root.pressed || root.highlight || root.checked
+                        anchors.fill: parent
+                        z: -1
+
+                        sourceComponent: LabelGlow {
+                            target: label
+                        }
+                    }
                 }
             }
         }
-        Image {
-            id: image
-
+        // IconImage tints the icon when it loads it, on the CPU. This used to be
+        // an Image under a ColorOverlay, a shader effect on every button.
+        IconImage {
             anchors.centerIn: parent
-            asynchronous: true
+            color: root.normalColor
             fillMode: Image.PreserveAspectFit
             height: icon.height
             source: icon.source
@@ -123,15 +126,8 @@ AbstractButton {
             // is actually drawn, times the screen's DPR.
             sourceSize.height: height * Screen.devicePixelRatio
             sourceSize.width: width * Screen.devicePixelRatio
-            visible: false
-            width: icon.width
-        }
-        ColorOverlay {
-            anchors.fill: image
-            antialiasing: true
-            color: root.normalColor
-            source: image
             visible: icon.source != null
+            width: icon.width
         }
     }
     states: [
@@ -148,10 +144,6 @@ AbstractButton {
                 color: root.pressedColor
                 target: label
             }
-            PropertyChanges {
-                target: labelGlow
-                visible: true
-            }
         },
         State {
             name: "active"
@@ -166,10 +158,6 @@ AbstractButton {
                 color: root.activeColor
                 target: label
             }
-            PropertyChanges {
-                target: labelGlow
-                visible: true
-            }
         },
         State {
             name: "inactive"
@@ -183,10 +171,6 @@ AbstractButton {
             PropertyChanges {
                 color: root.normalColor
                 target: label
-            }
-            PropertyChanges {
-                target: labelGlow
-                visible: false
             }
         }
     ]

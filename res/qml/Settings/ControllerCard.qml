@@ -6,7 +6,7 @@ import QtQuick.Dialogs
 import QtQuick.Shapes
 import Qt.labs.qmlmodels
 import QtMultimedia
-import Qt5Compat.GraphicalEffects
+import QtQuick.Controls.impl
 import ".." as Skin
 import "../Theme"
 
@@ -621,10 +621,9 @@ Item {
                         Layout.preferredWidth: 18
                         visible: itemDlgt.modelData.isUserMapping(Mixxx.Config)
 
-                        Image {
-                            id: userMappingBadge
-
+                        IconImage {
                             anchors.fill: parent
+                            color: Theme.deckTextColor
                             fillMode: Image.PreserveAspectFit
                             // A 96x96 bitmap drawn at 18 px: a 5x minification with no
                             // mipmap, sampled bilinear, so its edges crawled. It is also
@@ -636,13 +635,6 @@ Item {
                             source: "../images/work@2x.png"
                             sourceSize.height: 36
                             sourceSize.width: 36
-                            visible: false
-                        }
-                        ColorOverlay {
-                            anchors.fill: userMappingBadge
-                            antialiasing: true
-                            color: Theme.deckTextColor
-                            source: userMappingBadge
                         }
                     }
                 }
@@ -762,15 +754,6 @@ Item {
                 }
             }
         }
-    }
-    DropShadow {
-        anchors.fill: root
-        anchors.margins: 8
-        color: "#000000"
-        horizontalOffset: 0
-        radius: root.focused ? 0 : 8.0
-        source: content
-        verticalOffset: 0
     }
 
     component Settings: ControllerSettings {

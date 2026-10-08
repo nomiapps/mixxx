@@ -3134,6 +3134,7 @@ if(BUILD_TESTING)
         src/test/qmldurationformattertest.cpp
         src/test/qmleffectsproxytest.cpp
         src/test/qmlkeyutilstest.cpp
+        src/test/qmlnoshadereffects_test.cpp
         src/test/qmllibraryproxytest.cpp
         src/test/qmlspinnypositiontest.cpp
         src/test/qmlskincontrolcreatortest.cpp

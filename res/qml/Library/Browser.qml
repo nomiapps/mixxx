@@ -8,7 +8,6 @@ import QtQuick.Layouts
 import QtQuick.Controls 2.15
 import QtQuick.Controls.impl
 import QtQuick.Shapes
-import Qt5Compat.GraphicalEffects
 import "../Theme"
 
 Rectangle {

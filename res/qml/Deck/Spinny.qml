@@ -1,6 +1,5 @@
 import Mixxx 1.0 as Mixxx
 import Edge.Controls 1.0 as EdgeControls
-import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
 import QtQuick.Controls 2.12
 import QtQuick.Shapes
@@ -121,25 +120,13 @@ Item {
                     asynchronous: true
                     fillMode: Image.PreserveAspectCrop
                     height: width
-                    source: root.currentTrack?.coverArtUrl ?? ""
+                    // Cut to a circle by the image provider.
+                    source: Mixxx.Library.roundedCoverArtUrl(root.currentTrack?.coverArtUrl ?? "", 0.5)
                     // Bounded decode; see the library cell's cover.
                     sourceSize.height: 512
                     sourceSize.width: 512
-                    visible: false
+                    visible: status === Image.Ready
                     width: parent.width * 0.52
-                }
-                Rectangle {
-                    id: coverArtMask
-
-                    anchors.fill: coverArt
-                    radius: width / 2
-                    visible: false
-                }
-                OpacityMask {
-                    anchors.fill: coverArt
-                    maskSource: coverArtMask
-                    source: coverArt
-                    visible: coverArt.status === Image.Ready
                 }
 
                 Rectangle {

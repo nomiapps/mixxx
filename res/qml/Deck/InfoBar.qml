@@ -1,6 +1,5 @@
 import ".." as Skin
 import Mixxx 1.0 as Mixxx
-import Qt5Compat.GraphicalEffects
 import QtQuick 2.12
 import QtQuick.Shapes
 import QtQuick.Layouts
@@ -43,6 +42,11 @@ Rectangle {
         return index === topRowModel.count - 1 ? root.columnWidth : root.narrowColumnWidth;
     }
 
+    // The cover's corner radius as a fraction of its side, close to the bar's
+    // own radius. A fraction, not pixels, so that resizing the bar does not ask
+    // for a new image.
+    readonly property real coverCornerFraction: 0.1
+
     border.color: "#30343d"
     border.width: 1
     radius: 6
@@ -77,9 +81,14 @@ Rectangle {
         // or more -- and is minified to the bar's height. Without mipmaps that
         // is a straight bilinear sample and the art shimmers and aliases.
         mipmap: true
-        source: root.currentTrack?.coverArtUrl
-        visible: false
+        // Rounded by the image provider to sit inside the bar's own corners.
+        source: Mixxx.Library.roundedCoverArtUrl(root.currentTrack?.coverArtUrl ?? "", root.coverCornerFraction)
+        visible: root.deckPlayer?.isLoaded && !root.minimized
         width: height
+
+        Skin.FadeBehavior on visible {
+            fadeTarget: coverArt
+        }
     }
     Rectangle {
         id: coverArtCircle
@@ -88,18 +97,6 @@ Rectangle {
         color: Theme.deckEmptyCoverArt
         radius: root.radius - 1
         visible: !root.deckPlayer?.isLoaded && !root.minimized
-    }
-    OpacityMask {
-        id: coverArtMask
-
-        anchors.fill: coverArt
-        maskSource: coverArtCircle
-        source: coverArt
-        visible: root.deckPlayer?.isLoaded && !root.minimized
-
-        Skin.FadeBehavior on visible {
-            fadeTarget: coverArtMask
-        }
     }
     DelegateChooser {
         id: cellDelegate
