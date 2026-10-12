@@ -100,6 +100,10 @@ ComboBox {
         id: popupItem
 
         height: root.contentItem.height * (Math.min(root.popupMaxItem, Math.max(root.count, 1)) + 1)
+        // Keep the list inside the window. It is right-aligned to the field, so
+        // a list wider than its field hung off the left edge of the window when
+        // the field sat near that edge, and the start of every entry was cut off.
+        margins: 4
         padding: 0
         width: root.width
         x: root.width - width
