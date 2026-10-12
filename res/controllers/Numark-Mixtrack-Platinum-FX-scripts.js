@@ -5,6 +5,14 @@ var MixtrackPlatinumFX = {};
 // FX toggles
 MixtrackPlatinumFX.toggleFXControlEnable = true;
 MixtrackPlatinumFX.toggleFXControlSuper = false;
+// What the FX encoder turns on each button's effect, in the order the buttons
+// are printed: HPF, LPF, FLANGER and ECHO, REVERB, PHASER. Mixxx loads those six
+// as its starter effects, and the two filters are both its Filter effect, whose
+// high-pass cutoff is the third parameter.
+MixtrackPlatinumFX.fxEncoderKeys = [
+    ["parameter3", "parameter1", "parameter1"],
+    ["parameter1", "parameter1", "parameter1"],
+];
 
 MixtrackPlatinumFX.shiftBrowseIsZoom = false;
 
@@ -191,6 +199,14 @@ MixtrackPlatinumFX.init = function(id, debug) {
     for (i = 0; i < 2; i++) {
         MixtrackPlatinumFX.effect[i] = new MixtrackPlatinumFX.EffectUnit((i % 2)+1);
     }
+    if (MixtrackPlatinumFX.toggleFXControlEnable) {
+        // The buttons pick one effect at a time, so start with none picked on
+        // the screen too, then keep the lights on whatever the screen shows.
+        MixtrackPlatinumFX.allEffectOff();
+        for (i = 0; i < 2; i++) {
+            MixtrackPlatinumFX.effect[i].followScreen();
+        }
+    }
     // turn effect for master and headphones off to avoid confusion
     engine.setValue("[EffectRack1_EffectUnit1]", "group_[Headphone]_enable", 0);
     engine.setValue("[EffectRack1_EffectUnit2]", "group_[Headphone]_enable", 0);
@@ -314,7 +330,7 @@ MixtrackPlatinumFX.FxBlinkUpdateLEDs = function() {
 };
 
 MixtrackPlatinumFX.FxBlinkTimer=0;
-MixtrackPlatinumFX.FxBlinkState=true;
+MixtrackPlatinumFX.FxBlinkState=false;
 MixtrackPlatinumFX.FxBlink = function() {
     const start = MixtrackPlatinumFX.effect[0].isSwitchHolded || MixtrackPlatinumFX.effect[1].isSwitchHolded;
 
@@ -332,8 +348,22 @@ MixtrackPlatinumFX.FxBlink = function() {
 // this should be done with load_preset and QuickEffects instead (when effect
 // chain preset saving/loading is available in Mixxx)
 MixtrackPlatinumFX.EffectUnit = function(deckNumber) {
+    const unit = this;
     this.effects = [false, false, false];
     this.isSwitchHolded = false;
+
+    // An effect switched on or off on the screen lights or dims its button.
+    this.followScreen = function() {
+        const follow = function(index) {
+            engine.makeConnection(`[EffectRack1_EffectUnit${  deckNumber  }_Effect${index + 1}]`, "enabled", function(value) {
+                unit.effects[index] = value > 0;
+                MixtrackPlatinumFX.FxBlinkUpdateLEDs();
+            });
+        };
+        for (let i = 0; i < this.effects.length; i++) {
+            follow(i);
+        }
+    };
 
     this.updateEffects = function() {
         if (MixtrackPlatinumFX.toggleFXControlEnable) {
@@ -415,9 +445,13 @@ MixtrackPlatinumFX.EffectUnit = function(deckNumber) {
             this.inKey = "meta";
         },
         unshift: function() {
-            this.inKey = "parameter1";
+            this.inKey = MixtrackPlatinumFX.fxEncoderKeys[deckNumber - 1][0];
         },
         input: function(channel, control, value) {
+            if (MixtrackPlatinumFX.toggleFXControlEnable && !unit.effects[0]) {
+                // the one encoder is wired to all six effects: only the lit ones follow it
+                return;
+            }
             this.inSetParameter(this.inGetParameter() + this.inValueScale(value));
         },
         inValueScale: function(value) {
@@ -430,9 +464,13 @@ MixtrackPlatinumFX.EffectUnit = function(deckNumber) {
             this.inKey = "meta";
         },
         unshift: function() {
-            this.inKey = "parameter1";
+            this.inKey = MixtrackPlatinumFX.fxEncoderKeys[deckNumber - 1][1];
         },
         input: function(channel, control, value) {
+            if (MixtrackPlatinumFX.toggleFXControlEnable && !unit.effects[1]) {
+                // the one encoder is wired to all six effects: only the lit ones follow it
+                return;
+            }
             this.inSetParameter(this.inGetParameter() + this.inValueScale(value));
         },
         inValueScale: function(value) {
@@ -445,9 +483,13 @@ MixtrackPlatinumFX.EffectUnit = function(deckNumber) {
             this.inKey = "meta";
         },
         unshift: function() {
-            this.inKey = "parameter1";
+            this.inKey = MixtrackPlatinumFX.fxEncoderKeys[deckNumber - 1][2];
         },
         input: function(channel, control, value) {
+            if (MixtrackPlatinumFX.toggleFXControlEnable && !unit.effects[2]) {
+                // the one encoder is wired to all six effects: only the lit ones follow it
+                return;
+            }
             this.inSetParameter(this.inGetParameter() + this.inValueScale(value));
         },
         inValueScale: function(value) {

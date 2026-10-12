@@ -22,6 +22,10 @@ class FakeMidiControllerJSProxy : public ControllerJSProxy {
     Q_INVOKABLE void sendShortMsg(unsigned char status,
             unsigned char byte1,
             unsigned char byte2);
+
+    /// Every short message a mapping has sent, oldest first, for a test that
+    /// checks what a mapping lights.
+    static QList<QByteArray> s_sentShortMessages;
 };
 
 class FakeHidControllerJSProxy : public ControllerJSProxy {
@@ -262,4 +266,9 @@ class MappingTestFixture
 #endif
 
     bool testLoadMapping(const QString& mapping);
+
+    /// A controller with the mapping loaded and its script left running, for a
+    /// test of what the mapping does. Null if the mapping does not load.
+    std::unique_ptr<FakeController> startMapping(const QString& mapping);
+    void stopMapping(FakeController* pController);
 };
