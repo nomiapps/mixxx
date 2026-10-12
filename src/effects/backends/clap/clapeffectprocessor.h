@@ -25,9 +25,9 @@ class CLAPEffectGroupState final : public EffectState {
     CLAPPluginInstance* instance() const {
         return m_pInstance.get();
     }
-    mixxx::audio::SampleRate sampleRate() const {
-        return m_sampleRate;
-    }
+    /// Makes the plugin ready to process at the engine's sample rate, activating
+    /// it again if it was activated for another one. False if it cannot be.
+    bool activateFor(mixxx::audio::SampleRate sampleRate);
 
     /// Queues a parameter change for the next process call if the value
     /// differs from the one the plugin was last given.
@@ -47,7 +47,8 @@ class CLAPEffectGroupState final : public EffectState {
             const clap_input_events* pList, uint32_t index);
 
     std::unique_ptr<CLAPPluginInstance> m_pInstance;
-    const mixxx::audio::SampleRate m_sampleRate;
+    // The rate the plugin is activated for.
+    mixxx::audio::SampleRate m_sampleRate;
     QList<clap_id> m_parameterIds;
     QList<CLAPManifest::FixedParameter> m_fixedParameters;
     // The value each parameter was last sent with.

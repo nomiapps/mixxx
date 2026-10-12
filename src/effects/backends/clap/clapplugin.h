@@ -58,6 +58,9 @@ class CLAPPluginInstance {
     }
 
     bool activate(double sampleRate, uint32_t maxFrames);
+    /// Stops processing and deactivates, so that activate() can be called again
+    /// with another sample rate.
+    void deactivate();
     bool isActive() const {
         return m_active;
     }

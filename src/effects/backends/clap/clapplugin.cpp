@@ -113,13 +113,19 @@ std::unique_ptr<CLAPPluginInstance> CLAPPluginInstance::create(
 CLAPPluginInstance::~CLAPPluginInstance() {
     // Mixxx deletes an effect's state on the main thread, after the engine
     // has let go of it, so nothing is processing any more.
+    deactivate();
+    m_pPlugin->destroy(m_pPlugin);
+}
+
+void CLAPPluginInstance::deactivate() {
     if (m_processing) {
         m_pPlugin->stop_processing(m_pPlugin);
+        m_processing = false;
     }
     if (m_active) {
         m_pPlugin->deactivate(m_pPlugin);
+        m_active = false;
     }
-    m_pPlugin->destroy(m_pPlugin);
 }
 
 bool CLAPPluginInstance::activate(double sampleRate, uint32_t maxFrames) {

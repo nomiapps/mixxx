@@ -1,5 +1,6 @@
 #include "effects/backends/clap/clapeffectprocessor.h"
 
+#include "control/controlobject.h"
 #include "engine/effects/engineeffectparameter.h"
 #include "util/defs.h"
 #include "util/sample.h"
@@ -7,6 +8,19 @@
 namespace {
 
 constexpr double kSecondsPerMinute = 60.0;
+const ConfigKey kEngineSampleRateKey(QStringLiteral("[App]"), QStringLiteral("samplerate"));
+
+/// The rate the engine runs at. EngineEffect creates every effect state with a
+/// placeholder of 96 kHz, because effects can be loaded before the sound device
+/// is opened, so the rate a state is handed at creation says nothing.
+mixxx::audio::SampleRate engineSampleRateOr(mixxx::audio::SampleRate fallback) {
+    if (!ControlObject::exists(kEngineSampleRateKey)) {
+        // No engine: a test, or a tool that only lists effects.
+        return fallback;
+    }
+    const double rate = ControlObject::get(kEngineSampleRateKey);
+    return rate > 0 ? mixxx::audio::SampleRate::fromDouble(rate) : fallback;
+}
 constexpr int64_t kNoSteadyTime = -1;
 
 bool CLAP_ABI discardOutputEvent(const clap_output_events*, const clap_event_header*) {
@@ -18,7 +32,7 @@ bool CLAP_ABI discardOutputEvent(const clap_output_events*, const clap_event_hea
 CLAPEffectGroupState::CLAPEffectGroupState(
         const mixxx::EngineParameters& engineParameters)
         : EffectState(engineParameters),
-          m_sampleRate(engineParameters.sampleRate()),
+          m_sampleRate(engineSampleRateOr(engineParameters.sampleRate())),
           m_eventCount(0),
           m_sendAllValues(true),
           m_inputL(kMaxEngineFrames),
@@ -89,6 +103,26 @@ void CLAPEffectGroupState::load(const CLAPManifestPointer& pManifest) {
         qWarning() << "CLAPEffectGroupState: could not activate" << pManifest->name();
         m_pInstance.reset();
     }
+}
+
+bool CLAPEffectGroupState::activateFor(mixxx::audio::SampleRate sampleRate) {
+    if (!m_pInstance) {
+        return false;
+    }
+    if (m_pInstance->isActive() && sampleRate == m_sampleRate) {
+        return true;
+    }
+    // The engine runs at another rate than the plugin was activated for: the
+    // sound device was opened, or reconfigured, after the effect was loaded.
+    // CLAP wants activation on the main thread and this is the engine's, but
+    // the alternative is an effect that silently passes its input through
+    // until it is loaded again. It happens once per change of rate, and a
+    // plugin's activate() is the one place it is expected to allocate.
+    m_pInstance->deactivate();
+    m_sampleRate = sampleRate;
+    // The plugin starts from its defaults again.
+    m_sendAllValues = true;
+    return m_pInstance->activate(m_sampleRate.toDouble(), kMaxEngineFrames);
 }
 
 void CLAPEffectGroupState::setParameter(int index, double value) {
@@ -211,12 +245,9 @@ void CLAPEffectProcessor::processChannel(
         const GroupFeatureState& groupFeatures) {
     CLAPPluginInstance* pInstance = pState->instance();
     const SINT frames = engineParameters.framesPerBuffer();
-    // A plugin is activated for one sample rate, on the main thread. If the
-    // engine's rate has changed since, the signal passes through unchanged
-    // until the effect is loaded again.
     if (!pInstance ||
-            pState->sampleRate() != engineParameters.sampleRate() ||
             frames > static_cast<SINT>(kMaxEngineFrames) ||
+            !pState->activateFor(engineParameters.sampleRate()) ||
             !pInstance->startProcessing()) {
         SampleUtil::copy(pOutput, pInput, engineParameters.samplesPerBuffer());
         return;
