@@ -864,6 +864,7 @@ ApplicationWindow {
 
                     clip: true
                     height: visible ? implicitHeight : 0
+                    show4decks: root.show4decks
                     visible: root.showEffects && !root.maximizeLibrary
                     width: parent.width
 
