@@ -36,11 +36,21 @@ constexpr int kStarterEffectsUnnumberedVersion = 1;
 // 2: the two Filter slots hold their cutoff themselves. In version 1 they were
 // set through the meta knob, which the unit's super knob puts back to its
 // centre whenever the unit is loaded, so both filters did nothing.
-constexpr int kStarterEffectsVersion = 2;
+// 3: the Flanger and the Phaser hold their strength themselves too. Both take
+// it from the meta knob, which stands at zero in a slot that is filled this
+// way, so the Flanger was mixed in at nothing and the Phaser sat at its
+// shallowest: neither could be heard (found on the hardware, 14 October 2026).
+constexpr int kStarterEffectsVersion = 3;
 const QString kFilterLowPassId = QStringLiteral("lpf");
 const QString kFilterHighPassId = QStringLiteral("hpf");
 constexpr double kStarterHighPassHz = 500.0;
 constexpr double kStarterLowPassHz = 1000.0;
+const QString kFlangerMixId = QStringLiteral("mix");
+const QString kPhaserDepthId = QStringLiteral("depth");
+const QString kPhaserFeedbackId = QStringLiteral("feedback");
+// Deep, and fed back on itself: a phaser at its defaults is easy to miss.
+constexpr double kStarterPhaserDepth = 1.0;
+constexpr double kStarterPhaserFeedback = 0.5;
 const QString kParameterKey = QStringLiteral("parameter%1");
 const QString kParameterLinkTypeKey = QStringLiteral("parameter%1_link_type");
 // Plugins used in place of the built-in effect where they are installed.
@@ -74,12 +84,16 @@ QList<QList<StarterEffect>> starterEffects() {
                             FilterEffect::getId(),
                             {{kFilterLowPassId, kStarterLowPassHz},
                                     {kFilterHighPassId, std::nullopt}}},
-                    {QString(), FlangerEffect::getId(), {}},
+                    // Fully mixed in, which is the Flanger's own default.
+                    {QString(), FlangerEffect::getId(), {{kFlangerMixId, std::nullopt}}},
             },
             {
                     {kPluginDelayId, EchoEffect::getId(), {}},
                     {kPluginReverbId, ReverbEffect::getId(), {}},
-                    {QString(), PhaserEffect::getId(), {}},
+                    {QString(),
+                            PhaserEffect::getId(),
+                            {{kPhaserDepthId, kStarterPhaserDepth},
+                                    {kPhaserFeedbackId, kStarterPhaserFeedback}}},
             },
     };
 }
@@ -224,9 +238,11 @@ void EffectsManager::loadStarterEffects() {
     m_pConfig->setValue(kStarterEffectsVersionKey, kStarterEffectsVersion);
 
     const QList<QList<StarterEffect>> units = starterEffects();
-    if (version == kStarterEffectsUnnumberedVersion) {
-        // A profile that got version 1: give the starter effects that are still
-        // where they were put, and untouched, the parameters they now hold.
+    if (version >= kStarterEffectsUnnumberedVersion) {
+        // A profile that got an earlier version: give the starter effects that
+        // are still where they were put, and untouched, the parameters they now
+        // hold. One that was put right by an earlier version is off the meta
+        // knob already, and is left as it is.
         for (int unit = 0; unit < units.size(); ++unit) {
             const EffectChainPointer pChain = m_standardEffectChains.value(unit);
             const QList<StarterEffect>& effects = units.at(unit);

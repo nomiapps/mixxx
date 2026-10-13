@@ -69,6 +69,30 @@ class StarterEffectsTest : public MixxxTest {
         EXPECT_DOUBLE_EQ(kFilterOpenHighPassHz, filterKnob(1, 3));
     }
 
+    double knob(int unit, int slotNumber, int knobNumber) {
+        return ControlObject::get(ConfigKey(slot(unit, slotNumber)->getGroup(),
+                QStringLiteral("parameter%1").arg(knobNumber)));
+    }
+
+    /// The Flanger is fully mixed in (its fifth knob) and the Phaser deep
+    /// (fifth) and fed back (second): both can be heard.
+    void expectFlangerAndPhaserCanBeHeard() {
+        EXPECT_DOUBLE_EQ(1.0, knob(0, 2, 5));
+        EXPECT_DOUBLE_EQ(1.0, knob(1, 2, 5));
+        EXPECT_DOUBLE_EQ(0.5, knob(1, 2, 2));
+    }
+
+    void markProfileAsHavingVersion(int version) {
+        config()->setValue(ConfigKey(QStringLiteral("[Effects]"),
+                                   QStringLiteral("StarterEffectsVersion")),
+                version);
+    }
+
+    EffectManifestPointer builtIn(const QString& id) {
+        return m_pEffectsManager->getBackendManager()->getManifest(
+                id, EffectBackendType::BuiltIn);
+    }
+
     std::shared_ptr<EffectsManager> m_pEffectsManager;
 };
 
@@ -79,6 +103,7 @@ TEST_F(StarterEffectsTest, FillsTheFirstTwoUnitsOfANewProfile) {
     EXPECT_EQ(FilterEffect::getId(), effectId(0, 1));
     EXPECT_EQ(FlangerEffect::getId(), effectId(0, 2));
     expectHighPassAndLowPass();
+    expectFlangerAndPhaserCanBeHeard();
 
     // A delay and a reverb: the built-in ones, or plugins where this machine
     // has them installed.
@@ -104,6 +129,46 @@ TEST_F(StarterEffectsTest, FiltersKeepTheirCutoffWhenTheSuperKnobMoves) {
         ControlObject::set(ConfigKey(pChain->group(), QStringLiteral("super1")), super);
         expectHighPassAndLowPass();
     }
+}
+
+/// The Flanger's mix and the Phaser's depth follow the meta knob by default,
+/// and a meta knob at zero silences the one and flattens the other.
+TEST_F(StarterEffectsTest, FlangerAndPhaserKeepTheirStrengthWhateverTheMetaKnobDoes) {
+    m_pEffectsManager->loadStarterEffects();
+
+    for (const double meta : {0.0, 1.0, 0.5}) {
+        ControlObject::set(ConfigKey(slot(0, 2)->getGroup(), QStringLiteral("meta")), meta);
+        ControlObject::set(ConfigKey(slot(1, 2)->getGroup(), QStringLiteral("meta")), meta);
+        expectFlangerAndPhaserCanBeHeard();
+    }
+}
+
+/// A profile that has the second version of the starter effects has a Flanger
+/// mixed in at nothing. It and the Phaser are put right once; the Filters,
+/// which the second version already put right, are not touched again.
+TEST_F(StarterEffectsTest, RepairsTheFlangerAndPhaserOfTheSecondVersion) {
+    ASSERT_TRUE(builtIn(FlangerEffect::getId()));
+    ASSERT_TRUE(builtIn(PhaserEffect::getId()));
+    slot(0, 2)->loadEffectWithDefaults(builtIn(FlangerEffect::getId()));
+    slot(1, 2)->loadEffectWithDefaults(builtIn(PhaserEffect::getId()));
+    ControlObject::set(ConfigKey(slot(0, 2)->getGroup(), QStringLiteral("meta")), 0.0);
+    ControlObject::set(ConfigKey(slot(1, 2)->getGroup(), QStringLiteral("meta")), 0.0);
+    ASSERT_DOUBLE_EQ(0.0, knob(0, 2, 5)) << "the fault this repairs: a silent Flanger";
+    // A filter the second version put right, and the user then moved.
+    slot(0, 0)->loadEffectWithDefaults(builtIn(FilterEffect::getId()));
+    constexpr double kLinkTypeNone = 0;
+    constexpr double kUsersHighPassHz = 800.0;
+    ControlObject::set(ConfigKey(slot(0, 0)->getGroup(),
+                               QStringLiteral("parameter3_link_type")),
+            kLinkTypeNone);
+    ControlObject::set(ConfigKey(slot(0, 0)->getGroup(), QStringLiteral("parameter3")),
+            kUsersHighPassHz);
+    markProfileAsHavingVersion(2);
+
+    m_pEffectsManager->loadStarterEffects();
+
+    expectFlangerAndPhaserCanBeHeard();
+    EXPECT_DOUBLE_EQ(kUsersHighPassHz, filterKnob(0, 3));
 }
 
 /// A profile that was given the first starter effects has two Filters that do
