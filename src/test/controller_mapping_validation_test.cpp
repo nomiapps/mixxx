@@ -7,10 +7,14 @@
 #include <QRegularExpression>
 #include <QUrl>
 
+#include "control/controlobject.h"
 #include "controllers/defs_controllers.h"
 #include "controllers/legacycontrollermappingfilehandler.h"
 #include "controllers/scripting/legacy/controllerscriptenginelegacy.h"
+#include "effects/effectchain.h"
+#include "effects/effectslot.h"
 #include "effects/effectsmanager.h"
+#include "effects/visibleeffectslist.h"
 #include "engine/channelhandle.h"
 #include "engine/enginemixer.h"
 #include "library/coverartcache.h"
@@ -47,10 +51,13 @@ void FakeMidiControllerJSProxy::sendSysexMsg(const QList<int>& data, unsigned in
 void FakeMidiControllerJSProxy::sendShortMsg(unsigned char status,
         unsigned char byte1,
         unsigned char byte2) {
-    Q_UNUSED(status);
-    Q_UNUSED(byte1);
-    Q_UNUSED(byte2);
+    const char message[] = {static_cast<char>(status),
+            static_cast<char>(byte1),
+            static_cast<char>(byte2)};
+    s_sentShortMessages.append(QByteArray(message, sizeof(message)));
 }
+
+QList<QByteArray> FakeMidiControllerJSProxy::s_sentShortMessages;
 
 FakeHidControllerJSProxy::FakeHidControllerJSProxy()
         : ControllerJSProxy(nullptr) {
@@ -223,6 +230,29 @@ bool MappingTestFixture::testLoadMapping(const QString& mappingPath) {
     return result;
 }
 
+std::unique_ptr<FakeController> MappingTestFixture::startMapping(const QString& mappingPath) {
+    const std::shared_ptr<LegacyControllerMapping> pMapping =
+            LegacyControllerMappingFileHandler::loadMapping(
+                    QFileInfo(mappingPath), QDir(RESOURCE_FOLDER "/controllers"));
+    if (!pMapping) {
+        return nullptr;
+    }
+    auto pController = std::make_unique<FakeController>();
+    pController->setMapping(pMapping);
+    // A controller under test only checks its scripts for syntax errors; this
+    // one runs them.
+    pController->getScriptEngine()->setTesting(false);
+    if (!pController->applyMapping(getTestDir().filePath(RESOURCE_FOLDER))) {
+        pController->stopEngine();
+        return nullptr;
+    }
+    return pController;
+}
+
+void MappingTestFixture::stopMapping(FakeController* pController) {
+    pController->stopEngine();
+}
+
 bool checkUrl(const QString& url) {
     return QUrl(url).isValid();
 }
@@ -290,6 +320,167 @@ TEST_P(MappingTestFixture, LoadMapping) {
 
     EXPECT_TRUE(testLoadMapping(mappingPath)) << "Error while loading " << GetParam();
 }
+
+#ifdef MIXXX_USE_QML
+namespace {
+const QString kMixtrackPlatinumFxMapping = QStringLiteral(
+        RESOURCE_FOLDER "/controllers/Numark Mixtrack Platinum FX.midi.xml");
+constexpr int kMixtrackFxUnits = 2;
+constexpr int kMixtrackFxButtonsPerUnit = 3;
+constexpr char kMixtrackFxButtonLit = 0x7F;
+constexpr char kMixtrackFxButtonDim = 0x01;
+
+ConfigKey mixtrackFxEnabledKey(int unit, int button) {
+    return ConfigKey(QStringLiteral("[EffectRack1_EffectUnit%1_Effect%2]")
+                             .arg(unit + 1)
+                             .arg(button + 1),
+            QStringLiteral("enabled"));
+}
+
+/// The left three buttons are notes 0-2 on channel 9, the right three notes
+/// 3-5 on channel 10.
+QByteArray mixtrackFxButtonLight(int unit, int button, char brightness) {
+    const char message[] = {static_cast<char>(0x98 + unit),
+            static_cast<char>(unit * kMixtrackFxButtonsPerUnit + button),
+            brightness};
+    return QByteArray(message, sizeof(message));
+}
+} // namespace
+
+/// The controller's six effect buttons and the six effect slots on the screen
+/// are the same six things, in the same order, and show the same state.
+class MixtrackPlatinumFxMappingTest : public MappingTestFixture {
+  protected:
+    void loadMapping() {
+        m_pController = startMapping(kMixtrackPlatinumFxMapping);
+        ASSERT_TRUE(m_pController);
+        QCoreApplication::processEvents();
+    }
+
+    void TearDown() override {
+        if (m_pController) {
+            stopMapping(m_pController.get());
+            m_pController.reset();
+        }
+        MappingTestFixture::TearDown();
+    }
+
+    /// What the controller sends when an effect button is pressed, with or
+    /// without its shift key held.
+    void pressEffectButton(int unit, int button, bool shifted) {
+        const QString press = QStringLiteral(
+                "MixtrackPlatinumFX.effect[%1].effect%2(%3, %4, 0x7F, %5, \"\");")
+                                      .arg(unit)
+                                      .arg(button + 1)
+                                      .arg(8 + unit)
+                                      .arg(unit * kMixtrackFxButtonsPerUnit + button)
+                                      .arg(0x98 + unit);
+        const QString code = shifted
+                ? QStringLiteral("function() { MixtrackPlatinumFX.shift(); %1 "
+                                 "MixtrackPlatinumFX.unshift(); }")
+                          .arg(press)
+                : QStringLiteral("function() { %1 }").arg(press);
+        QJSValue function = m_pController->getScriptEngine()->wrapFunctionCode(code, 0);
+        ASSERT_TRUE(function.isCallable());
+        const QJSValue result = function.call();
+        ASSERT_FALSE(result.isError()) << result.toString().toStdString();
+        QCoreApplication::processEvents();
+    }
+
+    EffectSlotPointer slot(int unit, int button) {
+        return m_pEffectsManager->getStandardEffectChain(unit)->getEffectSlot(button);
+    }
+
+    bool picked(int unit, int button) {
+        return ControlObject::get(mixtrackFxEnabledKey(unit, button)) > 0;
+    }
+
+    std::unique_ptr<FakeController> m_pController;
+};
+
+TEST_F(MixtrackPlatinumFxMappingTest, StartsWithNoEffectPickedOnTheScreen) {
+    for (int unit = 0; unit < kMixtrackFxUnits; ++unit) {
+        for (int button = 0; button < kMixtrackFxButtonsPerUnit; ++button) {
+            ControlObject::set(mixtrackFxEnabledKey(unit, button), 1.0);
+        }
+    }
+
+    loadMapping();
+
+    for (int unit = 0; unit < kMixtrackFxUnits; ++unit) {
+        for (int button = 0; button < kMixtrackFxButtonsPerUnit; ++button) {
+            EXPECT_EQ(0.0, ControlObject::get(mixtrackFxEnabledKey(unit, button)))
+                    << "unit " << unit << " button " << button;
+        }
+    }
+}
+
+TEST_F(MixtrackPlatinumFxMappingTest, LightsTheButtonOfAnEffectSwitchedOnOnTheScreen) {
+    loadMapping();
+
+    for (int unit = 0; unit < kMixtrackFxUnits; ++unit) {
+        for (int button = 0; button < kMixtrackFxButtonsPerUnit; ++button) {
+            FakeMidiControllerJSProxy::s_sentShortMessages.clear();
+            ControlObject::set(mixtrackFxEnabledKey(unit, button), 1.0);
+            QCoreApplication::processEvents();
+            EXPECT_TRUE(FakeMidiControllerJSProxy::s_sentShortMessages.contains(
+                    mixtrackFxButtonLight(unit, button, kMixtrackFxButtonLit)))
+                    << "unit " << unit << " button " << button;
+
+            FakeMidiControllerJSProxy::s_sentShortMessages.clear();
+            ControlObject::set(mixtrackFxEnabledKey(unit, button), 0.0);
+            QCoreApplication::processEvents();
+            EXPECT_TRUE(FakeMidiControllerJSProxy::s_sentShortMessages.contains(
+                    mixtrackFxButtonLight(unit, button, kMixtrackFxButtonDim)))
+                    << "unit " << unit << " button " << button;
+            EXPECT_FALSE(FakeMidiControllerJSProxy::s_sentShortMessages.contains(
+                    mixtrackFxButtonLight(unit, button, kMixtrackFxButtonLit)));
+        }
+    }
+}
+
+TEST_F(MixtrackPlatinumFxMappingTest, APressPicksOneEffectAndASecondPressDropsIt) {
+    loadMapping();
+
+    pressEffectButton(0, 0, false);
+    EXPECT_TRUE(picked(0, 0));
+
+    pressEffectButton(1, 2, false);
+    EXPECT_FALSE(picked(0, 0));
+    EXPECT_TRUE(picked(1, 2));
+
+    pressEffectButton(1, 2, false);
+    EXPECT_FALSE(picked(1, 2));
+}
+
+/// There are far more effects than six buttons: shift and a button walks that
+/// button through all of them, and round again.
+TEST_F(MixtrackPlatinumFxMappingTest, ShiftAndAButtonMovesItToTheNextEffect) {
+    loadMapping();
+    const QList<EffectManifestPointer> effects =
+            m_pEffectsManager->getVisibleEffectsList()->getList();
+    ASSERT_GE(effects.size(), 2);
+    pressEffectButton(0, 0, false);
+
+    // An empty slot starts at the top of the list.
+    for (int step = 0; step <= effects.size(); ++step) {
+        FakeMidiControllerJSProxy::s_sentShortMessages.clear();
+        pressEffectButton(1, 0, true);
+
+        ASSERT_TRUE(slot(1, 0)->isLoaded());
+        EXPECT_EQ(effects.at(step % effects.size())->uniqueId(),
+                slot(1, 0)->getManifest()->uniqueId())
+                << "step " << step;
+        // It is the one picked, so it is the one heard and the one lit.
+        EXPECT_TRUE(picked(1, 0));
+        EXPECT_FALSE(picked(0, 0));
+        EXPECT_TRUE(FakeMidiControllerJSProxy::s_sentShortMessages.contains(
+                mixtrackFxButtonLight(1, 0, kMixtrackFxButtonLit)));
+    }
+    // Only that button's slot moved.
+    EXPECT_FALSE(slot(1, 1)->isLoaded());
+}
+#endif
 
 #ifdef __BULK__
 INSTANTIATE_TEST_SUITE_P(BulkMappings,

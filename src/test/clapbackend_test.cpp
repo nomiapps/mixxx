@@ -165,18 +165,24 @@ TEST_F(CLAPBackendTest, ReportsThePluginLatency) {
     EXPECT_EQ(kTestPluginLatencyFrames, m_pProcessor->getGroupDelayFrames());
 }
 
-TEST_F(CLAPBackendTest, PassesThroughAtAnotherSampleRate) {
+/// The engine creates every effect state with a placeholder rate of 96 kHz and
+/// then processes at the sound device's. A plugin that only worked at the rate
+/// it was created for would pass its input through for good, which is what
+/// every CLAP effect did in a running Mixxx.
+TEST_F(CLAPBackendTest, ProcessesAtTheEnginesRateNotTheOneItWasCreatedFor) {
     ASSERT_NO_FATAL_FAILURE(createProcessor());
     m_parameters.value(kGainParameterId)->setValue(2.0);
     const mixxx::EngineParameters otherRate(mixxx::audio::SampleRate(48000), kFramesPerBuffer);
-    m_pProcessor->process(m_channel,
-            m_channel,
-            m_input.data(),
-            m_output.data(),
-            otherRate,
-            EffectEnableState::Enabled,
-            GroupFeatureState());
-    expectOutputScaledBy(1.0f);
+    for (int buffer = 0; buffer < 2; ++buffer) {
+        m_pProcessor->process(m_channel,
+                m_channel,
+                m_input.data(),
+                m_output.data(),
+                otherRate,
+                EffectEnableState::Enabled,
+                GroupFeatureState());
+        expectOutputScaledBy(2.0f);
+    }
 }
 
 } // anonymous namespace

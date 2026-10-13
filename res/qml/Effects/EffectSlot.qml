@@ -22,6 +22,11 @@ Item {
     readonly property int maximumParametersPerType: 8
     property int parameterButtonHeight: 22
     property int selectorControlWidth: 40
+    // On a narrow slot the ON button and the meta knob give some of their width
+    // to the effect's name, which is the one thing here that has to be read.
+    readonly property int narrowBelowWidth: 200
+    readonly property real narrowControlScale: 0.8
+    readonly property int controlWidth: selector.width < root.narrowBelowWidth ? Math.round(root.selectorControlWidth * root.narrowControlScale) : root.selectorControlWidth
     // The per-parameter LINK / invert row. Desktop power-user controls at 7 px:
     // a touch surface turns them off rather than shrinking to nothing.
     property bool showParameterLinkControls: true
@@ -61,7 +66,7 @@ Item {
             key: "enabled"
             text: "ON"
             toggleable: true
-            width: root.selectorControlWidth
+            width: root.controlWidth
         }
         EffectSelector {
             id: effectSelector
@@ -84,7 +89,7 @@ Item {
             color: Theme.effectColor
             group: root.group
             key: "meta"
-            width: root.selectorControlWidth
+            width: root.controlWidth
         }
     }
     ListView {

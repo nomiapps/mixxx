@@ -8,6 +8,12 @@ import QtQuick
 Skin.ComboBox {
     id: root
 
+    // Below this width the field drops its arrows: on a small screen they took
+    // a third of it, and the name read as "Fil..." or "D...".
+    readonly property int arrowsFromWidth: 110
+    // The list is at least this wide whatever the field's width, so that names
+    // can be read in full where they are chosen.
+    readonly property int minimumListWidth: 190
     required property Mixxx.EffectSlotProxy slot
 
     function syncCurrentEffect() {
@@ -22,7 +28,10 @@ Skin.ComboBox {
 
     readonly property string observedEffectId: root.slot?.effectId ?? ""
 
+    indicator.visible: root.width >= root.arrowsFromWidth
+    indicator.width: root.width >= root.arrowsFromWidth ? 20 : 0
     model: Mixxx.EffectsManager.visibleEffectsModel
+    popupWidth: Math.max(root.width, root.minimumListWidth)
     textRole: "display"
 
     Component.onCompleted: syncCurrentEffect()

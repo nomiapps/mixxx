@@ -2,7 +2,9 @@
 
 #include <QDir>
 #include <QMetaType>
+#include <optional>
 
+#include "control/controlobject.h"
 #include "effects/backends/builtin/echoeffect.h"
 #include "effects/backends/builtin/filtereffect.h"
 #include "effects/backends/builtin/flangereffect.h"
@@ -25,22 +27,38 @@ namespace {
 const unsigned int kEffectMessagePipeFifoSize = 2048;
 const QString kEffectsXmlFile = QStringLiteral("effects.xml");
 
+// Set by the first version of the starter effects, which had no number.
 const ConfigKey kStarterEffectsLoadedKey(
         QStringLiteral("[Effects]"), QStringLiteral("StarterEffectsLoaded"));
-// The built-in Filter is a low-pass below the centre of its meta knob and a
-// high-pass above it.
-constexpr double kFilterMetaLowPass = 0.25;
-constexpr double kFilterMetaHighPass = 0.75;
+const ConfigKey kStarterEffectsVersionKey(
+        QStringLiteral("[Effects]"), QStringLiteral("StarterEffectsVersion"));
+constexpr int kStarterEffectsUnnumberedVersion = 1;
+// 2: the two Filter slots hold their cutoff themselves. In version 1 they were
+// set through the meta knob, which the unit's super knob puts back to its
+// centre whenever the unit is loaded, so both filters did nothing.
+constexpr int kStarterEffectsVersion = 2;
+const QString kFilterLowPassId = QStringLiteral("lpf");
+const QString kFilterHighPassId = QStringLiteral("hpf");
+constexpr double kStarterHighPassHz = 500.0;
+constexpr double kStarterLowPassHz = 1000.0;
+const QString kParameterKey = QStringLiteral("parameter%1");
+const QString kParameterLinkTypeKey = QStringLiteral("parameter%1_link_type");
 // Plugins used in place of the built-in effect where they are installed.
 const QString kPluginDelayId = QStringLiteral("com.nomiapps.trackxis.delay");
 const QString kPluginReverbId = QStringLiteral("com.nomiapps.trackxis.reverb");
+
+/// A parameter the starter effect holds at a value of its own, off the meta
+/// knob. Without a value it is held at the effect's default.
+struct StarterParameter {
+    QString id;
+    std::optional<double> value;
+};
 
 struct StarterEffect {
     // Tried first, and skipped when empty or not installed.
     QString pluginId;
     QString builtInId;
-    // Negative leaves the effect's own default.
-    double metaParameter;
+    QList<StarterParameter> heldParameters;
 };
 
 /// Per effect unit, in slot order. The six are the ones DJ controllers with
@@ -48,14 +66,20 @@ struct StarterEffect {
 QList<QList<StarterEffect>> starterEffects() {
     return {
             {
-                    {QString(), FilterEffect::getId(), kFilterMetaHighPass},
-                    {QString(), FilterEffect::getId(), kFilterMetaLowPass},
-                    {QString(), FlangerEffect::getId(), -1.0},
+                    {QString(),
+                            FilterEffect::getId(),
+                            {{kFilterHighPassId, kStarterHighPassHz},
+                                    {kFilterLowPassId, std::nullopt}}},
+                    {QString(),
+                            FilterEffect::getId(),
+                            {{kFilterLowPassId, kStarterLowPassHz},
+                                    {kFilterHighPassId, std::nullopt}}},
+                    {QString(), FlangerEffect::getId(), {}},
             },
             {
-                    {kPluginDelayId, EchoEffect::getId(), -1.0},
-                    {kPluginReverbId, ReverbEffect::getId(), -1.0},
-                    {QString(), PhaserEffect::getId(), -1.0},
+                    {kPluginDelayId, EchoEffect::getId(), {}},
+                    {kPluginReverbId, ReverbEffect::getId(), {}},
+                    {QString(), PhaserEffect::getId(), {}},
             },
     };
 }
@@ -122,15 +146,105 @@ void EffectsManager::setup() {
     readEffectsXml();
 }
 
+namespace {
+
+/// A knob parameter of an effect, with its position among the effect's knobs,
+/// from 1, which is the number its controls carry.
+struct KnobParameter {
+    int number;
+    EffectManifestParameterPointer pParameter;
+};
+
+/// Number 0 if the effect has no such knob.
+KnobParameter findKnob(const EffectManifestPointer& pManifest, const QString& parameterId) {
+    int number = 0;
+    for (const auto& pParameter : pManifest->parameters()) {
+        if (pParameter->parameterType() != EffectManifestParameter::ParameterType::Knob) {
+            continue;
+        }
+        ++number;
+        if (pParameter->id() == parameterId) {
+            return {number, pParameter};
+        }
+    }
+    return {0, nullptr};
+}
+
+/// True if every held parameter of the slot's effect is still linked to the meta
+/// knob the way the effect links it by default: it is as version 1 loaded it,
+/// and nobody has taken it off the knob to set it by hand.
+bool heldParametersStillOnTheMetaKnob(
+        const EffectSlotPointer& pSlot, const StarterEffect& effect) {
+    const EffectManifestPointer pManifest = pSlot->getManifest();
+    for (const StarterParameter& held : effect.heldParameters) {
+        const KnobParameter knob = findKnob(pManifest, held.id);
+        if (knob.number == 0) {
+            return false;
+        }
+        const double linkType = ControlObject::get(
+                ConfigKey(pSlot->getGroup(), kParameterLinkTypeKey.arg(knob.number)));
+        if (static_cast<int>(linkType) !=
+                static_cast<int>(knob.pParameter->defaultLinkType())) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void holdParameters(const EffectSlotPointer& pSlot, const StarterEffect& effect) {
+    const EffectManifestPointer pManifest = pSlot->getManifest();
+    for (const StarterParameter& held : effect.heldParameters) {
+        const KnobParameter knob = findKnob(pManifest, held.id);
+        if (knob.number == 0) {
+            continue;
+        }
+        ControlObject::set(
+                ConfigKey(pSlot->getGroup(), kParameterLinkTypeKey.arg(knob.number)),
+                static_cast<double>(EffectManifestParameter::LinkType::None));
+        // The default where no value is given: the meta knob may have left the
+        // parameter anywhere, and it stays there once it is off the knob.
+        ControlObject::set(
+                ConfigKey(pSlot->getGroup(), kParameterKey.arg(knob.number)),
+                held.value.value_or(knob.pParameter->getDefault()));
+    }
+}
+
+} // anonymous namespace
+
 void EffectsManager::loadStarterEffects() {
-    if (m_pConfig->getValue(kStarterEffectsLoadedKey, false)) {
+    int version = m_pConfig->getValue(kStarterEffectsVersionKey, 0);
+    if (version == 0 && m_pConfig->getValue(kStarterEffectsLoadedKey, false)) {
+        version = kStarterEffectsUnnumberedVersion;
+    }
+    if (version >= kStarterEffectsVersion) {
         return;
     }
-    // Whatever is found now, this profile is not asked again: units the user
-    // has filled or emptied since stay as they are.
-    m_pConfig->setValue(kStarterEffectsLoadedKey, true);
+    // Whatever is found now, this profile is not asked again for this version:
+    // units the user has filled or emptied since stay as they are.
+    m_pConfig->setValue(kStarterEffectsVersionKey, kStarterEffectsVersion);
 
     const QList<QList<StarterEffect>> units = starterEffects();
+    if (version == kStarterEffectsUnnumberedVersion) {
+        // A profile that got version 1: give the starter effects that are still
+        // where they were put, and untouched, the parameters they now hold.
+        for (int unit = 0; unit < units.size(); ++unit) {
+            const EffectChainPointer pChain = m_standardEffectChains.value(unit);
+            const QList<StarterEffect>& effects = units.at(unit);
+            for (int slot = 0; pChain && slot < effects.size(); ++slot) {
+                const StarterEffect& effect = effects.at(slot);
+                const EffectSlotPointer pSlot = pChain->getEffectSlot(slot);
+                if (!pSlot || effect.heldParameters.isEmpty() || !pSlot->isLoaded() ||
+                        pSlot->getManifest()->id() != effect.builtInId ||
+                        pSlot->getManifest()->backendType() != EffectBackendType::BuiltIn ||
+                        !heldParametersStillOnTheMetaKnob(pSlot, effect)) {
+                    continue;
+                }
+                holdParameters(pSlot, effect);
+            }
+        }
+        return;
+    }
+
     for (int unit = 0; unit < units.size(); ++unit) {
         const EffectChainPointer pChain = m_standardEffectChains.value(unit);
         if (!pChain || !pChain->isEmpty()) {
@@ -159,8 +273,8 @@ void EffectsManager::loadStarterEffects() {
                 continue;
             }
             pSlot->loadEffectWithDefaults(pManifest);
-            if (effect.metaParameter >= 0.0) {
-                pSlot->setMetaParameter(effect.metaParameter, true);
+            if (pManifest->backendType() == EffectBackendType::BuiltIn) {
+                holdParameters(pSlot, effect);
             }
         }
     }

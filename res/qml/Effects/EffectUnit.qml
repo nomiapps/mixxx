@@ -11,15 +11,9 @@ Item {
     readonly property Mixxx.EffectUnitProxy unit: Mixxx.EffectsManager.getEffectUnit(unitNumber)
     required property int unitNumber
 
-    // Tall enough for BOTH sides. The unit used to be as tall as its effect
-    // slots alone, and the controls frame beside them is anchored top to
-    // bottom, so its column of buttons and knobs was given whatever was left --
-    // about 50 px for 71 px of content. The dry/wet and super knobs were cut
-    // off along the bottom edge, hard against the row below.
-    //
-    // The frame keeps a 5 px margin top and bottom, and its column another 5,
-    // so the unit needs the column's own height plus 20.
-    implicitHeight: Math.max(effectContainer.height, unitControls.implicitHeight + 20)
+    // Tall enough for BOTH sides: the effect slots, and the frame of unit
+    // controls beside them with its 5 px margin above and below.
+    implicitHeight: Math.max(effectContainer.height, effectUnitControlsFrame.height + 10)
 
     Item {
         id: effectContainer
@@ -67,80 +61,78 @@ Item {
     Rectangle {
         id: effectUnitControlsFrame
 
-        anchors.bottom: parent.bottom
+        // One line of controls, as tall as a row of effect slots: the units
+        // are stacked, so a unit that is two lines tall costs the library
+        // twice over.
         anchors.margins: 5
         anchors.right: parent.right
         anchors.top: parent.top
         color: Theme.knobBackgroundColor
+        height: 50
         radius: 5
-        width: 150
+        width: unitControls.implicitWidth + 10
 
-        Column {
+        Row {
             id: unitControls
 
-            anchors.fill: parent
-            anchors.margins: 5
+            anchors.centerIn: parent
             spacing: 5
 
-            Row {
-                spacing: 5
-
-                Skin.ControlButton {
-                    activeColor: Theme.effectUnitColor
-                    group: root.group
-                    height: 26
-                    key: "show_parameters"
-                    text: root.expanded ? "▲" : "▼"
-                    toggleable: true
-                    width: 36
-                }
-                Skin.Button {
-                    activeColor: Theme.effectUnitColor
-                    height: 26
-                    text: "FX " + root.unitNumber
-                    width: 56
-
-                    onClicked: presetPopup.open()
-                }
-                Skin.ControlButton {
-                    activeColor: Theme.effectUnitColor
-                    group: root.group
-                    height: 26
-                    key: "group_[Headphone]_enable"
-                    text: "PFL"
-                    toggleable: true
-                    width: 42
-                }
+            Skin.ControlButton {
+                activeColor: Theme.effectUnitColor
+                anchors.verticalCenter: parent.verticalCenter
+                group: root.group
+                height: 26
+                key: "show_parameters"
+                text: root.expanded ? "▲" : "▼"
+                toggleable: true
+                width: 36
             }
-            Row {
-                spacing: 5
+            Skin.Button {
+                activeColor: Theme.effectUnitColor
+                anchors.verticalCenter: parent.verticalCenter
+                height: 26
+                text: "FX " + root.unitNumber
+                width: 56
 
-                Skin.ControlButton {
-                    activeColor: Theme.effectUnitColor
-                    group: root.group
-                    height: 30
-                    key: "mix_mode"
-                    text: "D/W"
-                    toggleable: true
-                    width: 36
-                }
-                Skin.ControlKnob {
-                    arcStart: Skin.Knob.ArcStart.Minimum
-                    color: Theme.effectUnitColor
-                    group: root.group
-                    height: 40
-                    key: "mix"
-                    width: 40
-                }
-                Skin.ControlKnob {
-                    arcStart: Skin.Knob.ArcStart.Minimum
-                    color: Theme.effectUnitColor
-                    group: root.group
-                    height: 40
-                    key: "super1"
-                    visible: showSuperKnobsControl.value > 0
-                    width: visible ? 40 : 0
-                }
+                onClicked: presetPopup.open()
+            }
+            Skin.ControlButton {
+                activeColor: Theme.effectUnitColor
+                anchors.verticalCenter: parent.verticalCenter
+                group: root.group
+                height: 26
+                key: "group_[Headphone]_enable"
+                text: "PFL"
+                toggleable: true
+                width: 42
+            }
+            Skin.ControlButton {
+                activeColor: Theme.effectUnitColor
+                anchors.verticalCenter: parent.verticalCenter
+                group: root.group
+                height: 26
+                key: "mix_mode"
+                text: "D/W"
+                toggleable: true
+                width: 36
+            }
+            Skin.ControlKnob {
+                arcStart: Skin.Knob.ArcStart.Minimum
+                color: Theme.effectUnitColor
+                group: root.group
+                height: 40
+                key: "mix"
+                width: 40
+            }
+            Skin.ControlKnob {
+                arcStart: Skin.Knob.ArcStart.Minimum
+                color: Theme.effectUnitColor
+                group: root.group
+                height: 40
+                key: "super1"
+                visible: showSuperKnobsControl.value > 0
+                width: visible ? 40 : 0
             }
         }
     }
