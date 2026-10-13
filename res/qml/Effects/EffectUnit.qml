@@ -22,7 +22,9 @@ Item {
         anchors.margins: 5
         anchors.right: effectUnitControlsFrame.left
         anchors.top: parent.top
-        height: root.expanded ? 160 : 60
+        // Three side by side whether expanded or not: an expanded unit grows
+        // downwards under each of its effects, so the bank keeps its columns.
+        height: Math.max(effect1.implicitHeight, effect2.implicitHeight, effect3.implicitHeight) + 10
 
         EffectSlot {
             id: effect1
@@ -31,31 +33,34 @@ Item {
             anchors.top: parent.top
             effectNumber: 1
             expanded: root.expanded
-            height: 50
+            height: implicitHeight
+            parametersBelow: true
             unitNumber: root.unitNumber
-            width: root.expanded ? parent.width : parent.width / 3
+            width: parent.width / 3
         }
         EffectSlot {
             id: effect2
 
-            anchors.left: root.expanded ? parent.left : effect1.right
-            anchors.top: root.expanded ? effect1.bottom : parent.top
+            anchors.left: effect1.right
+            anchors.top: parent.top
             effectNumber: 2
             expanded: root.expanded
-            height: 50
+            height: implicitHeight
+            parametersBelow: true
             unitNumber: root.unitNumber
-            width: root.expanded ? parent.width : parent.width / 3
+            width: parent.width / 3
         }
         EffectSlot {
             id: effect3
 
-            anchors.left: root.expanded ? parent.left : effect2.right
-            anchors.top: root.expanded ? effect2.bottom : parent.top
+            anchors.left: effect2.right
+            anchors.top: parent.top
             effectNumber: 3
             expanded: root.expanded
-            height: 50
+            height: implicitHeight
+            parametersBelow: true
             unitNumber: root.unitNumber
-            width: root.expanded ? parent.width : parent.width / 3
+            width: parent.width / 3
         }
     }
     Rectangle {

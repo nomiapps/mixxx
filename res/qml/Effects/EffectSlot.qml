@@ -19,8 +19,19 @@ Item {
     property int focusButtonSize: 16
     property int knobSize: 30
     property real maxSelectorWidth: 300
+    // The strip under a knob that links it to the meta knob.
+    readonly property int linkRowHeight: 8
     readonly property int maximumParametersPerType: 8
     property int parameterButtonHeight: 22
+    // A knob, its name under it, and the link strip under that, each on its own
+    // line: at 50 px the name sat underneath the link strip and could not be read.
+    readonly property int parameterCellHeight: root.knobSize + root.parameterLabelHeight + (root.showParameterLinkControls ? root.linkRowHeight + 2 : 0)
+    readonly property int parameterLabelHeight: 14
+    // Where an expanded slot puts its parameters: beside the chooser, in one line
+    // that scrolls, or under it, wrapped to the slot's own width. Under it, three
+    // slots still stand side by side when they are expanded.
+    property bool parametersBelow: false
+    readonly property int selectorHeight: 50
     property int selectorControlWidth: 40
     // On a narrow slot the ON button and the meta knob give some of their width
     // to the effect's name, which is the one thing here that has to be read.
@@ -33,14 +44,14 @@ Item {
     property Mixxx.EffectSlotProxy slot: Mixxx.EffectsManager.getEffectSlot(unitNumber, effectNumber)
     required property int unitNumber
 
-    height: 50
+    implicitHeight: root.selectorHeight + (parametersFlow.visible ? parametersFlow.height + 5 : 0)
 
     Item {
         id: selector
 
-        anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.top: parent.top
+        height: root.parametersBelow ? root.selectorHeight : root.height
         width: Math.min(root.width, root.maxSelectorWidth)
 
         EffectFocusButton {
@@ -92,21 +103,10 @@ Item {
             width: root.controlWidth
         }
     }
-    ListView {
-        id: parametersView
+    Component {
+        id: parameterDelegate
 
-        anchors.bottom: parent.bottom
-        anchors.left: selector.right
-        anchors.leftMargin: 10
-        anchors.right: parent.right
-        anchors.top: parent.top
-        clip: true
-        model: root.slot.parametersModel
-        orientation: ListView.Horizontal
-        spacing: 5
-        visible: root.expanded
-
-        delegate: Item {
+        Item {
             id: parameter
 
             required property string controlKey
@@ -124,11 +124,12 @@ Item {
             }
             required property int type
 
-            height: parametersView.height
+            height: root.parametersBelow ? root.parameterCellHeight : parametersView.height
             visible: shown
             width: shown ? root.cellWidth : 0
 
             Skin.EmbeddedText {
+                anchors.bottomMargin: parameter.isKnob && root.showParameterLinkControls ? root.linkRowHeight + 2 : 0
                 anchors.fill: parent
                 font.bold: false
                 text: parameter.label
@@ -161,45 +162,80 @@ Item {
                     toggleable: true
                 }
             }
-            Row {
+            Loader {
+                // Only knobs can be linked: a button parameter has no link controls.
+                active: parameter.shown && parameter.isKnob && root.showParameterLinkControls
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
-                height: 8
-                visible: parameter.shown && parameter.isKnob && root.showParameterLinkControls
 
-                Skin.ControlButton {
-                    activeColor: Theme.effectColor
-                    group: root.group
-                    height: 8
-                    key: parameter.controlKey + "_link_inverse"
-                    text: "I"
-                    toggleable: true
-                    width: 12
-                }
-                Item {
-                    height: 8
-                    width: 34
+                sourceComponent: Row {
+                    height: root.linkRowHeight
 
-                    Rectangle {
-                        anchors.fill: parent
-                        color: linkTypeControl.value > 0 ? Theme.effectColor : Theme.knobBackgroundColor
-                    }
-                    Text {
-                        anchors.centerIn: parent
-                        font.pixelSize: 7
-                        text: "LINK " + Math.round(linkTypeControl.value)
-                    }
-                    TapHandler {
-                        onTapped: linkTypeControl.value = (Math.round(linkTypeControl.value) + 1) % 5
-                    }
-                    Mixxx.ControlProxy {
-                        id: linkTypeControl
-
+                    Skin.ControlButton {
+                        activeColor: Theme.effectColor
                         group: root.group
-                        key: parameter.controlKey + "_link_type"
+                        height: root.linkRowHeight
+                        key: parameter.controlKey + "_link_inverse"
+                        text: "I"
+                        toggleable: true
+                        width: 12
+                    }
+                    Item {
+                        height: root.linkRowHeight
+                        width: 34
+
+                        Rectangle {
+                            anchors.fill: parent
+                            color: linkTypeControl.value > 0 ? Theme.effectColor : Theme.knobBackgroundColor
+                        }
+                        Text {
+                            anchors.centerIn: parent
+                            font.pixelSize: 7
+                            text: "LINK " + Math.round(linkTypeControl.value)
+                        }
+                        TapHandler {
+                            onTapped: linkTypeControl.value = (Math.round(linkTypeControl.value) + 1) % 5
+                        }
+                        Mixxx.ControlProxy {
+                            id: linkTypeControl
+
+                            group: root.group
+                            key: parameter.controlKey + "_link_type"
+                        }
                     }
                 }
             }
+        }
+    }
+    ListView {
+        id: parametersView
+
+        anchors.bottom: parent.bottom
+        anchors.left: selector.right
+        anchors.leftMargin: 10
+        anchors.right: parent.right
+        anchors.top: parent.top
+        clip: true
+        delegate: parameterDelegate
+        model: visible ? root.slot.parametersModel : null
+        orientation: ListView.Horizontal
+        spacing: 5
+        visible: root.expanded && !root.parametersBelow
+    }
+    Flow {
+        id: parametersFlow
+
+        anchors.left: parent.left
+        anchors.leftMargin: 5
+        anchors.right: parent.right
+        anchors.rightMargin: 5
+        anchors.top: selector.bottom
+        spacing: 5
+        visible: root.expanded && root.parametersBelow
+
+        Repeater {
+            delegate: parameterDelegate
+            model: parametersFlow.visible ? root.slot.parametersModel : null
         }
     }
 }

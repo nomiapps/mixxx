@@ -40,6 +40,11 @@ MixtrackPlatinumFX.jogScratchAlpha = 1; // do NOT set to 2 or higher
 MixtrackPlatinumFX.jogScratchBeta = 1/32;
 MixtrackPlatinumFX.jogPitchSensitivity = 10;
 MixtrackPlatinumFX.jogSeekSensitivity = 10000;
+// How long the platter has to stay untouched before the deck is let go. Under
+// a light touch the platter's sensor chatters: it reports the finger gone and
+// back again every 60 to 150 ms, and each "gone" used to drop the record.
+MixtrackPlatinumFX.jogTouchReleaseDelay = 200;
+MixtrackPlatinumFX.jogTouchReleaseTimers = [0, 0, 0, 0];
 
 // blink settings
 MixtrackPlatinumFX.enableBlink = true;
@@ -266,6 +271,12 @@ MixtrackPlatinumFX.shutdown = function() {
     if (MixtrackPlatinumFX.BlinkTimer!==0) {
         engine.stopTimer(MixtrackPlatinumFX.BlinkTimer);
         MixtrackPlatinumFX.BlinkTimer=0;
+    }
+    for (i=0; i<4; i++) {
+        if (MixtrackPlatinumFX.jogTouchReleaseTimers[i] !== 0) {
+            engine.stopTimer(MixtrackPlatinumFX.jogTouchReleaseTimers[i]);
+            MixtrackPlatinumFX.jogTouchReleaseTimers[i] = 0;
+        }
     }
 
     for (i=0; i<4; i++) {
@@ -1813,14 +1824,25 @@ MixtrackPlatinumFX.vuCallback = function(value, group) {
 
 MixtrackPlatinumFX.wheelTouch = function(channel, control, value) {
     const deckNumber = channel + 1;
+    const pendingRelease = MixtrackPlatinumFX.jogTouchReleaseTimers[channel];
 
-    if (!MixtrackPlatinumFX.shifted && MixtrackPlatinumFX.deck[channel].scratchModeEnabled && value === 0x7F) {
+    if (value === 0x7F) {
         // touch start
-
-        engine.scratchEnable(deckNumber, MixtrackPlatinumFX.jogScratchSensitivity, 33+1/3, MixtrackPlatinumFX.jogScratchAlpha, MixtrackPlatinumFX.jogScratchBeta, true);
-    } else if (value === 0) {
-        // touch end
-        engine.scratchDisable(deckNumber, true);
+        if (pendingRelease !== 0) {
+            // the finger never really left: keep hold of the record
+            engine.stopTimer(pendingRelease);
+            MixtrackPlatinumFX.jogTouchReleaseTimers[channel] = 0;
+            return;
+        }
+        if (!MixtrackPlatinumFX.shifted && MixtrackPlatinumFX.deck[channel].scratchModeEnabled) {
+            engine.scratchEnable(deckNumber, MixtrackPlatinumFX.jogScratchSensitivity, 33+1/3, MixtrackPlatinumFX.jogScratchAlpha, MixtrackPlatinumFX.jogScratchBeta, true);
+        }
+    } else if (value === 0 && pendingRelease === 0) {
+        // touch end, once it has lasted
+        MixtrackPlatinumFX.jogTouchReleaseTimers[channel] = engine.beginTimer(MixtrackPlatinumFX.jogTouchReleaseDelay, function() {
+            MixtrackPlatinumFX.jogTouchReleaseTimers[channel] = 0;
+            engine.scratchDisable(deckNumber, true);
+        }, true);
     }
 };
 

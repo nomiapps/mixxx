@@ -5,6 +5,7 @@
 
 #include <QApplication>
 #include <QRegularExpression>
+#include <QTest>
 #include <QUrl>
 
 #include "control/controlobject.h"
@@ -387,6 +388,46 @@ class MixtrackPlatinumFxMappingTest : public MappingTestFixture {
         QCoreApplication::processEvents();
     }
 
+    /// Runs statements in the mapping's script engine and returns what they
+    /// leave in `box.result`, as text.
+    QString runInMapping(const QString& statements) {
+        QJSValue function = m_pController->getScriptEngine()->wrapFunctionCode(
+                QStringLiteral("function(box) { %1 }").arg(statements), 1);
+        EXPECT_TRUE(function.isCallable());
+        // The wrapper is the one object both sides can reach: it carries the result back.
+        const QJSValue result = function.call({function});
+        EXPECT_FALSE(result.isError()) << result.toString().toStdString();
+        QCoreApplication::processEvents();
+        return function.property(QStringLiteral("result")).toString();
+    }
+
+    /// From here on the mapping's calls to hold and let go of a record are
+    /// recorded instead of made: without an engine running and a track on the
+    /// deck, Mixxx lets go by itself and says nothing about what the mapping did.
+    void recordScratchCalls() {
+        runInMapping(QStringLiteral(
+                "const real = engine;"
+                "MixtrackPlatinumFX.scratchCalls = [];"
+                "engine = new Proxy(real, { get: function(target, name) {"
+                "    if (name === 'scratchEnable' || name === 'scratchDisable') {"
+                "        return function() { MixtrackPlatinumFX.scratchCalls.push(name); };"
+                "    }"
+                "    const value = target[name];"
+                "    return typeof value === 'function' ? value.bind(target) : value;"
+                "} });"));
+    }
+
+    QString scratchCalls() {
+        return runInMapping(QStringLiteral(
+                "box.result = MixtrackPlatinumFX.scratchCalls.join(',');"));
+    }
+
+    /// The platter's touch sensor reporting a finger on deck 1, or gone.
+    void touchPlatter(bool touching) {
+        runInMapping(QStringLiteral("MixtrackPlatinumFX.wheelTouch(0, 0x06, %1);")
+                             .arg(touching ? 0x7F : 0x00));
+    }
+
     EffectSlotPointer slot(int unit, int button) {
         return m_pEffectsManager->getStandardEffectChain(unit)->getEffectSlot(button);
     }
@@ -451,6 +492,35 @@ TEST_F(MixtrackPlatinumFxMappingTest, APressPicksOneEffectAndASecondPressDropsIt
 
     pressEffectButton(1, 2, false);
     EXPECT_FALSE(picked(1, 2));
+}
+
+/// Under a light touch the platter's sensor reports the finger gone and back
+/// every 60 to 150 ms (seen on the hardware, 13 October 2026). The record must
+/// stay held through that, and still be let go when the finger really leaves.
+TEST_F(MixtrackPlatinumFxMappingTest, ALightTouchOnThePlatterKeepsHoldOfTheRecord) {
+    loadMapping();
+    recordScratchCalls();
+    constexpr int kSensorChatterGapMs = 150;
+    constexpr int kWellAfterReleaseMs = 600;
+    const QString held = QStringLiteral("scratchEnable");
+
+    touchPlatter(true);
+    ASSERT_EQ(held, scratchCalls());
+
+    for (int flicker = 0; flicker < 4; ++flicker) {
+        touchPlatter(false);
+        QTest::qWait(kSensorChatterGapMs);
+        touchPlatter(true);
+        EXPECT_EQ(held, scratchCalls()) << "flicker " << flicker;
+    }
+    // A release that was cancelled must not fire later.
+    QTest::qWait(kWellAfterReleaseMs);
+    EXPECT_EQ(held, scratchCalls());
+
+    touchPlatter(false);
+    EXPECT_EQ(held, scratchCalls());
+    QTest::qWait(kWellAfterReleaseMs);
+    EXPECT_EQ(QStringLiteral("scratchEnable,scratchDisable"), scratchCalls());
 }
 
 /// There are far more effects than six buttons: shift and a button walks that
