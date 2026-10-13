@@ -10,6 +10,10 @@ Skin.Button {
     id: root
 
     required property int effectNumber
+    // The knob a controller's BEATS encoder turns on this effect: its first,
+    // except on a filter that is cutting the lows, where it is the high-pass
+    // cutoff. The Mixtrack Platinum FX mapping follows the same rule.
+    readonly property string encoderKey: root.slot.effectId === root.filterEffectId && root.highPassInUse && !root.lowPassInUse ? "parameter3" : "parameter1"
     readonly property string filterEffectId: "org.mixxx.effects.filter"
     // A filter cutoff counts as in use once it is off the end of its range,
     // where the filter does nothing: 13 Hz for the high-pass, 22050 Hz for the

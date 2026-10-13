@@ -5,7 +5,8 @@ import "../Theme"
 
 // The effects the way a controller has them: six buttons in the middle, three
 // to a unit, with a switch at each side that sends that side's deck through
-// them and one dry/wet knob for the lot. Both decks share the six.
+// them, one dry/wet knob for the lot, and a readout of what the BEATS encoder
+// is set to. Both decks share the six.
 Item {
     id: root
 
@@ -14,6 +15,14 @@ Item {
     readonly property int buttonWidth: 104
     readonly property int deckSwitchWidth: 64
     readonly property int gap: 5
+    // The first effect that is picked, or null: the one the BEATS readout is about.
+    readonly property var pickedButton: {
+        for (const button of root.buttons) {
+            if (button.picked)
+                return button;
+        }
+        return null;
+    }
     // Whether the choosers and knobs behind the buttons are open.
     property bool rackShown: false
     property bool show4decks: false
@@ -41,7 +50,17 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         height: 2 * root.buttonHeight + root.gap
 
+        EffectBeatsReadout {
+            anchors.right: leftDecks.left
+            anchors.rightMargin: 2 * root.gap
+            controlKey: root.pickedButton ? root.pickedButton.encoderKey : ""
+            height: parent.height
+            slot: root.pickedButton ? root.pickedButton.slot : null
+            width: 110
+        }
         Column {
+            id: leftDecks
+
             anchors.right: grid.left
             anchors.rightMargin: 2 * root.gap
             height: parent.height
