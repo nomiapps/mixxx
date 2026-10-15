@@ -43,8 +43,13 @@ MixtrackPlatinumFX.jogSeekSensitivity = 10000;
 // How long the platter has to stay untouched before the deck is let go. Under
 // a light touch the platter's sensor chatters: it reports the finger gone and
 // back again every 60 to 150 ms, and each "gone" used to drop the record.
-MixtrackPlatinumFX.jogTouchReleaseDelay = 200;
+// Waiting 200 ms on every lift (13 October 2026) made a deliberate lift feel
+// late, so the wait is short until the sensor has chattered during this touch,
+// and only then long enough to ride out its gaps.
+MixtrackPlatinumFX.jogTouchReleaseDelay = 60;       // ms, a touch that has not chattered
+MixtrackPlatinumFX.jogTouchReleaseDelayLight = 160; // ms, once it has chattered
 MixtrackPlatinumFX.jogTouchReleaseTimers = [0, 0, 0, 0];
+MixtrackPlatinumFX.jogTouchChattered = [false, false, false, false];
 
 // blink settings
 MixtrackPlatinumFX.enableBlink = true;
@@ -1829,18 +1834,25 @@ MixtrackPlatinumFX.wheelTouch = function(channel, control, value) {
     if (value === 0x7F) {
         // touch start
         if (pendingRelease !== 0) {
-            // the finger never really left: keep hold of the record
+            // the finger never really left: keep hold of the record, and from
+            // now on this touch waits out the sensor's longer gaps
             engine.stopTimer(pendingRelease);
             MixtrackPlatinumFX.jogTouchReleaseTimers[channel] = 0;
+            MixtrackPlatinumFX.jogTouchChattered[channel] = true;
             return;
         }
+        MixtrackPlatinumFX.jogTouchChattered[channel] = false;
         if (!MixtrackPlatinumFX.shifted && MixtrackPlatinumFX.deck[channel].scratchModeEnabled) {
             engine.scratchEnable(deckNumber, MixtrackPlatinumFX.jogScratchSensitivity, 33+1/3, MixtrackPlatinumFX.jogScratchAlpha, MixtrackPlatinumFX.jogScratchBeta, true);
         }
     } else if (value === 0 && pendingRelease === 0) {
         // touch end, once it has lasted
-        MixtrackPlatinumFX.jogTouchReleaseTimers[channel] = engine.beginTimer(MixtrackPlatinumFX.jogTouchReleaseDelay, function() {
+        const wait = MixtrackPlatinumFX.jogTouchChattered[channel]
+            ? MixtrackPlatinumFX.jogTouchReleaseDelayLight
+            : MixtrackPlatinumFX.jogTouchReleaseDelay;
+        MixtrackPlatinumFX.jogTouchReleaseTimers[channel] = engine.beginTimer(wait, function() {
             MixtrackPlatinumFX.jogTouchReleaseTimers[channel] = 0;
+            MixtrackPlatinumFX.jogTouchChattered[channel] = false;
             engine.scratchDisable(deckNumber, true);
         }, true);
     }

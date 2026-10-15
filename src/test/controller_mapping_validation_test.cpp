@@ -495,15 +495,26 @@ TEST_F(MixtrackPlatinumFxMappingTest, APressPicksOneEffectAndASecondPressDropsIt
 }
 
 /// Under a light touch the platter's sensor reports the finger gone and back
-/// every 60 to 150 ms (seen on the hardware, 13 October 2026). The record must
-/// stay held through that, and still be let go when the finger really leaves.
+/// every 60 to 150 ms (seen on the hardware, 13 October 2026). Waiting out
+/// every lift made a deliberate lift late, so a touch waits only briefly until
+/// the sensor has chattered during it, and from then on rides out the gaps.
+/// The first gap of a light touch can still let go once (and take hold again);
+/// every gap after it keeps hold.
 TEST_F(MixtrackPlatinumFxMappingTest, ALightTouchOnThePlatterKeepsHoldOfTheRecord) {
     loadMapping();
     recordScratchCalls();
+    constexpr int kFirstGapMs = 40; // inside the short wait: hold kept
     constexpr int kSensorChatterGapMs = 150;
     constexpr int kWellAfterReleaseMs = 600;
     const QString held = QStringLiteral("scratchEnable");
 
+    touchPlatter(true);
+    ASSERT_EQ(held, scratchCalls());
+
+    // The first gap, shorter than the short wait: the record is still held,
+    // and the touch is now known to chatter.
+    touchPlatter(false);
+    QTest::qWait(kFirstGapMs);
     touchPlatter(true);
     ASSERT_EQ(held, scratchCalls());
 
@@ -521,6 +532,35 @@ TEST_F(MixtrackPlatinumFxMappingTest, ALightTouchOnThePlatterKeepsHoldOfTheRecor
     EXPECT_EQ(held, scratchCalls());
     QTest::qWait(kWellAfterReleaseMs);
     EXPECT_EQ(QStringLiteral("scratchEnable,scratchDisable"), scratchCalls());
+}
+
+/// A finger that lifts from a touch that never chattered lets go of the record
+/// at once, not after the long wait a chattering touch gets.
+TEST_F(MixtrackPlatinumFxMappingTest, AFirmLiftLetsGoOfTheRecordQuickly) {
+    loadMapping();
+    recordScratchCalls();
+    constexpr int kShortWaitAndSomeMs = 120; // the short wait is 60 ms
+
+    touchPlatter(true);
+    ASSERT_EQ(QStringLiteral("scratchEnable"), scratchCalls());
+    touchPlatter(false);
+    QTest::qWait(kShortWaitAndSomeMs);
+    EXPECT_EQ(QStringLiteral("scratchEnable,scratchDisable"), scratchCalls());
+
+    // And a touch after a chattering one starts afresh: the next firm lift is
+    // quick again.
+    touchPlatter(true);
+    touchPlatter(false);
+    QTest::qWait(20);
+    touchPlatter(true); // chattered
+    touchPlatter(false);
+    QTest::qWait(600);
+    touchPlatter(true); // a new touch
+    touchPlatter(false);
+    QTest::qWait(kShortWaitAndSomeMs);
+    EXPECT_EQ(QStringLiteral("scratchEnable,scratchDisable,scratchEnable,scratchDisable,"
+                             "scratchEnable,scratchDisable"),
+            scratchCalls());
 }
 
 /// There are far more effects than six buttons: shift and a button walks that
