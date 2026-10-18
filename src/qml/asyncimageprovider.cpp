@@ -47,7 +47,7 @@ CoverArtRequest parseCoverArtRequestId(const QString& requestId) {
     const QString query = requestId.mid(queryStart);
     if (query.startsWith(AsyncImageProvider::kCornerQuery)) {
         bool ok = false;
-        const double value = query.mid(AsyncImageProvider::kCornerQuery.size()).toDouble(&ok);
+        const double value = QStringView(query).mid(AsyncImageProvider::kCornerQuery.size()).toDouble(&ok);
         if (ok && value > 0.0) {
             cornerFraction = qMin(value, kMaxCornerFraction);
         }
@@ -56,7 +56,7 @@ CoverArtRequest parseCoverArtRequestId(const QString& requestId) {
 }
 
 AsyncImageResponse::AsyncImageResponse(
-        QString id,
+        const QString& id,
         QSize requestedSize,
         std::shared_ptr<TrackCollectionManager> pTrackCollectionManager)
         : m_id(parseCoverArtRequestId(id).id),

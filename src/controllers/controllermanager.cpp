@@ -417,7 +417,8 @@ void ControllerManager::slotCheckForNewDevices() {
         anyEnabled = anyEnabled || isControllerEnabled(m_pConfig, name);
     }
     bool anyOpen = false;
-    for (const Controller* pController : getControllers()) {
+    const QList<Controller*> controllersBeforeRescan = getControllers();
+    for (const Controller* pController : controllersBeforeRescan) {
         anyOpen = anyOpen || pController->isOpen();
     }
     if (!anyEnabled && anyOpen) {

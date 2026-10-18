@@ -63,7 +63,7 @@ class AsyncImageResponse : public QQuickImageResponse, public QRunnable {
     Q_OBJECT
   public:
     AsyncImageResponse(
-            QString id,
+            const QString& id,
             QSize requestedSize,
             std::shared_ptr<TrackCollectionManager> pTrackCollectionManager);
 

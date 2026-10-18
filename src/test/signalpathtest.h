@@ -71,6 +71,12 @@ class BaseSignalPathTest : public MixxxTest, SoundSourceProviderRegistration {
   protected:
     BaseSignalPathTest()
             : m_playerInfoGuard{nullptr, nullptr} {
+#ifdef __RUBBERBAND__
+        // Before any deck exists, not in SetUp(): fixtures load tracks in their
+        // constructors (MockedEngineBackendTest), and a load fits the RubberBand
+        // scaler, which asks this pool how to split its channels.
+        RubberBandWorkerPool::createInstance();
+#endif
         m_pControlIndicatorTimer = std::make_unique<mixxx::ControlIndicatorTimer>();
         m_pChannelHandleFactory = std::make_shared<ChannelHandleFactory>();
         m_pNumDecks = std::make_unique<ControlObject>(ConfigKey(
@@ -141,9 +147,6 @@ class BaseSignalPathTest : public MixxxTest, SoundSourceProviderRegistration {
     ~BaseSignalPathTest() override = default;
 
     void SetUp() override {
-#ifdef __RUBBERBAND__
-        RubberBandWorkerPool::createInstance();
-#endif
     }
 
     void TearDown() override {

@@ -59,7 +59,7 @@ TEST_F(ControllerEnumeratorTest, DeletesReplacedControllersNobodyTook) {
     QPointer<Controller> pFirst;
     {
         RescanningEnumerator enumerator;
-        pFirst = enumerator.queryDevices().first();
+        pFirst = enumerator.queryDevices().constFirst();
         enumerator.queryDevices();
         EXPECT_TRUE(pFirst);
     }
