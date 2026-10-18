@@ -206,7 +206,10 @@ MixtrackPlatinumFX.init = function(id, debug) {
         midi.sendShortMsg(0x80 | i, 0x0D, engine.getValue(group, "keylock")?0x7F:0x00);
         midi.sendShortMsg(0x90 | i, 0x0D, engine.getValue(group, "keylock")?0x7F:0x00);
         // Hook into this and save the bpm_file when loaded so we can reset it later
-        engine.makeConnection(group, "track_loaded", MixtrackPlatinumFX.trackBPM).trigger();
+        const trackLoadedConnection = engine.makeConnection(group, "track_loaded", MixtrackPlatinumFX.trackBPM);
+        if (trackLoadedConnection) {
+            trackLoadedConnection.trigger();
+        }
     }
     for (i = 0; i < 2; i++) {
         MixtrackPlatinumFX.effect[i] = new MixtrackPlatinumFX.EffectUnit((i % 2)+1);
@@ -236,10 +239,12 @@ MixtrackPlatinumFX.init = function(id, debug) {
     engine.makeConnection("[Channel3]", "VuMeter", MixtrackPlatinumFX.vuCallback);
     engine.makeConnection("[Channel4]", "VuMeter", MixtrackPlatinumFX.vuCallback);
 
-    engine.makeConnection("[Channel1]", "rate", MixtrackPlatinumFX.rateCallback).trigger();
-    engine.makeConnection("[Channel2]", "rate", MixtrackPlatinumFX.rateCallback).trigger();
-    engine.makeConnection("[Channel3]", "rate", MixtrackPlatinumFX.rateCallback).trigger();
-    engine.makeConnection("[Channel4]", "rate", MixtrackPlatinumFX.rateCallback).trigger();
+    for (i = 0; i < 4; i++) {
+        const rateConnection = engine.makeConnection(`[Channel${i + 1}]`, "rate", MixtrackPlatinumFX.rateCallback);
+        if (rateConnection) {
+            rateConnection.trigger();
+        }
+    }
 
     // trigger is needed to initialize lights to 0x01
     MixtrackPlatinumFX.deck.forEachComponent(function(component) {

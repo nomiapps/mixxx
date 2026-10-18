@@ -173,7 +173,10 @@ void MappingTestFixture::SetUp() {
             m_pEffectsManager.get(),
             m_pEngine.get());
 
-    m_pPlayerManager->addConfiguredDecks();
+    // Two decks, whatever the machine's soundconfig.xml says: addConfiguredDecks()
+    // read the real settings file, so these tests passed or failed by machine.
+    // Not SoundManager::setConfiguredDeckCount(), which writes that file.
+    m_pPlayerManager->slotChangeNumDecks(2);
     m_pPlayerManager->addSampler();
     PlayerInfo::create();
     m_pEffectsManager->setup();
@@ -352,7 +355,9 @@ QByteArray mixtrackFxButtonLight(int unit, int button, char brightness) {
 /// are the same six things, in the same order, and show the same state.
 class MixtrackPlatinumFxMappingTest : public MappingTestFixture {
   protected:
-    void loadMapping() {
+    void loadMapping(int deckCount = 4) {
+        m_pPlayerManager->slotChangeNumDecks(deckCount);
+        ASSERT_EQ(deckCount, m_pPlayerManager->numberOfDecks());
         m_pController = startMapping(kMixtrackPlatinumFxMapping);
         ASSERT_TRUE(m_pController);
         QCoreApplication::processEvents();
@@ -439,6 +444,17 @@ class MixtrackPlatinumFxMappingTest : public MappingTestFixture {
     std::unique_ptr<FakeController> m_pController;
 };
 
+TEST_F(MixtrackPlatinumFxMappingTest, InitializesWithTwoDecks) {
+    ASSERT_NO_FATAL_FAILURE(loadMapping(2));
+    EXPECT_EQ(QStringLiteral("true"),
+            runInMapping(QStringLiteral("box.result = MixtrackPlatinumFX.initComplete;")));
+    for (int unit = 0; unit < kMixtrackFxUnits; ++unit) {
+        for (int button = 0; button < kMixtrackFxButtonsPerUnit; ++button) {
+            EXPECT_FALSE(picked(unit, button));
+        }
+    }
+}
+
 TEST_F(MixtrackPlatinumFxMappingTest, StartsWithNoEffectPickedOnTheScreen) {
     for (int unit = 0; unit < kMixtrackFxUnits; ++unit) {
         for (int button = 0; button < kMixtrackFxButtonsPerUnit; ++button) {
@@ -446,7 +462,7 @@ TEST_F(MixtrackPlatinumFxMappingTest, StartsWithNoEffectPickedOnTheScreen) {
         }
     }
 
-    loadMapping();
+    ASSERT_NO_FATAL_FAILURE(loadMapping());
 
     for (int unit = 0; unit < kMixtrackFxUnits; ++unit) {
         for (int button = 0; button < kMixtrackFxButtonsPerUnit; ++button) {
@@ -457,7 +473,7 @@ TEST_F(MixtrackPlatinumFxMappingTest, StartsWithNoEffectPickedOnTheScreen) {
 }
 
 TEST_F(MixtrackPlatinumFxMappingTest, LightsTheButtonOfAnEffectSwitchedOnOnTheScreen) {
-    loadMapping();
+    ASSERT_NO_FATAL_FAILURE(loadMapping());
 
     for (int unit = 0; unit < kMixtrackFxUnits; ++unit) {
         for (int button = 0; button < kMixtrackFxButtonsPerUnit; ++button) {
@@ -481,7 +497,7 @@ TEST_F(MixtrackPlatinumFxMappingTest, LightsTheButtonOfAnEffectSwitchedOnOnTheSc
 }
 
 TEST_F(MixtrackPlatinumFxMappingTest, APressPicksOneEffectAndASecondPressDropsIt) {
-    loadMapping();
+    ASSERT_NO_FATAL_FAILURE(loadMapping());
 
     pressEffectButton(0, 0, false);
     EXPECT_TRUE(picked(0, 0));
@@ -501,7 +517,7 @@ TEST_F(MixtrackPlatinumFxMappingTest, APressPicksOneEffectAndASecondPressDropsIt
 /// The first gap of a light touch can still let go once (and take hold again);
 /// every gap after it keeps hold.
 TEST_F(MixtrackPlatinumFxMappingTest, ALightTouchOnThePlatterKeepsHoldOfTheRecord) {
-    loadMapping();
+    ASSERT_NO_FATAL_FAILURE(loadMapping());
     recordScratchCalls();
     constexpr int kFirstGapMs = 10; // inside the short wait: hold kept
     constexpr int kSensorChatterGapMs = 150;
@@ -537,7 +553,7 @@ TEST_F(MixtrackPlatinumFxMappingTest, ALightTouchOnThePlatterKeepsHoldOfTheRecor
 /// A finger that lifts from a touch that never chattered lets go of the record
 /// at once, not after the long wait a chattering touch gets.
 TEST_F(MixtrackPlatinumFxMappingTest, AFirmLiftLetsGoOfTheRecordQuickly) {
-    loadMapping();
+    ASSERT_NO_FATAL_FAILURE(loadMapping());
     recordScratchCalls();
     constexpr int kShortWaitAndSomeMs = 90; // the short wait is 30 ms
 
@@ -566,7 +582,7 @@ TEST_F(MixtrackPlatinumFxMappingTest, AFirmLiftLetsGoOfTheRecordQuickly) {
 /// There are far more effects than six buttons: shift and a button walks that
 /// button through all of them, and round again.
 TEST_F(MixtrackPlatinumFxMappingTest, ShiftAndAButtonMovesItToTheNextEffect) {
-    loadMapping();
+    ASSERT_NO_FATAL_FAILURE(loadMapping());
     const QList<EffectManifestPointer> effects =
             m_pEffectsManager->getVisibleEffectsList()->getList();
     ASSERT_GE(effects.size(), 2);
