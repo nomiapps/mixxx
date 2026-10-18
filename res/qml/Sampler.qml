@@ -223,10 +223,30 @@ Rectangle {
                 onReleased: cueDefaultControl.value = 0
             }
         }
+        // The deck's CUE, for a sample: stopped, it sets the cue point or
+        // previews from it while held; playing, it jumps back and stops, per
+        // the cue mode in Settings. It was only reachable as a right-click on
+        // Play, which a touch screen cannot do.
+        Skin.ControlButton {
+            id: cueButton
+
+            activeColor: Theme.samplerColor
+            anchors.left: playButton.right
+            anchors.leftMargin: 3
+            anchors.top: embedded.top
+            group: root.group
+            height: 40
+            highlight: cueIndicatorControl.value > 0
+            key: "cue_default"
+            text: "Cue"
+            width: 40
+
+            onCanceled: cueDefaultControl.value = 0
+        }
         Text {
             id: label
 
-            anchors.left: playButton.right
+            anchors.left: cueButton.right
             anchors.leftMargin: 5
             anchors.right: bpmLabel.left
             anchors.rightMargin: 5
@@ -249,7 +269,7 @@ Rectangle {
         }
         Skin.WaveformOverview {
             anchors.bottom: embedded.bottom
-            anchors.left: playButton.right
+            anchors.left: cueButton.right
             anchors.leftMargin: 5
             anchors.right: embedded.right
             anchors.top: label.bottom
@@ -282,7 +302,7 @@ Rectangle {
             id: dragArea
 
             anchors.bottom: embedded.bottom
-            anchors.left: playButton.right
+            anchors.left: cueButton.right
             anchors.right: embedded.right
             anchors.top: embedded.top
             drag.target: dragProxy
@@ -545,6 +565,12 @@ Rectangle {
 
         group: root.group
         key: "play_latched"
+    }
+    Mixxx.ControlProxy {
+        id: cueIndicatorControl
+
+        group: root.group
+        key: "cue_indicator"
     }
     Mixxx.ControlProxy {
         id: cueDefaultControl
