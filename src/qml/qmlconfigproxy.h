@@ -60,6 +60,12 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     // 0 off, 1 main window, 2 Edge surface, 3 both
     Q_PROPERTY(int waveformStemLabels READ waveformStemLabels WRITE
                     set_waveformStemLabels NOTIFY waveformStemLabelsChanged);
+    // Sampler row: how many strips share the width (2, 4 or 8), and whether
+    // their buttons are drawn at touch size.
+    Q_PROPERTY(int samplerStripsShown READ samplerStripsShown WRITE
+                    set_samplerStripsShown NOTIFY samplerStripsShownChanged);
+    Q_PROPERTY(bool samplerTouchSize READ samplerTouchSize WRITE
+                    set_samplerTouchSize NOTIFY samplerTouchSizeChanged);
     Q_PROPERTY(int waveformOverviewType READ waveformOverviewType WRITE
                     set_waveformOverviewType NOTIFY waveformOverviewTypeChanged);
     Q_PROPERTY(bool waveformOverviewStereo READ waveformOverviewStereo WRITE
@@ -414,6 +420,8 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     PROPERTY_DECL_ACCESSOR(bool, waveformOverviewNormalized);
     PROPERTY_DECL_ACCESSOR(bool, waveformShowStemStrips);
     PROPERTY_DECL_ACCESSOR(int, waveformStemLabels);
+    PROPERTY_DECL_ACCESSOR(int, samplerStripsShown);
+    PROPERTY_DECL_ACCESSOR(bool, samplerTouchSize);
     PROPERTY_DECL_ACCESSOR(int, waveformOverviewType);
     PROPERTY_DECL_ACCESSOR(bool, waveformOverviewStereo);
     PROPERTY_DECL_ACCESSOR(bool, waveformOverviewMinuteMarkers);
@@ -560,6 +568,8 @@ class QmlConfigProxy : public QmlConfigProxyBase {
     void waveformOverviewNormalizedChanged();
     void waveformShowStemStripsChanged();
     void waveformStemLabelsChanged();
+    void samplerStripsShownChanged();
+    void samplerTouchSizeChanged();
     void waveformOverviewTypeChanged();
     void waveformOverviewStereoChanged();
     void waveformOverviewMinuteMarkersChanged();

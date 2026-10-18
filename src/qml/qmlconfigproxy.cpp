@@ -70,6 +70,9 @@ const QString kZoomSynchronizationKey = QStringLiteral("ZoomSynchronization");
 const QString kOverviewNormalizedKey = QStringLiteral("OverviewNormalized");
 const QString kShowStemStripsKey = QStringLiteral("ShowStemStrips");
 const QString kStemLabelsKey = QStringLiteral("StemLabels");
+const QString kSamplerGroup = QStringLiteral("[Samplers]");
+const QString kSamplerStripsShownKey = QStringLiteral("StripsShown");
+const QString kSamplerTouchSizeKey = QStringLiteral("TouchSize");
 const QString kOverviewTypeKey = QStringLiteral("WaveformOverviewType");
 const QString kOverviewStereoKey = QStringLiteral("overview_stereo_mode");
 const QString kOverviewMinuteMarkersKey =
@@ -647,6 +650,9 @@ PROPERTY_IMPL(kWaveformGroup, kShowStemStripsKey, bool, waveformShowStemStrips, 
 // 0 off, 1 main window only, 2 Edge surface only, 3 both. Defaults to both so the
 // setting arriving changes nothing until someone narrows it.
 PROPERTY_IMPL(kWaveformGroup, kStemLabelsKey, int, waveformStemLabels, 3);
+// 8 strips in compact size is the row as it was before these settings existed.
+PROPERTY_IMPL(kSamplerGroup, kSamplerStripsShownKey, int, samplerStripsShown, 8);
+PROPERTY_IMPL(kSamplerGroup, kSamplerTouchSizeKey, bool, samplerTouchSize, false);
 PROPERTY_IMPL_GETTER(kWaveformGroup,
         kWaveformTypeKey,
         QmlWaveformDisplay::Type,

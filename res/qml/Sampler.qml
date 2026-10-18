@@ -46,6 +46,12 @@ Rectangle {
     property bool showHotcues: true
     property bool showLength: true
     property bool showRateControl: true
+    // Settings > Interface > Sampler pad size. Every row of buttons below the
+    // summary grows to a fingertip; the summary row is already 40 high.
+    property bool touchSize: false
+    readonly property int buttonRowHeight: root.touchSize ? 40 : 26
+    readonly property int lengthRowHeight: root.touchSize ? 40 : 20
+    readonly property int padRowHeight: root.touchSize ? 40 : 22
     readonly property real visualBpm: visualBpmControl.value
 
     signal fxAssignmentChanged(int unitNumber, bool enabled)
@@ -120,8 +126,21 @@ Rectangle {
         return Qt.darker(trackColor, 2);
     }
     // The length row is 20 high plus the column's 3 spacing; without the extra
-    // the hotcue grid pays for it out of its own pads.
-    implicitHeight: root.minimized ? 50 : (root.showLength ? 193 : 170)
+    // the hotcue grid pays for it out of its own pads. Touch size adds what each
+    // row grows by, so the pads keep the height they were given.
+    implicitHeight: {
+        if (root.minimized)
+            return 50;
+        let height = root.showLength ? 193 : 170;
+        height += root.buttonRowHeight - 26;
+        if (root.showLength)
+            height += root.lengthRowHeight - 20;
+        if (root.showHotcues && root.hotcueCount > 0)
+            height += (root.padRowHeight - 22) * Math.ceil(Math.min(8, root.hotcueCount) / 4);
+        if (root.showFxAssignments && root.fxUnitCount > 0)
+            height += root.padRowHeight - 22;
+        return height;
+    }
     implicitWidth: 230
 
     Skin.SectionBackground {
@@ -294,6 +313,7 @@ Rectangle {
             Skin.ControlButton {
                 Layout.fillWidth: true
                 group: root.group
+                implicitHeight: root.buttonRowHeight
                 key: "sync_enabled"
                 text: "Sync"
                 toggleable: true
@@ -301,6 +321,7 @@ Rectangle {
             Skin.ControlButton {
                 Layout.fillWidth: true
                 group: root.group
+                implicitHeight: root.buttonRowHeight
                 key: "keylock"
                 text: "Key"
                 toggleable: true
@@ -308,6 +329,7 @@ Rectangle {
             Skin.ControlButton {
                 Layout.fillWidth: true
                 group: root.group
+                implicitHeight: root.buttonRowHeight
                 key: "repeat"
                 text: "Loop"
                 toggleable: true
@@ -315,6 +337,7 @@ Rectangle {
             Skin.ControlButton {
                 Layout.fillWidth: true
                 group: root.group
+                implicitHeight: root.buttonRowHeight
                 key: "pfl"
                 text: "PFL"
                 toggleable: true
@@ -326,11 +349,13 @@ Rectangle {
                 Layout.preferredWidth: 76
                 color: Theme.crossfaderOrientationColor
                 group: root.group
+                implicitHeight: root.buttonRowHeight
                 key: "orientation"
             }
             Skin.ControlButton {
                 Layout.fillWidth: true
                 group: root.group
+                implicitHeight: root.buttonRowHeight
                 key: "eject"
                 text: "Eject"
             }
@@ -354,7 +379,7 @@ Rectangle {
             Skin.Button {
                 Layout.preferredWidth: 26
                 enabled: false
-                implicitHeight: 20
+                implicitHeight: root.lengthRowHeight
                 opacity: 0.7
                 text: "LEN"
             }
@@ -371,7 +396,7 @@ Rectangle {
                     // count with.
                     enabled: root.loaded && root.beats > 0
                     highlight: root.activeLength === modelData
-                    implicitHeight: 20
+                    implicitHeight: root.lengthRowHeight
                     opacity: enabled ? 1 : 0.5
                     text: modelData < 1 ? "1/" + (1 / modelData) : modelData
 
@@ -405,7 +430,7 @@ Rectangle {
                             Layout.fillWidth: true
                             group: root.group
                             hotcueNumber: index + 1
-                            implicitHeight: 22
+                            implicitHeight: root.padRowHeight
                         }
                     }
                 }
@@ -425,7 +450,7 @@ Rectangle {
                             Layout.fillWidth: true
                             activeColor: Theme.effectUnitColor
                             group: "[EffectRack1_EffectUnit" + (index + 1) + "]"
-                            implicitHeight: 22
+                            implicitHeight: root.padRowHeight
                             key: "group_" + root.group + "_enable"
                             text: "FX" + (index + 1)
                             toggleable: true

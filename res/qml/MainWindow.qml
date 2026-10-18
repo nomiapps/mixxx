@@ -760,7 +760,6 @@ Item {
 
                     clip: true
                     height: visible ? implicitHeight : 0
-                    samplerCount: 8
                     visible: root.showSamplers && !root.maximizeLibrary
                     width: parent.width
 
