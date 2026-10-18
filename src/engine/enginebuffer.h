@@ -333,6 +333,8 @@ class EngineBuffer : public EngineObject {
     }
     bool updateIndicatorsAndModifyPlay(bool newPlay, bool oldPlay);
     void notifyTrackLoaded(TrackPointer pNewTrack, TrackPointer pOldTrack);
+    // Applies sampleRate and m_channelCount to every scaler. Caller holds m_pause.
+    void setScalerSignal(mixxx::audio::SampleRate sampleRate);
     void processTrackLocked(CSAMPLE* pOutput,
             const std::size_t bufferSize,
             mixxx::audio::SampleRate sampleRate);
@@ -357,6 +359,7 @@ class EngineBuffer : public EngineObject {
     FRIEND_TEST(EngineSyncTest, FollowerUserTweakPreservedInLeaderChange);
     FRIEND_TEST(EngineSyncTest, BeatMapQuantizePlay);
     FRIEND_TEST(EngineBufferTest, ScalerNoTransport);
+    FRIEND_TEST(EngineBufferE2ETest, StemLoadFitsScalersBeforeTheAudioThread);
     EngineSync* m_pEngineSync;
     SyncControl* m_pSyncControl;
     VinylControlControl* m_pVinylControlControl;

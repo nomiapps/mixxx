@@ -577,6 +577,16 @@ void EngineBuffer::slotTrackLoaded(TrackPointer pTrack,
         m_channelCount = mixxx::audio::ChannelCount::stereo();
     }
 
+    // Fit the scalers to the new channel count here, on the reader thread and
+    // under the pause lock, so process() finds nothing to change. A stereo <->
+    // stem switch rebuilds the RubberBand stretchers and the SoundTouch buffers,
+    // and doing that on the audio thread stalled the callback long enough to
+    // drop out every deck, not just this one (#16120).
+    const auto engineSampleRate = mixxx::audio::SampleRate::fromDouble(m_pSampleRate->get());
+    if (engineSampleRate.isValid()) {
+        setScalerSignal(engineSampleRate);
+    }
+
     m_pTrackSamples->set(trackNumFrame.toEngineSamplePos());
     m_pTrackSampleRate->set(trackSampleRate.toDouble());
     m_pTrackLoaded->forceSet(1);
@@ -1223,6 +1233,14 @@ void EngineBuffer::processTrackLocked(
     hintReader(rate);
 }
 
+void EngineBuffer::setScalerSignal(mixxx::audio::SampleRate sampleRate) {
+    m_pScaleLinear->setSignal(sampleRate, m_channelCount);
+    m_pScaleST->setSignal(sampleRate, m_channelCount);
+#ifdef __RUBBERBAND__
+    m_pScaleRB->setSignal(sampleRate, m_channelCount);
+#endif
+}
+
 void EngineBuffer::process(CSAMPLE* pOutput, const std::size_t bufferSize) {
     // Bail if we receive a buffer size with incomplete sample frames. Assert in debug builds.
     VERIFY_OR_DEBUG_ASSERT((bufferSize % m_channelCount) == 0) {
@@ -1241,15 +1259,6 @@ void EngineBuffer::process(CSAMPLE* pOutput, const std::size_t bufferSize) {
 
     m_sampleRate = mixxx::audio::SampleRate::fromDouble(m_pSampleRate->get());
 
-    // If the sample rate has changed, force Rubberband to reset so that
-    // it doesn't reallocate when the user engages keylock during playback.
-    // We do this even if rubberband is not active.
-    m_pScaleLinear->setSignal(m_sampleRate, m_channelCount);
-    m_pScaleST->setSignal(m_sampleRate, m_channelCount);
-#ifdef __RUBBERBAND__
-    m_pScaleRB->setSignal(m_sampleRate, m_channelCount);
-#endif
-
     // A start scheduled inside this buffer (playFromStartUnquantized with an
     // offset): render the head silent and play from the frame after. One
     // process() call, not two -- the reader, the seek, the rate ramp, the
@@ -1263,6 +1272,12 @@ void EngineBuffer::process(CSAMPLE* pOutput, const std::size_t bufferSize) {
     m_startOffsetFrames = 0;
 
     if (isTrackLoaded() && m_pause.tryLock()) {
+        // If the sample rate has changed, force Rubberband to reset so that
+        // it doesn't reallocate when the user engages keylock during playback.
+        // We do this even if rubberband is not active. Under the pause lock,
+        // because slotTrackLoaded() changes the channel count and refits the
+        // scalers itself; a new track's channel count is already applied here.
+        setScalerSignal(m_sampleRate);
         if (headSamples > 0) {
             // What the pause branch would have written there anyway.
             SampleUtil::clear(pOutput, headSamples);

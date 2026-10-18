@@ -12,6 +12,7 @@
 #include "moc_enginedeck.cpp"
 #include "track/track.h"
 #include "util/assert.h"
+#include "util/defs.h"
 #include "util/sample.h"
 
 EngineDeck::EngineDeck(
@@ -120,6 +121,12 @@ EngineDeck::~EngineDeck() {
 
 #ifdef __STEM__
 void EngineDeck::addStemHandle(const ChannelHandleAndGroup& stemHandleGroup) {
+    if (m_stems.empty()) {
+        // Sized for the largest engine buffer, so the first stem track on this
+        // deck does not allocate in processStem() on the audio thread.
+        m_stemBuffer = mixxx::SampleBuffer(
+                static_cast<SINT>(kMaxEngineSamples) * mixxx::kMaxSupportedStems);
+    }
     m_stems.emplace_back(ChannelHandleAndGroup(stemHandleGroup.handle(), stemHandleGroup.name()));
     m_stemsGainCache.push_back(CSAMPLE_GAIN_ONE);
     if (m_pEffectsManager != nullptr) {

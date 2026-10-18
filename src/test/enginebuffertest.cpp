@@ -8,13 +8,19 @@
 #include <QtDebug>
 
 #include "control/controlobject.h"
+#include "engine/bufferscalers/enginebufferscalelinear.h"
+#include "engine/bufferscalers/enginebufferscalest.h"
 #include "engine/controls/ratecontrol.h"
+#ifdef __RUBBERBAND__
+#include "engine/bufferscalers/enginebufferscalerubberband.h"
+#endif
 #include "engine/defs_keylock.h"
 #include "mixer/basetrackplayer.h"
 #include "preferences/usersettings.h"
 #include "test/mixxxtest.h"
 #include "test/mockedenginebackendtest.h"
 #include "test/signalpathtest.h"
+#include "track/track.h"
 
 // In case any of the test in this file fail. You can use the audioplot.py tool
 // in the tools folder to visually compare the results of the enginebuffer
@@ -183,6 +189,38 @@ TEST_F(EngineBufferTest, SlowRubberBand) {
     // Playing at low rate, the vinyl scaler should be used
     ProcessBuffer();
     EXPECT_EQ(m_pMockScaleVinyl1, m_pChannel1->getEngineBuffer()->m_pScale);
+}
+#endif
+
+#ifdef __STEM__
+TEST_F(EngineBufferE2ETest, StemLoadFitsScalersBeforeTheAudioThread) {
+    // SetUp left a stereo track on deck 1. Load a stem without running the
+    // engine: the scalers must already fit the stem's channel count when the
+    // audio thread first sees it, so process() has nothing to rebuild there.
+    // Rebuilding them in process() dropped out every deck (#16120).
+    EngineBuffer* pBuffer = m_pChannel1->getEngineBuffer();
+    ASSERT_EQ(static_cast<int>(mixxx::audio::ChannelCount::stereo()),
+            static_cast<int>(pBuffer->m_pScaleST->getOutputSignal().getChannelCount()));
+
+    m_pMixerDeck1->slotEjectTrack(1.0);
+    TrackPointer pStem = Track::newTemporary(getTestDir().filePath(
+            QStringLiteral("stems/stem01/sin_ALAC_24bit.stem.mp4")));
+    m_pMixerDeck1->slotLoadTrack(pStem, mixxx::StemChannelSelection(), false);
+    // One callback to wake the reader worker, as loadTrack() does; the load
+    // then completes on that worker with no further callback.
+    ProcessBuffer();
+    for (int i = 0; i < 2000 && !pBuffer->isTrackLoaded(); ++i) {
+        QTest::qSleep(1);
+    }
+    ASSERT_TRUE(pBuffer->isTrackLoaded());
+
+    // As ints, so a failure prints the counts and not uint8_t characters.
+    const int stemChannels = mixxx::audio::ChannelCount::stem();
+    EXPECT_EQ(stemChannels, static_cast<int>(pBuffer->m_pScaleLinear->getOutputSignal().getChannelCount()));
+    EXPECT_EQ(stemChannels, static_cast<int>(pBuffer->m_pScaleST->getOutputSignal().getChannelCount()));
+#ifdef __RUBBERBAND__
+    EXPECT_EQ(stemChannels, static_cast<int>(pBuffer->m_pScaleRB->getOutputSignal().getChannelCount()));
+#endif
 }
 #endif
 
