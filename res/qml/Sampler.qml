@@ -115,7 +115,7 @@ Rectangle {
         };
         const trackLocationUrl = root.currentTrack?.trackLocationUrl;
         if (trackLocationUrl)
-            data["text/uri-list"] = trackLocationUrl;
+            data["text/uri-list"] = trackLocationUrl.toString();
         return data;
     }
     Drag.supportedActions: Qt.CopyAction
@@ -145,26 +145,6 @@ Rectangle {
 
     Skin.SectionBackground {
         anchors.fill: parent
-    }
-    // Dragging a sampler is how you copy its track to a deck, and the strip
-    // only has to REPORT that a drag is under way -- Drag.Automatic hands the
-    // payload above to the system and draws its own cursor. Dragging `root`
-    // moved the strip itself as well, and since these sit in a layout they do
-    // not spring back: a sampler could be shoved out of the row and left there.
-    // A stand-in carries the gesture instead. It is never shown and never
-    // measured, so wherever the drag leaves it costs nothing.
-    Item {
-        id: dragProxy
-
-        height: 0
-        visible: false
-        width: 0
-    }
-    MouseArea {
-        id: dragArea
-
-        anchors.fill: parent
-        drag.target: dragProxy
     }
     Item {
         id: summary
@@ -277,6 +257,35 @@ Rectangle {
             group: root.group
             rangeEnd: root.sampleRangeEnd
             rangeStart: root.sampleRangeStart
+        }
+        // Dragging a sampler is how you copy its track to a deck, and the strip
+        // only has to REPORT that a drag is under way -- Drag.Automatic hands the
+        // payload above to the system and draws its own cursor. Dragging `root`
+        // moved the strip itself as well, and since these sit in a layout they do
+        // not spring back: a sampler could be shoved out of the row and left there.
+        // A stand-in carries the gesture instead. It is never shown and never
+        // measured, so wherever the drag leaves it costs nothing.
+        //
+        // The handle is the title and waveform, not the whole strip. Covering the
+        // strip put it under the gain knob and the speed fader, whose DragHandlers
+        // only take a passive grab on press: the press fell through to this
+        // MouseArea, and on a touch screen it won the drag, so turning the gain
+        // dragged the track out instead (seen on the Surface, 19 Oct 2026).
+        Item {
+            id: dragProxy
+
+            height: 0
+            visible: false
+            width: 0
+        }
+        MouseArea {
+            id: dragArea
+
+            anchors.bottom: embedded.bottom
+            anchors.left: playButton.right
+            anchors.right: embedded.right
+            anchors.top: embedded.top
+            drag.target: dragProxy
         }
         Skin.VuMeter {
             id: vuMeter
