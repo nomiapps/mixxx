@@ -69,8 +69,13 @@ jobs:
     if: github.event_name == 'pull_request'
     uses: ./.github/workflows/git.yml
 
+  # The seven-platform build (macOS, Windows, Android, AppImage, ...) runs
+  # upstream only. This fork is built and tested on Windows locally; what it
+  # needs from CI is Linux, and the checks job above gives it that: coverage is
+  # a full Debug build plus the whole test suite. GitHub disabled Actions on the
+  # fork in October 2026 for wasted compute, and this matrix was most of it.
   build:
-    if: needs.stop-build.outputs.result == 'false'
+    if: needs.stop-build.outputs.result == 'false' && github.repository == 'mixxxdj/mixxx'
     needs:
       - stop-build
     permissions:
