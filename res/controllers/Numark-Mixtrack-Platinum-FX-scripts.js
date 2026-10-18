@@ -46,7 +46,7 @@ MixtrackPlatinumFX.jogSeekSensitivity = 10000;
 // Waiting 200 ms on every lift (13 October 2026) made a deliberate lift feel
 // late, so the wait is short until the sensor has chattered during this touch,
 // and only then long enough to ride out its gaps.
-MixtrackPlatinumFX.jogTouchReleaseDelay = 60;       // ms, a touch that has not chattered
+MixtrackPlatinumFX.jogTouchReleaseDelay = 30;       // ms, a touch that has not chattered
 MixtrackPlatinumFX.jogTouchReleaseDelayLight = 160; // ms, once it has chattered
 MixtrackPlatinumFX.jogTouchReleaseTimers = [0, 0, 0, 0];
 MixtrackPlatinumFX.jogTouchChattered = [false, false, false, false];

@@ -503,7 +503,7 @@ TEST_F(MixtrackPlatinumFxMappingTest, APressPicksOneEffectAndASecondPressDropsIt
 TEST_F(MixtrackPlatinumFxMappingTest, ALightTouchOnThePlatterKeepsHoldOfTheRecord) {
     loadMapping();
     recordScratchCalls();
-    constexpr int kFirstGapMs = 40; // inside the short wait: hold kept
+    constexpr int kFirstGapMs = 10; // inside the short wait: hold kept
     constexpr int kSensorChatterGapMs = 150;
     constexpr int kWellAfterReleaseMs = 600;
     const QString held = QStringLiteral("scratchEnable");
@@ -539,7 +539,7 @@ TEST_F(MixtrackPlatinumFxMappingTest, ALightTouchOnThePlatterKeepsHoldOfTheRecor
 TEST_F(MixtrackPlatinumFxMappingTest, AFirmLiftLetsGoOfTheRecordQuickly) {
     loadMapping();
     recordScratchCalls();
-    constexpr int kShortWaitAndSomeMs = 120; // the short wait is 60 ms
+    constexpr int kShortWaitAndSomeMs = 90; // the short wait is 30 ms
 
     touchPlatter(true);
     ASSERT_EQ(QStringLiteral("scratchEnable"), scratchCalls());
