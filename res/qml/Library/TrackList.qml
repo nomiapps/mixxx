@@ -32,6 +32,10 @@ Rectangle {
     // bypass this deliberately -- they return 0 earlier in columnWidthProvider.
     readonly property int minimumColumnWidth: 40
 
+    // Keyboard focus to the rows, so arrows move the selection and Enter loads it.
+    function focusView() {
+        view.forceActiveFocus();
+    }
     // Instantiator does not promise that its objects arrive in model order, and
     // Menu.insertItem() clamps an index that is past the end -- so inserting at
     // the index the Instantiator reports can leave the items permanently

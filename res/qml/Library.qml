@@ -17,9 +17,17 @@ Item {
     // What the search box holds, for anything outside that reflects it -- the
     // Camelot wheel marks the key it is filtered on.
     readonly property alias searchText: searchField.text
-    // The host keeps the library on screen while this is set, even when the window is
-    // too short for it: the touch keyboard that shortens the window needs the box.
     readonly property bool searchFocused: searchField.activeFocus
+    // The host keeps the library on screen while this is set, even when the window is
+    // too short for it: the touch keyboard that shortens the window needs the box. It
+    // stays set briefly after the box lets go of focus, because the keyboard is still
+    // closing then: dropping the library at that moment threw away the results that
+    // Enter or a tap on a row had just handed focus to.
+    readonly property bool searchHoldsLibrary: searchField.activeFocus || searchReleaseGrace.running
+    // Set while the box has focus from a finger or pen rather than a click or a
+    // shortcut, so the host can echo what is typed where the on-screen keyboard,
+    // which can cover the box, does not reach.
+    property bool searchByTouch: false
     // The track list, so a host can load the current selection to a deck of its
     // choosing without going through the [ChannelN],LoadSelectedTrack control,
     // which every library in the process answers at once.
@@ -39,6 +47,13 @@ Item {
             const parts = [root.smartCrateQuery, searchField.text].filter(p => p.trim().length > 0);
             root.sidebar.tracklist.search(parts.join(" "));
         }
+    }
+    // Enter in the box: run the search now rather than after the typing pause, and
+    // hand focus to the results, which on a touch screen also puts the keyboard away.
+    function submitSearch() {
+        searchDebounce.stop();
+        root.applySearch();
+        trackList.focusView();
     }
     function focusSearch() {
         searchDebounce.stop();
@@ -187,7 +202,13 @@ Item {
         // Reaching for the search box means searching the whole library, so drop any
         // crate scope rather than quietly searching inside it. Otherwise a search can
         // return nothing while the collection plainly contains matches.
+        Keys.onEnterPressed: root.submitSearch()
+        Keys.onReturnPressed: root.submitSearch()
         onActiveFocusChanged: {
+            if (!searchField.activeFocus) {
+                root.searchByTouch = false;
+                searchReleaseGrace.restart();
+            }
             if (searchField.activeFocus && root.smartCrateQuery.length > 0) {
                 root.smartCrateQuery = "";
                 searchDebounce.stop();
@@ -195,6 +216,20 @@ Item {
             }
         }
 
+        // Passive: it only notes the device, the field still takes the press.
+        PointHandler {
+            acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Stylus
+
+            onActiveChanged: {
+                if (active)
+                    root.searchByTouch = true;
+            }
+        }
+        Timer {
+            id: searchReleaseGrace
+
+            interval: 1500
+        }
         Timer {
             id: searchDebounce
 

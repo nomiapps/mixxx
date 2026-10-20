@@ -840,13 +840,18 @@ Item {
                     id: library
 
                     readonly property bool roomy: root.maximizeLibrary || root.height - mixer.height >= 400
+                    // Pushed in by the library (onSearchHoldsLibraryChanged below) rather
+                    // than read off `item` here: reading it made `active` depend on the
+                    // item it unloads, a binding loop.
+                    property bool heldBySearch: false
 
-                    // Only hold off building it while the window is short; once built it
-                    // stays, and a short window just hides it. Tapping the search box on a
-                    // touch screen brings up the docked keyboard, which shortens the window:
-                    // dropping the library then destroyed the box under the finger (so the
-                    // keyboard closed at once) and the rebuilt one came back with no rows.
-                    active: roomy || item !== null
+                    // Kept while its search box has focus, however short the window gets.
+                    // Tapping the box on a touch screen brings up the docked keyboard,
+                    // which shortens the window: dropping the library then destroyed the
+                    // box under the finger, so the keyboard closed at once. Otherwise a
+                    // short window still unloads it: the waveform/deck split above keys
+                    // on `active`, and a library kept but hidden left an empty band.
+                    active: roomy || heldBySearch
                     width: parent.width
 
                     sourceComponent: Component {
@@ -857,8 +862,9 @@ Item {
 
                             // One search across this library and the Edge surface's
                             // (edgeSurfaceWindow.librarySearch). Read on creation too:
-                            // this Loader builds the library only once the window is tall enough.
+                            // this Loader drops the library when the window gets short.
                             Component.onCompleted: mainLibrary.setSearchText(edgeSurfaceWindow.librarySearch)
+                            onSearchHoldsLibraryChanged: library.heldBySearch = mainLibrary.searchHoldsLibrary
                             onSearchTextChanged: edgeSurfaceWindow.librarySearch = mainLibrary.searchText
 
                             Connections {
@@ -890,7 +896,7 @@ Item {
                         State {
                             // Not while someone is typing a search: hiding it would take
                             // the focus, and with it the keyboard that shortened the window.
-                            when: !library.roomy && !(library.item && library.item.searchFocused)
+                            when: !library.roomy && !library.heldBySearch
 
                             PropertyChanges {
                                 target: library
@@ -996,6 +1002,61 @@ Item {
             }
 
             target: Mixxx.ControllerManager
+        }
+    }
+    // The library search echoed at the top of the window while it is typed by
+    // touch: the on-screen keyboard can sit over the search box itself.
+    Rectangle {
+        id: searchEcho
+
+        readonly property var libraryItem: library.item
+        readonly property string query: libraryItem ? libraryItem.searchText : ""
+
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: 44
+        border.color: Theme.blue
+        border.width: 1
+        color: Theme.knobBackgroundColor
+        height: 44
+        radius: 4
+        visible: libraryItem !== null && libraryItem.searchFocused && libraryItem.searchByTouch
+        width: Math.min(640, parent.width - 32)
+        z: 30
+
+        Row {
+            anchors.left: parent.left
+            anchors.leftMargin: 14
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 2
+
+            Text {
+                color: searchEcho.query.length > 0 ? Theme.deckTextColor : Theme.midGray
+                elide: Text.ElideLeft
+                font.pixelSize: 20
+                text: searchEcho.query.length > 0 ? searchEcho.query : qsTranslate("WSearchLineEdit", "Search...")
+                width: Math.min(implicitWidth, searchEcho.width - 40)
+            }
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                color: Theme.blue
+                height: 24
+                width: 2
+
+                SequentialAnimation on opacity {
+                    loops: Animation.Infinite
+                    running: searchEcho.visible
+
+                    NumberAnimation {
+                        duration: 500
+                        to: 0
+                    }
+                    NumberAnimation {
+                        duration: 500
+                        to: 1
+                    }
+                }
+            }
         }
     }
     Skin.KeywheelPopup {
