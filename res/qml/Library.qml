@@ -79,11 +79,14 @@ Item {
     }
     // Empties the box and shows the full library at once, without the typing debounce,
     // and leaves the cursor in the box since clearing is usually the start of a new search.
-    function clearSearch() {
+    // Not after a finger tap: focus there raises the on-screen keyboard, which shortens
+    // the window, and a tap on the box is all it takes to start typing again.
+    function clearSearch(keepFocus = true) {
         searchDebounce.stop();
         searchField.text = "";
         root.applySearch();
-        searchField.forceActiveFocus();
+        if (keepFocus)
+            searchField.forceActiveFocus();
     }
     // Mirrors a search typed into another library view (the Edge surface's, or the
     // main window's). The typing debounce applies it, as if typed here. Setting the
@@ -180,7 +183,7 @@ Item {
         placeholderText: qsTranslate("WSearchLineEdit", "Search...")
         placeholderTextColor: Theme.midGray
         // Keep typed text from running under the clear glyph.
-        rightPadding: clearButton.visible ? clearButton.width + 16 : 8
+        rightPadding: clearButton.visible ? clearGlyph.width + 16 : 8
 
         background: Rectangle {
             border.color: searchField.activeFocus ? Theme.blue : Theme.midGray
@@ -236,28 +239,41 @@ Item {
             interval: 300
             onTriggered: root.applySearch()
         }
-        // Clear glyph, only while there is something to clear. Drawn flat rather than
-        // as a Skin.Button: a gradient box inside a text field reads as a second
-        // control, and the settings window's close button already uses this glyph.
-        Text {
-            id: clearButton
+    }
+    // Clear glyph, only while there is something to clear. Drawn flat rather than
+    // as a Skin.Button: a gradient box inside a text field reads as a second
+    // control, and the settings window's close button already uses this glyph.
+    //
+    // A sibling laid over the box, not a child of it, with a finger-sized target
+    // that takes the press for itself (WithinBounds grabs exclusively). As a child,
+    // a finger's press reached the field too: it took focus, the on-screen keyboard
+    // rose and shortened the window, and the release no longer landed on the glyph.
+    Item {
+        id: clearButton
 
-            anchors.right: parent.right
-            anchors.rightMargin: 8
-            anchors.verticalCenter: parent.verticalCenter
+        anchors.right: searchField.right
+        anchors.verticalCenter: searchField.verticalCenter
+        height: searchField.height + 8
+        visible: searchField.text.length > 0
+        width: 40
+
+        Text {
+            id: clearGlyph
+
+            anchors.centerIn: parent
             color: clearHover.hovered ? Theme.white : Theme.midGray
             font.pixelSize: 13
             text: "✕"
-            visible: searchField.text.length > 0
+        }
+        HoverHandler {
+            id: clearHover
 
-            HoverHandler {
-                id: clearHover
+            cursorShape: Qt.PointingHandCursor
+        }
+        TapHandler {
+            gesturePolicy: TapHandler.WithinBounds
 
-                cursorShape: Qt.PointingHandCursor
-            }
-            TapHandler {
-                onTapped: root.clearSearch()
-            }
+            onTapped: eventPoint => root.clearSearch(eventPoint.device.type !== PointerDevice.TouchScreen)
         }
     }
     // A scan of a large library runs for minutes; the button text alone is easy to miss.
