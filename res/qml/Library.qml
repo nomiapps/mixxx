@@ -17,6 +17,9 @@ Item {
     // What the search box holds, for anything outside that reflects it -- the
     // Camelot wheel marks the key it is filtered on.
     readonly property alias searchText: searchField.text
+    // The host keeps the library on screen while this is set, even when the window is
+    // too short for it: the touch keyboard that shortens the window needs the box.
+    readonly property bool searchFocused: searchField.activeFocus
     // The track list, so a host can load the current selection to a deck of its
     // choosing without going through the [ChannelN],LoadSelectedTrack control,
     // which every library in the process answers at once.

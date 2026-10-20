@@ -839,7 +839,14 @@ Item {
                 Loader {
                     id: library
 
-                    active: root.maximizeLibrary || root.height - mixer.height >= 400
+                    readonly property bool roomy: root.maximizeLibrary || root.height - mixer.height >= 400
+
+                    // Only hold off building it while the window is short; once built it
+                    // stays, and a short window just hides it. Tapping the search box on a
+                    // touch screen brings up the docked keyboard, which shortens the window:
+                    // dropping the library then destroyed the box under the finger (so the
+                    // keyboard closed at once) and the rebuilt one came back with no rows.
+                    active: roomy || item !== null
                     width: parent.width
 
                     sourceComponent: Component {
@@ -850,7 +857,7 @@ Item {
 
                             // One search across this library and the Edge surface's
                             // (edgeSurfaceWindow.librarySearch). Read on creation too:
-                            // this Loader drops the library when the window gets short.
+                            // this Loader builds the library only once the window is tall enough.
                             Component.onCompleted: mainLibrary.setSearchText(edgeSurfaceWindow.librarySearch)
                             onSearchTextChanged: edgeSurfaceWindow.librarySearch = mainLibrary.searchText
 
@@ -881,7 +888,9 @@ Item {
                             }
                         },
                         State {
-                            when: !root.maximizeLibrary && root.height - mixer.height < 400
+                            // Not while someone is typing a search: hiding it would take
+                            // the focus, and with it the keyboard that shortened the window.
+                            when: !library.roomy && !(library.item && library.item.searchFocused)
 
                             PropertyChanges {
                                 target: library
