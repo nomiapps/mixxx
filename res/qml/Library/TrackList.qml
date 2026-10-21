@@ -316,6 +316,18 @@ Rectangle {
         view.forceLayout();
         root.saveLayout();
     }
+    // The visual column whose span holds x (header content coordinates); past
+    // either end, the first or last column.
+    function visualIndexAtX(x) {
+        let right = 0;
+        for (let visualIndex = 0; visualIndex < root.visualColumnOrder.length; ++visualIndex) {
+            right += view.columnWidth(root.visualColumnOrder[visualIndex]) + view.columnSpacing;
+            if (x < right) {
+                return visualIndex;
+            }
+        }
+        return root.visualColumnOrder.length - 1;
+    }
     function moveColumn(logicalIndex, direction) {
         const source = root.visualIndexForColumn(logicalIndex);
         const destination = source + direction;
@@ -451,7 +463,84 @@ Rectangle {
 
             implicitHeight: columnName.contentHeight + 5
             implicitWidth: columnName.contentWidth + 5
+            opacity: touchMove.active ? 0.7 : 1
+            z: touchMove.active ? 2 : 0
 
+            // The header's own movableColumns/resizableColumns only work with a
+            // mouse: Qt finds the column edge from hover, and a finger never
+            // hovers. These two handlers do the same for touch and pen; the
+            // mouse keeps Qt's.
+            transform: Translate {
+                x: touchMove.active ? touchMove.activeTranslation.x : 0
+            }
+
+            DragHandler {
+                id: touchMove
+
+                // activeTranslation is back to 0 by the time active turns false.
+                property real draggedX: 0
+                // A grab taken away (a popup opening, a touch cancel) is no drop.
+                property bool cancelled: false
+
+                acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Stylus
+                grabPermissions: PointerHandler.CanTakeOverFromAnything
+                target: null
+                yAxis.enabled: false
+
+                onActiveTranslationChanged: {
+                    if (active) {
+                        draggedX = activeTranslation.x;
+                    }
+                }
+                onCanceled: cancelled = true
+                onActiveChanged: {
+                    if (active) {
+                        draggedX = 0;
+                        cancelled = false;
+                        return;
+                    }
+                    if (cancelled) {
+                        return;
+                    }
+                    // Dropped: the column under the finger is where this one goes.
+                    const source = root.visualIndexForColumn(column.index);
+                    const destination = root.visualIndexAtX(column.x + column.width / 2 + draggedX);
+                    if (source >= 0 && destination >= 0 && destination !== source) {
+                        view.moveColumn(source, destination);
+                    }
+                }
+            }
+            Item {
+                // A finger-wide grip on the column's right edge, inside the column
+                // so the next column's delegate cannot cover it.
+                anchors.bottom: parent.bottom
+                anchors.right: parent.right
+                anchors.top: parent.top
+                width: Math.min(24, parent.width / 3)
+                z: 1
+
+                DragHandler {
+                    id: touchResize
+
+                    property real startWidth: 0
+
+                    acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Stylus
+                    grabPermissions: PointerHandler.CanTakeOverFromAnything
+                    target: null
+                    yAxis.enabled: false
+
+                    onActiveChanged: {
+                        if (active) {
+                            startWidth = view.columnWidth(column.index);
+                        }
+                    }
+                    onActiveTranslationChanged: {
+                        if (active) {
+                            view.setColumnWidth(column.index, Math.max(root.minimumColumnWidth, startWidth + activeTranslation.x));
+                        }
+                    }
+                }
+            }
             TapHandler {
                 id: columnMouseHandler
 
@@ -473,6 +562,12 @@ Rectangle {
                     root.saveLayout();
                 }
                 onLongPressed: eventPoint => {
+                    // A finger held still before dragging: the drag has not
+                    // started yet, so this is the menu; the popup then takes
+                    // the touch and the drag is cancelled, not dropped.
+                    if (touchMove.active || touchResize.active) {
+                        return;
+                    }
                     headerMenu.columnIndex = index;
                     headerMenu.popup();
                 }
