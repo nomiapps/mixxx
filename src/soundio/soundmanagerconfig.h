@@ -107,6 +107,18 @@ class SoundManagerConfig {
     QMultiHash<SoundDeviceId, AudioInput>& getInputsRef();
     void clearOutputs();
     void clearInputs();
+    /// Points the configured devices at a freshly read device list. A
+    /// SoundDeviceId carries the API's device index, and that index changes
+    /// when the list is read again (a sound card unplugged and plugged back
+    /// in comes back under a new PortAudio index), so the ids from before
+    /// would match nothing. Matched by name, like readFromDisk().
+    void rebindDevices(const QList<SoundDeviceId>& available);
+    /// The device in available that configured now is: the only one with its
+    /// name, else the one with its ALSA hw name, else the one with its old
+    /// index, else the first with its name. A name that is gone entirely
+    /// keeps configured as it was, so it still reports "not found".
+    static SoundDeviceId reboundDeviceId(const SoundDeviceId& configured,
+            const QList<SoundDeviceId>& available);
     bool hasMicInputs();
     bool hasExternalRecordBroadcast();
     void loadDefaults(SoundManager* soundManager, unsigned int flags);

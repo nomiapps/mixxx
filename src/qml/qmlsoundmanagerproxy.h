@@ -172,6 +172,9 @@ class QmlSoundManagerProxy : public QObject {
     /// Forwarded from SoundManager: an output stopped calling back and
     /// the devices were reopened (recovered) or could not be.
     void audioStalled(const QString& deviceNames, bool recovered);
+    /// Forwarded from SoundManager: devices that had failed to open opened
+    /// by themselves after a device was plugged (back) in.
+    void audioDevicesReturned(const QString& deviceNames);
     /// Forwarded from SoundManager: headphones routed to channels 3-4 of a
     /// DJ controller's sound card.
     void headphonesRouted(const QString& deviceName);

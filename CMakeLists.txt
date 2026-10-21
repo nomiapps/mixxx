@@ -3063,6 +3063,7 @@ if(BUILD_TESTING)
     src/test/skincontext_test.cpp
     src/test/softtakeover_test.cpp
     src/test/callbackwatchdogtest.cpp
+    src/test/soundmanagerconfigrebindtest.cpp
     src/test/headphoneroutingtest.cpp
     src/test/soundproxy_test.cpp
     src/test/soundsourceproviderregistrytest.cpp

@@ -90,6 +90,10 @@ QmlSoundManagerProxy::QmlSoundManagerProxy(
             this,
             &QmlSoundManagerProxy::audioStalled);
     connect(m_pSoundManager.get(),
+            &SoundManager::audioDevicesReturned,
+            this,
+            &QmlSoundManagerProxy::audioDevicesReturned);
+    connect(m_pSoundManager.get(),
             &SoundManager::headphonesRouted,
             this,
             &QmlSoundManagerProxy::headphonesRouted);

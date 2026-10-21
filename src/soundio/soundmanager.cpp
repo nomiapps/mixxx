@@ -11,6 +11,7 @@
 
 #include "audio/types.h"
 #include "control/controlobject.h"
+#include "controllers/controllerhotplugwatcher.h"
 #include "engine/enginemixer.h"
 #include "moc_soundmanager.cpp"
 #include "preferences/configobject.h"
@@ -72,7 +73,12 @@ SoundManager::SoundManager(
                   pConfig, this, m_pNetworkStream)),
           m_pipewireEnabled(m_pConfig->getValue(
                   ConfigKey(kAppGroup, QStringLiteral("pipewire")), false)),
-          m_stallRecoveries(0) {
+          m_stallRecoveries(0),
+          m_pHardwareWatcher(nullptr),
+          m_waitingForDevices(false),
+          m_deviceRetriesLeft(0),
+          m_retryOnlyOnArrival(false),
+          m_audioReturnPending(false) {
     // TODO(xxx) some of these ControlObject are not needed by soundmanager, or are unused here.
     // It is possible to take them out?
     m_pControlObjectSoundStatusCO = new ControlObject(
@@ -118,6 +124,19 @@ SoundManager::SoundManager(
             &SoundManager::checkCallbacks);
     m_callbackWatchdogTimer.start();
 
+    // A sound card that failed to open (unplugged, or it fell off the bus)
+    // is opened again when it comes back, without a restart or an Apply.
+    m_deviceRetryTimer.setSingleShot(true);
+    connect(&m_deviceRetryTimer,
+            &QTimer::timeout,
+            this,
+            &SoundManager::retryWaitingDevices);
+    m_pHardwareWatcher = new ControllerHotplugWatcher(this);
+    connect(m_pHardwareWatcher,
+            &ControllerHotplugWatcher::devicesChanged,
+            this,
+            &SoundManager::slotHardwareChanged);
+
     // Don't write config to disk, yet -- it may be reset to defaults in case
     // previously configured devices were not found.
     // Write new config after MixxxMainWindow::noOutputDlg where the user has
@@ -126,6 +145,7 @@ SoundManager::SoundManager(
 
 SoundManager::~SoundManager() {
     m_callbackWatchdogTimer.stop();
+    m_deviceRetryTimer.stop();
     // Clean up devices.
     const bool sleepAfterClosing = false;
     clearDeviceList(sleepAfterClosing);
@@ -271,10 +291,13 @@ void SoundManager::clearDeviceList(bool sleepAfterClosing) {
     // Empty out the list of devices we currently have.
     m_pErrorDevice.clear();
 
-    // deinitialize in case of PortAudio so the devices are updated
-    if (isPipewireSelected()) {
-        m_pEnumerator->deinitialize();
-    }
+    // Deinitialize so the next queryDevices() really reads the devices
+    // again. Until upstream 1ee1904d6a this ran for PortAudio, as the old
+    // comment here said; that commit turned the condition round to PipeWire
+    // only, which left PortAudio's list frozen at startup (Pa_Initialize is
+    // the only place it is read), so neither "Query devices" nor a reopen
+    // could find a sound card plugged in later. Both enumerators need it.
+    m_pEnumerator->deinitialize();
 }
 
 QList<mixxx::audio::SampleRate> SoundManager::getSampleRates(const QString& api) const {
@@ -298,6 +321,10 @@ QList<mixxx::audio::SampleRate> SoundManager::getSampleRates() const {
 void SoundManager::queryDevices() {
     qDebug() << "SoundManager::queryDevices()";
     m_pEnumerator->initialize();
+    // Device ids carry the API's index, which a re-read can change; keep the
+    // configuration pointing at the same devices (a no-op at startup, before
+    // the configuration is read).
+    rebindConfigToDevices();
     // now tell the prefs that we updated the device list -- bkgood
 #ifndef __PIPEWIRE__
     emit devicesUpdated();
@@ -325,6 +352,9 @@ SoundDeviceStatus SoundManager::setupDevices() {
     //m_pClkRefDevice = NULL;
     m_pErrorDevice.clear();
     int outputDevicesOpened = 0;
+    // Outputs other than the internal network stream: while one plays, a
+    // missing device is not worth tearing it down to look again.
+    int realOutputDevicesOpened = 0;
     int inputDevicesOpened = 0;
 
     // NOTE(rryan): Documenting for future people touching this class. If you
@@ -468,6 +498,9 @@ SoundDeviceStatus SoundManager::setupDevices() {
         devicesNotFound.remove(pDevice->getDeviceId());
         if (mode.isOutput) {
             ++outputDevicesOpened;
+            if (!isNetworkDevice) {
+                ++realOutputDevicesOpened;
+            }
         }
         if (mode.isInput) {
             ++inputDevicesOpened;
@@ -510,17 +543,135 @@ SoundDeviceStatus SoundManager::setupDevices() {
             m_config.writeToDisk();
             saveHeadphonesConsidered();
         }
+        updateWaitingForDevices(true, true);
         emit devicesSetup();
         return SoundDeviceStatus::Ok;
     }
     m_pErrorDevice = SoundDevicePointer(
             new SoundDeviceNotFound(devicesNotFound.constBegin()->name));
+    updateWaitingForDevices(false, realOutputDevicesOpened > 0);
     return SoundDeviceStatus::ErrorDeviceCount;
 
 closeAndError:
     const bool sleepAfterClosing = false;
     closeDevices(sleepAfterClosing);
+    updateWaitingForDevices(false, false);
     return status;
+}
+
+SoundDeviceStatus SoundManager::reopenWithFreshDeviceList() {
+    if (isPipewireSelected()) {
+        // PipeWire enumerates asynchronously and keeps its own list current.
+        const bool sleepAfterClosing = false;
+        closeDevices(sleepAfterClosing);
+        return setupDevices();
+    }
+    const bool sleepAfterClosing = false;
+    clearDeviceList(sleepAfterClosing);
+    queryDevices();
+    return setupDevices();
+}
+
+void SoundManager::rebindConfigToDevices() {
+    // Only devices of the configured API: on Windows the same endpoint is
+    // listed under one name by MME, DirectSound and WASAPI, and setupDevices()
+    // opens whatever the id matches, whatever its API.
+    QList<SoundDeviceId> available;
+    for (const auto& pDevice : m_pEnumerator->queryDevices()) {
+        if (pDevice->getHostAPI() == m_config.getAPI()) {
+            available.append(pDevice->getDeviceId());
+        }
+    }
+    m_config.rebindDevices(available);
+}
+
+void SoundManager::updateWaitingForDevices(bool opened, bool outputPlaying) {
+    // Only a configuration that asks for real outputs has anything to wait
+    // for; "no sound" by choice does not.
+    bool wantsOutputs = false;
+    const auto outputs = m_config.getOutputs();
+    for (auto it = outputs.constBegin(); it != outputs.constEnd(); ++it) {
+        if (it.key().name != kNetworkDeviceInternalName) {
+            wantsOutputs = true;
+            break;
+        }
+    }
+    const bool waiting = !opened && wantsOutputs;
+    // With another output playing, a retry tears that one down too: only a
+    // device arriving is worth it then, never the timer.
+    m_retryOnlyOnArrival = outputPlaying;
+    if (waiting == m_waitingForDevices) {
+        if (waiting && outputPlaying) {
+            m_deviceRetryTimer.stop();
+        }
+        return;
+    }
+    m_waitingForDevices = waiting;
+    if (!waiting) {
+        m_deviceRetryTimer.stop();
+        return;
+    }
+    if (outputPlaying) {
+        qInfo() << "Some sound devices not open; they are opened again when a"
+                << "device is plugged in";
+        return;
+    }
+    qInfo() << "Sound devices not open; they are opened again when a device"
+            << "is plugged in, and tried every" << kDeviceRetryFallbackSeconds << "s";
+    m_deviceRetryTimer.start(std::chrono::seconds(kDeviceRetryFallbackSeconds));
+}
+
+QString SoundManager::configuredDeviceNames() const {
+    QStringList names;
+    const auto outputs = m_config.getOutputs();
+    for (auto it = outputs.constBegin(); it != outputs.constEnd(); ++it) {
+        if (it.key().name != kNetworkDeviceInternalName && !names.contains(it.key().name)) {
+            names.append(it.key().name);
+        }
+    }
+    return names.join(QStringLiteral(", "));
+}
+
+void SoundManager::slotHardwareChanged() {
+    if (!m_waitingForDevices) {
+        return;
+    }
+    // Wait for a USB sound card's several interfaces to settle, so one
+    // reopen covers them all.
+    m_deviceRetriesLeft = kDeviceRetriesPerArrival;
+    // Not pushed further back by more changes, so a device that keeps
+    // coming and going cannot starve the retry.
+    if (!m_deviceRetryTimer.isActive() ||
+            m_deviceRetryTimer.remainingTime() > kDeviceSettleMillis) {
+        m_deviceRetryTimer.start(kDeviceSettleMillis);
+    }
+}
+
+void SoundManager::retryWaitingDevices() {
+    if (!m_waitingForDevices) {
+        return;
+    }
+    qInfo() << "Trying the closed sound devices again";
+    const SoundDeviceStatus status = reopenWithFreshDeviceList();
+    m_callbackWatchdog.reset();
+    if (status != SoundDeviceStatus::Ok) {
+        qInfo() << "Sound devices still do not open:" << getLastErrorMessage(status);
+        // Windows can announce the device before its audio endpoint is
+        // usable; give one arrival a couple more chances. After that, or for
+        // a device that comes back unannounced (the audio service restarting
+        // does that), try now and then; each try reads the device list
+        // again, which is not free, hence not more often.
+        if (--m_deviceRetriesLeft > 0) {
+            m_deviceRetryTimer.start(2 * kDeviceSettleMillis);
+        } else if (!m_retryOnlyOnArrival) {
+            m_deviceRetryTimer.start(std::chrono::seconds(kDeviceRetryFallbackSeconds));
+        }
+        return;
+    }
+    qInfo() << "Sound devices reopened";
+    // Said once the callbacks really run (checkCallbacks): a stream that
+    // opens and stalls again must not claim to be back.
+    m_audioReturnPending = true;
 }
 
 SoundDevicePointer SoundManager::getErrorDevice() const {
@@ -563,6 +714,11 @@ void SoundManager::closeActiveConfig(bool async) {
     // Close open devices. After this call we will not get any more
     // onDeviceOutputCallback() or pushBuffer() calls because all the
     // SoundDevices are closed. closeDevices() blocks and can take a while.
+    // A configuration is being applied: no retry may reopen the devices
+    // while that is under way (the legacy page shows a message box between
+    // closing and applying). setupDevices() decides again afterwards.
+    m_waitingForDevices = false;
+    m_deviceRetryTimer.stop();
     const bool sleepAfterClosing = true;
     closeDevices(sleepAfterClosing, async);
 }
@@ -570,6 +726,10 @@ void SoundManager::closeActiveConfig(bool async) {
 SoundDeviceStatus SoundManager::setConfig(const SoundManagerConfig& config) {
     SoundDeviceStatus status = SoundDeviceStatus::Ok;
     m_config = config;
+    // The settings page built its device ids from the list as it was when it
+    // opened; the list may have been read again since (a reopen after a
+    // device dropped out).
+    rebindConfigToDevices();
     checkConfig();
     // Picking a controller as the main output in the settings is the other
     // moment its headphones need routing.
@@ -770,6 +930,10 @@ void SoundManager::checkCallbacks() {
         qDebug() << "Audio callback watchdog: watching" << sample.id.name
                  << "from callback" << sample.callbackCount;
     }
+    if (result.anyAdvanced && m_audioReturnPending) {
+        m_audioReturnPending = false;
+        emit audioDevicesReturned(configuredDeviceNames());
+    }
     if (result.anyAdvanced) {
         // Sound is flowing again (or still): the next stall gets a fresh
         // set of attempts.
@@ -798,17 +962,32 @@ void SoundManager::checkCallbacks() {
                << "for" << (CallbackWatchdog::kStalledTicks * kCallbackWatchdogSeconds)
                << "s, reopening the sound devices (attempt" << m_stallRecoveries
                << "of" << kMaxStallRecoveries << ")";
-    const bool sleepAfterClosing = false;
-    closeDevices(sleepAfterClosing);
-    const SoundDeviceStatus status = setupDevices();
+    // A stall is often the device dropping off the bus, and then the old
+    // list holds only its dead handle: read the list again.
+    const SoundDeviceStatus status = reopenWithFreshDeviceList();
     m_callbackWatchdog.reset();
     const bool recovered = status == SoundDeviceStatus::Ok;
     if (!recovered) {
         qWarning() << "Reopening the sound devices failed:" << getLastErrorMessage(status);
+        // Nothing is open now, so this watchdog has nothing left to watch.
+        // The device arriving again reopens it (slotHardwareChanged); until
+        // then, a few later tries cover one that comes back without the OS
+        // announcing it.
+        if (m_waitingForDevices) {
+            m_deviceRetriesLeft = kDeviceRetriesPerArrival;
+            m_deviceRetryTimer.start(4 * kDeviceSettleMillis);
+        }
     }
-    if (m_stallRecoveries == kMaxStallRecoveries) {
-        qWarning() << "Giving up on the audio callback until the sound"
-                   << "configuration is applied again";
+    if (m_stallRecoveries == kMaxStallRecoveries && recovered) {
+        // Each reopen opened and stalled again. Keep trying, slowly, rather
+        // than leave Mixxx silent until someone applies the settings. (A
+        // failed reopen is already waiting, on its own schedule.)
+        qWarning() << "The audio callback keeps stalling; trying again every"
+                   << kDeviceRetryFallbackSeconds << "s";
+        m_waitingForDevices = true;
+        m_retryOnlyOnArrival = false;
+        m_deviceRetriesLeft = 0;
+        m_deviceRetryTimer.start(std::chrono::seconds(kDeviceRetryFallbackSeconds));
     }
     emit audioStalled(stalledNames, recovered);
 }

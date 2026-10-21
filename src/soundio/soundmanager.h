@@ -25,6 +25,7 @@
 
 class EngineMixer;
 class ControlObject;
+class ControllerHotplugWatcher;
 class PipewireEnumerator;
 
 #define SOUNDMANAGER_DISCONNECTED 0
@@ -166,6 +167,14 @@ class SoundManager : public QObject {
     /// Reopens attempted for one stall before the watchdog gives up; a
     /// later Apply in the sound settings arms it again.
     static constexpr int kMaxStallRecoveries = 3;
+    /// After the OS reports a device arriving, wait this long for the rest
+    /// of it (a USB sound card brings several interfaces) before reopening.
+    static constexpr int kDeviceSettleMillis = 1500;
+    /// Tries per arrival before waiting for the next one.
+    static constexpr int kDeviceRetriesPerArrival = 3;
+    /// How often to try again while the configured devices are closed and
+    /// no arrival has been reported (none can be, off Windows).
+    static constexpr int kDeviceRetryFallbackSeconds = 30;
   signals:
     void deviceAdded(SoundDevicePointer pDevice);
     void deviceRemoved(SoundDevicePointer pDevice);
@@ -182,6 +191,9 @@ class SoundManager : public QObject {
     /// An open device stopped calling back for a few seconds. The
     /// devices were reopened; recovered says whether that succeeded.
     void audioStalled(const QString& deviceNames, bool recovered);
+    /// The configured devices had failed to open and have now opened by
+    /// themselves, after a device was plugged (back) in.
+    void audioDevicesReturned(const QString& deviceNames);
     /// Headphones were routed to channels 3-4 of a DJ controller's sound card
     /// (HeadphoneRouting); the UI should say so.
     void headphonesRouted(const QString& deviceName);
@@ -189,6 +201,8 @@ class SoundManager : public QObject {
   private slots:
     void completeDevicesClosing();
     void checkCallbacks();
+    void slotHardwareChanged();
+    void retryWaitingDevices();
 
   public slots:
     void addDevice(SoundDevicePointer pDevice);
@@ -204,6 +218,22 @@ class SoundManager : public QObject {
     // (from PortAudio) and attempts to close them all. Closing a soundcard that
     // isn't open is safe.
     void closeDevices(bool sleepAfterClosing, bool async = false);
+
+    /// Closes the devices, reads the device list from the API again, points
+    /// the configuration at what it found and opens the devices. Reopening
+    /// against the old list cannot work for a device that was unplugged:
+    /// PortAudio reads its list once, in Pa_Initialize, so the device it has
+    /// is dead and the one plugged back in is not on it.
+    SoundDeviceStatus reopenWithFreshDeviceList();
+    /// Called with the outcome of every setupDevices(): a failure with
+    /// configured outputs means waiting for a device to come (back), and
+    /// any device arrival from then on tries to open them again.
+    /// outputPlaying: some other output did open, so retries wait for an
+    /// arrival instead of tearing it down on a timer.
+    void updateWaitingForDevices(bool opened, bool outputPlaying);
+    /// SoundManagerConfig::rebindDevices against the current list.
+    void rebindConfigToDevices();
+    QString configuredDeviceNames() const;
 
     /// Applies HeadphoneRouting to m_config. Returns the routed device's
     /// display name, or an empty string.
@@ -242,6 +272,15 @@ class SoundManager : public QObject {
     QTimer m_callbackWatchdogTimer;
     CallbackWatchdog m_callbackWatchdog;
     int m_stallRecoveries;
+    /// Tells of devices arriving; shared with controller hotplug, it only
+    /// says that something changed.
+    ControllerHotplugWatcher* m_pHardwareWatcher;
+    bool m_waitingForDevices;
+    int m_deviceRetriesLeft;
+    bool m_retryOnlyOnArrival;
+    /// Reopened by a retry; audioDevicesReturned waits for callbacks.
+    bool m_audioReturnPending;
+    QTimer m_deviceRetryTimer;
     QString m_headphonesRoutedNotice;
     QStringList m_headphonesConsideredUnsaved;
 };

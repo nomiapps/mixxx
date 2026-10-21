@@ -505,6 +505,57 @@ void SoundManagerConfig::clearInputs() {
     m_bExternalRecordBroadcastConnected = false;
 }
 
+// static
+SoundDeviceId SoundManagerConfig::reboundDeviceId(const SoundDeviceId& configured,
+        const QList<SoundDeviceId>& available) {
+    QList<SoundDeviceId> sameName;
+    for (const auto& id : available) {
+        if (id.name == configured.name) {
+            sameName.append(id);
+        }
+    }
+    if (sameName.isEmpty()) {
+        return configured;
+    }
+    if (sameName.size() == 1) {
+        return sameName.first();
+    }
+    if (!configured.alsaHwDevice.isEmpty()) {
+        for (const auto& id : std::as_const(sameName)) {
+            if (id.alsaHwDevice == configured.alsaHwDevice) {
+                return id;
+            }
+        }
+    }
+    for (const auto& id : std::as_const(sameName)) {
+        if (id == configured) {
+            return id;
+        }
+    }
+    return sameName.first();
+}
+
+namespace {
+
+template<typename Path>
+QMultiHash<SoundDeviceId, Path> reboundPaths(
+        const QMultiHash<SoundDeviceId, Path>& paths,
+        const QList<SoundDeviceId>& available) {
+    QMultiHash<SoundDeviceId, Path> rebound;
+    for (auto it = paths.constBegin(); it != paths.constEnd(); ++it) {
+        rebound.insert(SoundManagerConfig::reboundDeviceId(it.key(), available), it.value());
+    }
+    return rebound;
+}
+
+} // namespace
+
+void SoundManagerConfig::rebindDevices(const QList<SoundDeviceId>& available) {
+    // Only the keys change, so the input and output counters stay right.
+    m_outputs = reboundPaths(m_outputs, available);
+    m_inputs = reboundPaths(m_inputs, available);
+}
+
 bool SoundManagerConfig::hasMicInputs() {
     return m_iNumMicInputs;
 }

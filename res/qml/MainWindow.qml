@@ -981,7 +981,10 @@ Item {
         }
         Connections {
             function onAudioStalled(deviceNames, recovered) {
-                audioToast.show(recovered ? qsTr("Audio restarted: %1 stopped responding").arg(deviceNames) : qsTr("Audio stopped: %1 stopped responding and could not be reopened. See Settings > Sound hardware.").arg(deviceNames));
+                audioToast.show(recovered ? qsTr("Audio restarted: %1 stopped responding").arg(deviceNames) : qsTr("Audio stopped: %1 stopped responding and could not be reopened. It reopens by itself when the device is back; otherwise see Settings > Sound hardware.").arg(deviceNames));
+            }
+            function onAudioDevicesReturned(deviceNames) {
+                audioToast.show(qsTr("Audio back: %1 reconnected").arg(deviceNames), 5000);
             }
             function onHeadphonesRouted(deviceName) {
                 audioToast.showHeadphonesRouted(deviceName);
