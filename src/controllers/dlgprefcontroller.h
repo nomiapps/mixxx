@@ -41,6 +41,7 @@ class DlgPrefController : public DlgPreferencePage {
 
     QUrl helpUrl() const override;
     void keyPressEvent(QKeyEvent* pEvent) override;
+    void showEvent(QShowEvent* pEvent) override;
 
   public slots:
     /// Called when the preference dialog (not this page) is shown to the user.
@@ -158,5 +159,6 @@ class DlgPrefController : public DlgPreferencePage {
 
 #if defined(__HID__) && !defined(Q_OS_ANDROID)
     std::unique_ptr<ControllerHidReportTabsManager> m_hidReportTabsManager;
+    bool m_hidReportTabsPending = false;
 #endif
 };

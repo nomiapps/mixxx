@@ -220,11 +220,16 @@ DlgPrefController::DlgPrefController(
         m_ui.labelHidUsage->setVisible(true);
         m_ui.labelHidUsageValue->setVisible(true);
 
-        // Create HID report tabs
+        // The HID report tabs are built when the page is first shown
+        // (showEvent). A table row per report field adds up: a touch screen's
+        // vendor reports run to thousands of fields, and DlgPrefControllers
+        // builds a page for every HID interface at startup and after every
+        // controller rescan, on the main thread, whether or not anyone opens
+        // the legacy preferences. On the Surface that froze the UI 4-15 s.
         m_hidReportTabsManager =
                 std::make_unique<ControllerHidReportTabsManager>(
                         m_ui.controllerTabs, hidController);
-        m_hidReportTabsManager->createReportTypeTabs();
+        m_hidReportTabsPending = true;
     } else
 #endif
     {
@@ -1270,6 +1275,25 @@ void DlgPrefController::showMapping(std::shared_ptr<LegacyControllerMapping> pMa
     if (firstVisibleTabIndex >= 0) {
         m_ui.controllerTabs->setCurrentIndex(firstVisibleTabIndex);
     }
+}
+
+void DlgPrefController::showEvent(QShowEvent* pEvent) {
+#if defined(__HID__) && !defined(Q_OS_ANDROID)
+    if (m_hidReportTabsPending && m_hidReportTabsManager) {
+        m_hidReportTabsPending = false;
+        m_hidReportTabsManager->createReportTypeTabs();
+        // The tab widget may have been hidden for having no visible tabs.
+        m_ui.controllerTabs->setVisible(getNumberOfVisibleTabs() > 0);
+        if (m_ui.controllerTabs->currentIndex() < 0 ||
+                !m_ui.controllerTabs->isTabVisible(m_ui.controllerTabs->currentIndex())) {
+            const int firstVisibleTabIndex = getIndexOfFirstVisibleTab();
+            if (firstVisibleTabIndex >= 0) {
+                m_ui.controllerTabs->setCurrentIndex(firstVisibleTabIndex);
+            }
+        }
+    }
+#endif
+    DlgPreferencePage::showEvent(pEvent);
 }
 
 void DlgPrefController::slotInputControlSearch() {

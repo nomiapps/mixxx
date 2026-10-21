@@ -1,5 +1,7 @@
 #include "controllers/dlgprefcontrollers.h"
 
+#include <QElapsedTimer>
+
 #include "control/controlproxy.h"
 #include "controllers/controller.h"
 #include "controllers/controllermanager.h"
@@ -205,6 +207,11 @@ void DlgPrefControllers::setupControllerWidgets() {
 
     std::sort(controllerList.begin(), controllerList.end(), controllerCompare);
 
+    // This runs on the main thread at startup and after every controller
+    // rescan, so a slow page freezes the whole UI; say how long it took.
+    QElapsedTimer timer;
+    timer.start();
+
     for (auto* pController : std::as_const(controllerList)) {
         auto pControllerDlg = make_parented<DlgPrefController>(
                 this, pController, m_pControllerManager, m_pConfig);
@@ -260,6 +267,8 @@ void DlgPrefControllers::setupControllerWidgets() {
         temp.setBold(pController->isOpen());
         pControllerTreeItem->setFont(0, temp);
     }
+    qDebug() << "Built" << controllerList.size() << "controller preference pages in"
+             << timer.elapsed() << "ms";
 }
 
 void DlgPrefControllers::slotHighlightDevice(DlgPrefController* pControllerDlg, bool enabled) {
