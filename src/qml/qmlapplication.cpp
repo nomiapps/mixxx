@@ -36,6 +36,7 @@
 #include "qml/qmldlgpreferencesproxy.h"
 #include "qml/qmlrecordingproxy.h"
 #include "soundio/soundmanager.h"
+#include "util/sessionhealth.h"
 #include "util/versionstore.h"
 #include "waveform/guitick.h"
 #include "waveform/overviewtype.h"
@@ -481,6 +482,10 @@ QmlApplication::QmlApplication(
 }
 
 void QmlApplication::slotWindowChanged(QQuickWindow* window) {
+    if (!m_pSessionHealth) {
+        m_pSessionHealth = std::make_unique<::SessionHealthMonitor>();
+    }
+    m_pSessionHealth->setWindow(window);
     if (window) {
         connect(window,
                 &QQuickWindow::afterFrameEnd,

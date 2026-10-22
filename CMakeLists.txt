@@ -1739,6 +1739,7 @@ add_library(
   src/util/screensaver.cpp
   src/util/screensavermanager.cpp
   src/util/semanticversion.cpp
+  src/util/sessionhealth.cpp
   src/util/stat.cpp
   src/util/statmodel.cpp
   src/util/statsmanager.cpp
@@ -3063,6 +3064,7 @@ if(BUILD_TESTING)
     src/test/skincontext_test.cpp
     src/test/softtakeover_test.cpp
     src/test/callbackwatchdogtest.cpp
+    src/test/sessionhealthtest.cpp
     src/test/soundmanagerconfigrebindtest.cpp
     src/test/headphoneroutingtest.cpp
     src/test/soundproxy_test.cpp
@@ -4974,6 +4976,8 @@ elseif(WIN32)
   # Controller hotplug: RegisterDeviceNotification (user32) and the live WinMM
   # MIDI device list (winmm), called directly rather than through a library.
   target_link_libraries(mixxx-lib PRIVATE user32 winmm)
+  # Session health log: CPU clock and its limit (CallNtPowerInformation).
+  target_link_libraries(mixxx-lib PRIVATE powrprof pdh)
 endif()
 
 if(APPLE OR WIN32)

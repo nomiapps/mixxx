@@ -13,6 +13,7 @@
 class ControlProxy;
 class ControlPushButton;
 class GuiTick;
+class SessionHealthMonitor;
 class VisualsManager;
 class QQuickWindow;
 #if defined(Q_OS_ANDROID)
@@ -63,6 +64,8 @@ class QmlApplication : public QObject {
     QString m_mainFilePath;
 
     std::unique_ptr<QQmlApplicationEngine> m_pAppEngine;
+    /// One line a minute on how the UI and the machine are keeping up.
+    std::unique_ptr<::SessionHealthMonitor> m_pSessionHealth;
     bool m_ownsWaveformWidgetFactory{false};
     bool m_loadSucceeded;
     QmlAutoReload m_autoReload;
