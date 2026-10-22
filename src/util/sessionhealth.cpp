@@ -4,6 +4,7 @@
 #include <QStringList>
 #include <QtDebug>
 #include <algorithm>
+#include <chrono>
 #include <vector>
 
 #include "moc_sessionhealth.cpp"
@@ -67,6 +68,14 @@ void SessionHealthWindow::addFrameGap(qint64 gapMs) {
     }
 }
 
+namespace {
+
+QString phase(qint64 ms) {
+    return ms < 0 ? QStringLiteral("?") : QString::number(ms);
+}
+
+} // namespace
+
 void SessionHealthWindow::reset() {
     *this = SessionHealthWindow();
 }
@@ -129,6 +138,72 @@ void SessionHealthMonitor::setWindow(QQuickWindow* pWindow) {
                 &QQuickWindow::afterFrameEnd,
                 this,
                 &SessionHealthMonitor::slotFrameEnd);
+        // The phases, timed where they happen. Direct: the render thread must
+        // not wait for the main thread to note a time.
+        connect(pWindow,
+                &QQuickWindow::afterAnimating,
+                this,
+                [this]() { m_animatedNs.store(nowNs()); },
+                Qt::DirectConnection);
+        connect(pWindow,
+                &QQuickWindow::beforeSynchronizing,
+                this,
+                [this]() { m_syncBeginNs.store(nowNs()); },
+                Qt::DirectConnection);
+        connect(pWindow,
+                &QQuickWindow::afterSynchronizing,
+                this,
+                [this]() { m_syncEndNs.store(nowNs()); },
+                Qt::DirectConnection);
+        connect(pWindow,
+                &QQuickWindow::beforeRendering,
+                this,
+                [this]() { m_renderBeginNs.store(nowNs()); },
+                Qt::DirectConnection);
+        connect(pWindow,
+                &QQuickWindow::afterRendering,
+                this,
+                [this]() { m_renderEndNs.store(nowNs()); },
+                Qt::DirectConnection);
+        connect(pWindow,
+                &QQuickWindow::frameSwapped,
+                this,
+                [this]() { recordFramePhases(); },
+                Qt::DirectConnection);
+    }
+}
+
+// static
+qint64 SessionHealthMonitor::nowNs() {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now().time_since_epoch())
+            .count();
+}
+
+void SessionHealthMonitor::recordFramePhases() {
+    const qint64 swappedNs = nowNs();
+    const qint64 animated = m_animatedNs.load();
+    const qint64 syncBegin = m_syncBeginNs.load();
+    const qint64 syncEnd = m_syncEndNs.load();
+    const qint64 renderBegin = m_renderBeginNs.load();
+    const qint64 renderEnd = m_renderEndNs.load();
+    // A span counts only if its two ends are in order and belong to this frame.
+    auto span = [](qint64 from, qint64 to) -> qint64 {
+        return (from > 0 && to >= from) ? (to - from) / 1000000 : -1;
+    };
+    SessionHealthFramePhases frame;
+    frame.syncMs = span(syncBegin, syncEnd);
+    frame.renderMs = span(renderBegin, renderEnd);
+    frame.swapMs = span(renderEnd, swappedNs);
+    frame.beforeSyncMs = span(animated, syncBegin);
+    const qint64 start = frame.beforeSyncMs >= 0 ? animated : syncBegin;
+    frame.totalMs = span(start, swappedNs);
+    if (frame.totalMs < 0) {
+        return;
+    }
+    const QMutexLocker locker(&m_slowestMutex);
+    if (frame.totalMs > m_slowest.totalMs) {
+        m_slowest = frame;
     }
 }
 
@@ -147,6 +222,13 @@ void SessionHealthMonitor::slotFrameEnd() {
 
 void SessionHealthMonitor::slotReport() {
     const SessionHealthSystemSample sample = sampleSystem();
+    {
+        const QMutexLocker locker(&m_slowestMutex);
+        if (m_slowest.totalMs >= 0) {
+            m_window.slowestFrame = m_slowest;
+        }
+        m_slowest = SessionHealthFramePhases();
+    }
     qInfo().noquote() << formatReport(m_uptime.elapsed(), m_window, sample);
     m_window.reset();
 }
@@ -169,6 +251,16 @@ QString SessionHealthMonitor::formatReport(qint64 uptimeMs,
                      .arg(window.maxFrameGapMs)
                      .arg(window.frameGapsOver50Ms)
                      .arg(window.frameGapsOver150Ms);
+    if (window.slowestFrame) {
+        const SessionHealthFramePhases& slow = *window.slowestFrame;
+        parts << QStringLiteral(
+                "slowest frame %1 ms: before sync %2, sync %3, render %4, swap %5")
+                         .arg(slow.totalMs)
+                         .arg(phase(slow.beforeSyncMs),
+                                 phase(slow.syncMs),
+                                 phase(slow.renderMs),
+                                 phase(slow.swapMs));
+    }
     QStringList process;
     if (sample.processCpuPercentOfOneCore) {
         process << QStringLiteral("CPU %1% of one core")

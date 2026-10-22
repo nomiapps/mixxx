@@ -60,6 +60,22 @@ TEST(SessionHealthTest, ReportNamesWhatWasMeasured) {
     EXPECT_TRUE(line.contains(QStringLiteral("on battery 84%"))) << line.toStdString();
 }
 
+TEST(SessionHealthTest, ReportSplitsTheSlowestFrame) {
+    SessionHealthWindow window;
+    SessionHealthFramePhases slow;
+    slow.totalMs = 320;
+    slow.beforeSyncMs = 290;
+    slow.syncMs = 20;
+    slow.renderMs = 6;
+    slow.swapMs = -1;
+    window.slowestFrame = slow;
+    const QString line = SessionHealthMonitor::formatReport(
+            60000, window, SessionHealthSystemSample());
+    EXPECT_TRUE(line.contains(QStringLiteral(
+            "slowest frame 320 ms: before sync 290, sync 20, render 6, swap ?")))
+            << line.toStdString();
+}
+
 TEST(SessionHealthTest, ReportLeavesOutWhatThePlatformCannotTell) {
     const QString line = SessionHealthMonitor::formatReport(
             0, SessionHealthWindow(), SessionHealthSystemSample());

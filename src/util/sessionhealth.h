@@ -1,13 +1,29 @@
 #pragma once
 
 #include <QElapsedTimer>
+#include <QMutex>
 #include <QObject>
 #include <QPointer>
 #include <QString>
 #include <QTimer>
+#include <atomic>
 #include <optional>
 
 class QQuickWindow;
+
+/// Where one frame's time went, from QQuickWindow's signals. beforeSync runs
+/// from the end of animations to the start of the sync: polish (bindings,
+/// layout, JavaScript) plus any wait for the render thread. sync is the
+/// scene graph sync (updatePaintNode: waveform data, texture uploads), render
+/// the draw calls, swap the buffer swap (vsync and GPU). -1 where a signal did
+/// not come.
+struct SessionHealthFramePhases {
+    qint64 totalMs = -1;
+    qint64 beforeSyncMs = -1;
+    qint64 syncMs = -1;
+    qint64 renderMs = -1;
+    qint64 swapMs = -1;
+};
 
 /// One minute of how the UI kept up: main-thread lateness and the gaps
 /// between rendered frames. Kept apart from the timers so it can be tested.
@@ -26,6 +42,8 @@ class SessionHealthWindow {
     qint64 maxFrameGapMs = 0;
     int frameGapsOver50Ms = 0;
     int frameGapsOver150Ms = 0;
+    /// The slowest frame of the minute, split into its phases.
+    std::optional<SessionHealthFramePhases> slowestFrame;
 };
 
 /// What the operating system says about Mixxx and the machine at one moment.
@@ -78,6 +96,10 @@ class SessionHealthMonitor : public QObject {
     void slotReport();
 
   private:
+    static qint64 nowNs();
+    /// Called on the thread that rendered, once the frame is swapped.
+    void recordFramePhases();
+
     SessionHealthSystemSample sampleSystem();
 
     QTimer m_lagProbe;
@@ -87,6 +109,16 @@ class SessionHealthMonitor : public QObject {
     QElapsedTimer m_sinceLastFrame;
     QPointer<QQuickWindow> m_pWindow;
     SessionHealthWindow m_window;
+
+    // Phase timestamps of the frame in flight (steady clock, ns). Written on
+    // the GUI thread (animations) and the render thread (the rest).
+    std::atomic<qint64> m_animatedNs{0};
+    std::atomic<qint64> m_syncBeginNs{0};
+    std::atomic<qint64> m_syncEndNs{0};
+    std::atomic<qint64> m_renderBeginNs{0};
+    std::atomic<qint64> m_renderEndNs{0};
+    QMutex m_slowestMutex;
+    SessionHealthFramePhases m_slowest; // guarded by m_slowestMutex
 
 #ifdef Q_OS_WIN
     // Previous CPU time readings, for the load since the last report.
