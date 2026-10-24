@@ -78,6 +78,7 @@ SoundManager::SoundManager(
           m_waitingForDevices(false),
           m_deviceRetriesLeft(0),
           m_retryOnlyOnArrival(false),
+          m_waitingAfterStall(false),
           m_audioReturnPending(false) {
     // TODO(xxx) some of these ControlObject are not needed by soundmanager, or are unused here.
     // It is possible to take them out?
@@ -549,7 +550,7 @@ SoundDeviceStatus SoundManager::setupDevices() {
     }
     m_pErrorDevice = SoundDevicePointer(
             new SoundDeviceNotFound(devicesNotFound.constBegin()->name));
-    updateWaitingForDevices(false, realOutputDevicesOpened > 0);
+    updateWaitingForDevices(false, realOutputDevicesOpened > 0, /*deviceMissing=*/true);
     return SoundDeviceStatus::ErrorDeviceCount;
 
 closeAndError:
@@ -585,7 +586,8 @@ void SoundManager::rebindConfigToDevices() {
     m_config.rebindDevices(available);
 }
 
-void SoundManager::updateWaitingForDevices(bool opened, bool outputPlaying) {
+void SoundManager::updateWaitingForDevices(
+        bool opened, bool outputPlaying, bool deviceMissing) {
     // Only a configuration that asks for real outputs has anything to wait
     // for; "no sound" by choice does not.
     bool wantsOutputs = false;
@@ -597,22 +599,29 @@ void SoundManager::updateWaitingForDevices(bool opened, bool outputPlaying) {
         }
     }
     const bool waiting = !opened && wantsOutputs;
-    // With another output playing, a retry tears that one down too: only a
-    // device arriving is worth it then, never the timer.
-    m_retryOnlyOnArrival = outputPlaying;
+    // Only a device arriving is worth a retry, never the timer, when
+    // another output plays (a retry tears that one down too), or when a
+    // configured device is simply not plugged in and the OS will say when it
+    // is (each timed retry re-reads the device list on the main thread, ~2 s
+    // on the Surface, every 30 s for as long as the device stays away). A
+    // device that vanished under a playing stream keeps the timer: it can come
+    // back unannounced (the audio service restarting does that).
+    m_retryOnlyOnArrival = outputPlaying ||
+            (deviceMissing && m_pHardwareWatcher->isActive() && !m_waitingAfterStall);
     if (waiting == m_waitingForDevices) {
-        if (waiting && outputPlaying) {
+        if (waiting && m_retryOnlyOnArrival) {
             m_deviceRetryTimer.stop();
         }
         return;
     }
     m_waitingForDevices = waiting;
     if (!waiting) {
+        m_waitingAfterStall = false;
         m_deviceRetryTimer.stop();
         return;
     }
-    if (outputPlaying) {
-        qInfo() << "Some sound devices not open; they are opened again when a"
+    if (m_retryOnlyOnArrival) {
+        qInfo() << "Sound devices not open; they are opened again when a"
                 << "device is plugged in";
         return;
     }
@@ -718,6 +727,7 @@ void SoundManager::closeActiveConfig(bool async) {
     // while that is under way (the legacy page shows a message box between
     // closing and applying). setupDevices() decides again afterwards.
     m_waitingForDevices = false;
+    m_waitingAfterStall = false;
     m_deviceRetryTimer.stop();
     const bool sleepAfterClosing = true;
     closeDevices(sleepAfterClosing, async);
@@ -964,6 +974,7 @@ void SoundManager::checkCallbacks() {
                << "of" << kMaxStallRecoveries << ")";
     // A stall is often the device dropping off the bus, and then the old
     // list holds only its dead handle: read the list again.
+    m_waitingAfterStall = true;
     const SoundDeviceStatus status = reopenWithFreshDeviceList();
     m_callbackWatchdog.reset();
     const bool recovered = status == SoundDeviceStatus::Ok;

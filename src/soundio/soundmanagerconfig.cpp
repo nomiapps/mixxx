@@ -153,7 +153,16 @@ bool SoundManagerConfig::validateDevices() {
         QDomNodeList inElements(devElement.elementsByTagName(xmlElementInput));
 
         if (devicesMatchingByName == 0) {
-            continue;
+            // Not plugged in right now. Kept as configured rather than
+            // dropped: dropped, Mixxx started on no outputs at all, said
+            // nothing, and plugging the device in later could not bring its
+            // sound back, because nothing remembered it was wanted (the
+            // Surface on 24 Oct 2026, Mixtrack plugged in after start-up).
+            // Kept, it reports "not found", and SoundManager opens it once a
+            // device arrives (updateWaitingForDevices); the ids are matched
+            // by name again then (rebindDevices).
+            qInfo() << "Configured sound device" << deviceIdFromFile.name
+                    << "is not present; keeping it for when it is";
         } else if (devicesMatchingByName == 1) {
             // There is only one device with this name, so it is unambiguous
             // which it is. Neither the alsaHwDevice nor deviceIndex are

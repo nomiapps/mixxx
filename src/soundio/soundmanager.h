@@ -230,7 +230,9 @@ class SoundManager : public QObject {
     /// any device arrival from then on tries to open them again.
     /// outputPlaying: some other output did open, so retries wait for an
     /// arrival instead of tearing it down on a timer.
-    void updateWaitingForDevices(bool opened, bool outputPlaying);
+    /// deviceMissing: a configured device is not in the device list at all
+    /// (rather than failing to open).
+    void updateWaitingForDevices(bool opened, bool outputPlaying, bool deviceMissing = false);
     /// SoundManagerConfig::rebindDevices against the current list.
     void rebindConfigToDevices();
     QString configuredDeviceNames() const;
@@ -278,6 +280,9 @@ class SoundManager : public QObject {
     bool m_waitingForDevices;
     int m_deviceRetriesLeft;
     bool m_retryOnlyOnArrival;
+    /// The devices closed because a stream stalled, not because one was
+    /// missing from the start.
+    bool m_waitingAfterStall;
     /// Reopened by a retry; audioDevicesReturned waits for callbacks.
     bool m_audioReturnPending;
     QTimer m_deviceRetryTimer;
