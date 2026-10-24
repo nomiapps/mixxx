@@ -70,6 +70,9 @@ class ControllerManager : public QObject {
     void controllersPluggedIn(const QStringList& opened,
             const QStringList& notOpened,
             bool rescanned);
+    /// Controllers just seen arriving, before anything is done with them, so
+    /// the UI can say so at once rather than after the rescan.
+    void controllersDetected(const QStringList& names);
 
   public slots:
     void slotApplyMapping(Controller* pController,

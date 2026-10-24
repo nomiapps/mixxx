@@ -407,6 +407,7 @@ void ControllerManager::slotCheckForNewDevices() {
         return;
     }
     m_hotplugChecksLeft = 0;
+    emit controllersDetected(arrived);
 
     // A rescan closes and reopens every controller, which restarts their
     // mappings. Worth it for a controller the user has set up, and harmless

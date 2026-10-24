@@ -655,6 +655,10 @@ QmlControllerManagerProxy::QmlControllerManagerProxy(
             &ControllerManager::controllersPluggedIn,
             this,
             &QmlControllerManagerProxy::controllersPluggedIn);
+    connect(m_pControllerManager.get(),
+            &ControllerManager::controllersDetected,
+            this,
+            &QmlControllerManagerProxy::controllersDetected);
 
     connect(m_pControllerManager.get(),
             &ControllerManager::scanStarted,

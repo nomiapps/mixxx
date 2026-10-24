@@ -170,6 +170,9 @@ class SoundManager : public QObject {
     /// After the OS reports a device arriving, wait this long for the rest
     /// of it (a USB sound card brings several interfaces) before reopening.
     static constexpr int kDeviceSettleMillis = 1500;
+    /// Time for the UI to draw the "reconnecting" notice before a stall's
+    /// reopen, which can block the main thread for seconds.
+    static constexpr int kStallNoticeMillis = 150;
     /// Tries per arrival before waiting for the next one.
     static constexpr int kDeviceRetriesPerArrival = 3;
     /// How often to try again while the configured devices are closed and
@@ -191,6 +194,9 @@ class SoundManager : public QObject {
     /// An open device stopped calling back for a few seconds. The
     /// devices were reopened; recovered says whether that succeeded.
     void audioStalled(const QString& deviceNames, bool recovered);
+    /// An output stopped calling back and is about to be reopened, which can
+    /// freeze the UI for a few seconds.
+    void audioReconnecting(const QString& deviceNames);
     /// The configured devices had failed to open and have now opened by
     /// themselves, after a device was plugged (back) in.
     void audioDevicesReturned(const QString& deviceNames);
@@ -202,6 +208,7 @@ class SoundManager : public QObject {
     void completeDevicesClosing();
     void checkCallbacks();
     void slotHardwareChanged();
+    void reopenAfterStall(const QString& stalledNames);
     void retryWaitingDevices();
 
   public slots:
@@ -283,6 +290,8 @@ class SoundManager : public QObject {
     /// The devices closed because a stream stalled, not because one was
     /// missing from the start.
     bool m_waitingAfterStall;
+    /// A stall was announced and its reopen is about to run.
+    bool m_stallReopenPending;
     /// Reopened by a retry; audioDevicesReturned waits for callbacks.
     bool m_audioReturnPending;
     QTimer m_deviceRetryTimer;

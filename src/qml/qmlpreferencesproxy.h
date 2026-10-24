@@ -404,6 +404,8 @@ class QmlControllerManagerProxy : public QObject {
     void controllersPluggedIn(const QStringList& opened,
             const QStringList& notOpened,
             bool rescanned);
+    /// Forwarded from ControllerManager: controllers just seen arriving.
+    void controllersDetected(const QStringList& names);
 
   private:
     static inline std::shared_ptr<ControllerManager> s_pControllerManager;

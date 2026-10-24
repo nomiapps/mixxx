@@ -79,6 +79,7 @@ SoundManager::SoundManager(
           m_deviceRetriesLeft(0),
           m_retryOnlyOnArrival(false),
           m_waitingAfterStall(false),
+          m_stallReopenPending(false),
           m_audioReturnPending(false) {
     // TODO(xxx) some of these ControlObject are not needed by soundmanager, or are unused here.
     // It is possible to take them out?
@@ -967,11 +968,28 @@ void SoundManager::checkCallbacks() {
         // Said so when the cap was reached; no more log spam.
         return;
     }
+    if (m_stallReopenPending) {
+        return;
+    }
     ++m_stallRecoveries;
     qWarning() << "Audio callback stalled on" << stalledNames
                << "for" << (CallbackWatchdog::kStalledTicks * kCallbackWatchdogSeconds)
                << "s, reopening the sound devices (attempt" << m_stallRecoveries
                << "of" << kMaxStallRecoveries << ")";
+    // Say so first, and reopen a moment later. Closing a stream whose device
+    // has gone can block the main thread for seconds (6.5 s on the Surface,
+    // 24 Oct 2026, most of it PortAudio stopping the dead stream); started
+    // at once, the UI froze with nothing on screen, and an unplugged
+    // controller looked like a broken Mixxx.
+    emit audioReconnecting(stalledNames);
+    m_stallReopenPending = true;
+    QTimer::singleShot(kStallNoticeMillis, this, [this, stalledNames]() {
+        m_stallReopenPending = false;
+        reopenAfterStall(stalledNames);
+    });
+}
+
+void SoundManager::reopenAfterStall(const QString& stalledNames) {
     // A stall is often the device dropping off the bus, and then the old
     // list holds only its dead handle: read the list again.
     m_waitingAfterStall = true;

@@ -922,8 +922,14 @@ Item {
     Rectangle {
         id: audioToast
 
-        function show(message, durationMs) {
-            audioToastText.text = message;
+        // append: add to what is on screen instead of replacing it, so that
+        // "controller connected" and "audio back", which come within a second
+        // of each other on a replug, are both read.
+        function show(message, durationMs, append) {
+            if (append && opacity > 0 && audioToastText.text.length > 0 && audioToastText.text.indexOf(message) < 0)
+                audioToastText.text = audioToastText.text + " · " + message;
+            else
+                audioToastText.text = message;
             opacity = 1;
             audioToastTimer.interval = durationMs ?? 8000;
             audioToastTimer.restart();
@@ -980,11 +986,17 @@ Item {
             onTriggered: audioToast.opacity = 0
         }
         Connections {
+            function onAudioReconnecting(deviceNames) {
+                audioToast.show(qsTr("Sound lost on %1, reconnecting...").arg(deviceNames), 15000);
+            }
             function onAudioStalled(deviceNames, recovered) {
-                audioToast.show(recovered ? qsTr("Audio restarted: %1 stopped responding").arg(deviceNames) : qsTr("Audio stopped: %1 stopped responding and could not be reopened. It reopens by itself when the device is back; otherwise see Settings > Sound hardware.").arg(deviceNames));
+                if (recovered)
+                    audioToast.show(qsTr("Audio back on %1").arg(deviceNames), 6000, true);
+                else
+                    audioToast.show(qsTr("Audio stopped: %1 is gone. It comes back by itself when the device is plugged in again.").arg(deviceNames), 15000);
             }
             function onAudioDevicesReturned(deviceNames) {
-                audioToast.show(qsTr("Audio back: %1 reconnected").arg(deviceNames), 5000);
+                audioToast.show(qsTr("Audio back on %1").arg(deviceNames), 6000, true);
             }
             function onHeadphonesRouted(deviceName) {
                 audioToast.showHeadphonesRouted(deviceName);
@@ -995,9 +1007,12 @@ Item {
         // A controller plugged in while Mixxx runs: picked up without a
         // restart, and said so, because otherwise nothing on screen changes.
         Connections {
+            function onControllersDetected(names) {
+                audioToast.show(qsTr("%1 detected, connecting...").arg(names.join(", ")), 8000, true);
+            }
             function onControllersPluggedIn(opened, notOpened, rescanned) {
                 if (opened.length > 0)
-                    audioToast.show(qsTr("%1 connected").arg(opened.join(", ")), 5000);
+                    audioToast.show(qsTr("%1 connected").arg(opened.join(", ")), 6000, true);
                 else if (rescanned)
                     audioToast.show(qsTr("%1 plugged in. Set it up in Settings > Controllers.").arg(notOpened.join(", ")), 10000);
                 else
