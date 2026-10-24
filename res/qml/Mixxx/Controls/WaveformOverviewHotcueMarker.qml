@@ -1,6 +1,6 @@
 import Mixxx 1.0 as Mixxx
 import QtQuick 2.12
-import QtQuick.Shapes 1.12
+import QtQuick.Shapes
 
 Item {
     id: root
@@ -21,8 +21,7 @@ Item {
         visible: statusControl.value >= 0
         anchors.fill: parent
         antialiasing: true
-        layer.smooth: true
-        layer.samples: 2
+        preferredRendererType: Shape.CurveRenderer
 
         ShapePath {
             startX: marker.x

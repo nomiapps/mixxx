@@ -1,6 +1,6 @@
 import Mixxx 1.0 as Mixxx
 import QtQuick
-import QtQuick.Shapes 1.12
+import QtQuick.Shapes
 import QtQuick.Window 2.12
 
 Item {
@@ -15,8 +15,7 @@ Item {
 
         anchors.fill: parent
         antialiasing: true
-        layer.samples: 2
-        layer.smooth: true
+        preferredRendererType: Shape.CurveRenderer
         visible: control.value >= 0
 
         ShapePath {

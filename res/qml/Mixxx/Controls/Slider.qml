@@ -1,5 +1,5 @@
 import QtQuick 2.12
-import QtQuick.Shapes 1.12
+import QtQuick.Shapes
 
 Item {
     id: root
@@ -111,6 +111,7 @@ Item {
         anchors.fill: parent
         anchors.margins: root.bar.margin
         antialiasing: true
+        preferredRendererType: Shape.CurveRenderer
         visible: root.bar.enabled
         z: 1
 

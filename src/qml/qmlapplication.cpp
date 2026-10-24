@@ -168,11 +168,13 @@ QmlApplication::QmlApplication(
         qputenv("QT_QPA_UPDATE_IDLE_TIME", QByteArray::number(idleMs));
     }
 
-    // 4x MSAA so QtQuick.Shapes strokes (knob value arcs, waveform markers)
-    // are antialiased; the Shape "antialiasing" property is a no-op without a
-    // multisampled surface. Must be set before any QQuickWindow is created.
+    // No multisampling on the windows. It was 4x MSAA so that QtQuick.Shapes
+    // strokes were antialiased, but that makes every pixel of the whole window
+    // cost four samples, every frame. At the Surface Pro's 2736x1824 on its
+    // integrated GPU the render phase alone took 60-110 ms in the slowest
+    // frame of each minute (session health log, 23 Oct 2026). The shapes use
+    // Shape.CurveRenderer now, which antialiases each curve itself.
     QSurfaceFormat format = QSurfaceFormat::defaultFormat();
-    format.setSamples(4);
     // Keep vsync. Tried swapInterval 0 to stop the GUI thread waiting on the
     // Edge panel's 60 Hz vblank: the Edge surface is a topmost borderless
     // window covering its whole screen, Windows scans such a window out

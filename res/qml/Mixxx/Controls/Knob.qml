@@ -70,13 +70,14 @@ Item {
         }
     }
     Shape {
-        // Enable smooth curves. For QtQuick Shapes, this currently only works
-        // by enabling multisampling, so we use 4xMSAA here.
-        // See https://www.qt.io/blog/2017/07/07/let-there-be-shapes for details.
+        // The curve renderer antialiases the arc itself, at any resolution.
+        // It used to rely on a multisampled window, which made every pixel
+        // of the whole window cost four samples (see QmlApplication).
         property int multiSamplingLevel: Mixxx.Config.multiSamplingLevel
 
         anchors.fill: parent
         antialiasing: true
+        preferredRendererType: Shape.CurveRenderer
         layer.enabled: multiSamplingLevel > 1
         layer.samples: multiSamplingLevel
         visible: root.arc
