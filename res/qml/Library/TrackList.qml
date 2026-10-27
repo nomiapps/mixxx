@@ -174,7 +174,7 @@ Rectangle {
             // keeps the dragged column the size the user chose while the others
             // shrink or grow around it, and the saved layout stays proportional
             // when the window is a different size next time.
-            const naturalWidth = view.stretch > 0 ? explicitWidth / view.stretch : explicitWidth;
+            const naturalWidth = root.naturalWidthFor(index, explicitWidth);
             if (Math.abs(root.model.columns[index].preferredWidth - naturalWidth) >= 0.5) {
                 root.model.columns[index].preferredWidth = naturalWidth;
                 changed = true;
@@ -197,6 +197,39 @@ Rectangle {
                 }
             });
         }
+    }
+    // The preferred width that, once the scalable columns are stretched to fill the
+    // view, draws this column at screenWidth. The stretch depends on this column's
+    // own preferred width as well, so dividing by the current stretch came out short:
+    // during a drag the edge lagged behind the finger or the pointer and jumped back
+    // a few pixels every other frame.
+    function naturalWidthFor(index, screenWidth) {
+        let others = 0;
+        let fixed = 0;
+        let dynamic = 0;
+        for (let c = 0; c < root.model.columns.length; ++c) {
+            const columnDef = root.model.columns[c];
+            if (c === index || columnDef.hidden || columnDef.autoHideWidth > view.width) {
+                continue;
+            }
+            const explicitWidth = view.explicitColumnWidth(c);
+            if (explicitWidth >= 0) {
+                fixed += Math.max(explicitWidth, root.minimumColumnWidth);
+            } else if (columnDef.preferredWidth > 0) {
+                others += Math.max(columnDef.preferredWidth, root.minimumColumnWidth);
+            } else {
+                dynamic += columnDef.fillSpan || 1;
+            }
+        }
+        if (dynamic > 0 || others <= 0) {
+            // Nothing is stretched then (see updateColumnSize).
+            return screenWidth;
+        }
+        const room = view.width - fixed - screenWidth;
+        if (room <= 0) {
+            return view.stretch > 0 ? screenWidth / view.stretch : screenWidth;
+        }
+        return screenWidth * others / room;
     }
     function visibleColumnCount() {
         let count = 0;
@@ -321,12 +354,23 @@ Rectangle {
     function visualIndexAtX(x) {
         let right = 0;
         for (let visualIndex = 0; visualIndex < root.visualColumnOrder.length; ++visualIndex) {
-            right += view.columnWidth(root.visualColumnOrder[visualIndex]) + view.columnSpacing;
+            right += Math.max(0, view.columnWidth(root.visualColumnOrder[visualIndex])) + view.columnSpacing;
             if (x < right) {
                 return visualIndex;
             }
         }
         return root.visualColumnOrder.length - 1;
+    }
+    // Left edge of a column in header content coordinates.
+    function columnLeft(logicalIndex) {
+        let left = 0;
+        for (let visualIndex = 0; visualIndex < root.visualColumnOrder.length; ++visualIndex) {
+            if (root.visualColumnOrder[visualIndex] === logicalIndex) {
+                break;
+            }
+            left += Math.max(0, view.columnWidth(root.visualColumnOrder[visualIndex])) + view.columnSpacing;
+        }
+        return left;
     }
     function moveColumn(logicalIndex, direction) {
         const source = root.visualIndexForColumn(logicalIndex);
@@ -450,10 +494,23 @@ Rectangle {
         anchors.margins: 5
         anchors.right: parent.right
         anchors.top: parent.top
-        movableColumns: true
+        // Scrolled by the table it follows. Flicking it as well let a finger's
+        // sideways drag scroll the header instead of reaching the column handlers.
+        interactive: false
+        // Qt's own column move answers a finger as well, so a touch resize near a
+        // column's edge also moved that column when it let go. Touch and pen have
+        // the delegate's handlers below; Qt's stays for the mouse.
+        movableColumns: !touchPoint.active
         resizableColumns: true
         syncView: view
         z: 1
+
+        // Passive: only notes that a finger or pen is down on the header.
+        PointHandler {
+            id: touchPoint
+
+            acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Stylus
+        }
 
         delegate: Item {
             id: column
@@ -481,6 +538,10 @@ Rectangle {
                 property real draggedX: 0
                 // A grab taken away (a popup opening, a touch cancel) is no drop.
                 property bool cancelled: false
+                // The column being dragged, taken when the drag starts. The header
+                // hands its delegates to other columns when it lays itself out
+                // again, so `column.index` can name a different column by the drop.
+                property int moved: -1
 
                 acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Stylus
                 grabPermissions: PointerHandler.CanTakeOverFromAnything
@@ -497,31 +558,40 @@ Rectangle {
                     if (active) {
                         draggedX = 0;
                         cancelled = false;
+                        moved = column.index;
                         return;
                     }
-                    if (cancelled) {
+                    if (cancelled || moved < 0) {
                         return;
                     }
                     // Dropped: the column under the finger is where this one goes.
-                    const source = root.visualIndexForColumn(column.index);
-                    const destination = root.visualIndexAtX(column.x + column.width / 2 + draggedX);
+                    const source = root.visualIndexForColumn(moved);
+                    const destination = root.visualIndexAtX(root.columnLeft(moved) + Math.max(0, view.columnWidth(moved)) / 2 + draggedX);
                     if (source >= 0 && destination >= 0 && destination !== source) {
                         view.moveColumn(source, destination);
                     }
                 }
             }
+            // Finger-wide grips on both sides of each column edge: the right end of
+            // this column resizes it, the left end resizes the visible column before
+            // it. A finger aimed at the line lands on either side of it; on the
+            // right-hand side it used to start a column move instead.
+            //
+            // Each takes the column it resizes when the drag starts. The header
+            // hands its delegates to other columns when it lays itself out again,
+            // which a resize makes it do, so `column.index` read during the drag
+            // resized whichever column the delegate had just been given.
             Item {
-                // A finger-wide grip on the column's right edge, inside the column
-                // so the next column's delegate cannot cover it.
                 anchors.bottom: parent.bottom
                 anchors.right: parent.right
                 anchors.top: parent.top
-                width: Math.min(24, parent.width / 3)
+                width: Math.min(16, parent.width / 3)
                 z: 1
 
                 DragHandler {
                     id: touchResize
 
+                    property int resized: -1
                     property real startWidth: 0
 
                     acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Stylus
@@ -531,12 +601,57 @@ Rectangle {
 
                     onActiveChanged: {
                         if (active) {
-                            startWidth = view.columnWidth(column.index);
+                            resized = column.index;
+                            startWidth = view.columnWidth(resized);
                         }
                     }
                     onActiveTranslationChanged: {
+                        if (active && resized >= 0) {
+                            view.setColumnWidth(resized, Math.max(root.minimumColumnWidth, startWidth + activeTranslation.x));
+                        }
+                    }
+                }
+            }
+            Item {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.top: parent.top
+                visible: root.visualColumnOrder.indexOf(column.index) > 0
+                width: Math.min(16, parent.width / 3)
+                z: 1
+
+                DragHandler {
+                    id: touchResizePrevious
+
+                    property int resized: -1
+                    property real startWidth: 0
+
+                    // The visible column left of this one. Looked up when the drag
+                    // starts, not bound: the model's column list cannot notify.
+                    function previousColumn() {
+                        const order = root.visualColumnOrder;
+                        for (let visualIndex = order.indexOf(column.index) - 1; visualIndex >= 0; --visualIndex) {
+                            if (!root.model.columns[order[visualIndex]].hidden) {
+                                return order[visualIndex];
+                            }
+                        }
+                        return -1;
+                    }
+
+                    acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Stylus
+                    grabPermissions: PointerHandler.CanTakeOverFromAnything
+                    target: null
+                    yAxis.enabled: false
+
+                    onActiveChanged: {
                         if (active) {
-                            view.setColumnWidth(column.index, Math.max(root.minimumColumnWidth, startWidth + activeTranslation.x));
+                            resized = previousColumn();
+                            startWidth = resized >= 0 ? view.columnWidth(resized) : 0;
+                        }
+                    }
+                    onActiveTranslationChanged: {
+                        if (active && resized >= 0) {
+                            view.setColumnWidth(resized, Math.max(root.minimumColumnWidth, startWidth + activeTranslation.x));
                         }
                     }
                 }
@@ -565,7 +680,7 @@ Rectangle {
                     // A finger held still before dragging: the drag has not
                     // started yet, so this is the menu; the popup then takes
                     // the touch and the drag is cancelled, not dropped.
-                    if (touchMove.active || touchResize.active) {
+                    if (touchMove.active || touchResize.active || touchResizePrevious.active) {
                         return;
                     }
                     headerMenu.columnIndex = index;
