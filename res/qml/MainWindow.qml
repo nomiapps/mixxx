@@ -851,7 +851,8 @@ Item {
                     // box under the finger, so the keyboard closed at once. Otherwise a
                     // short window still unloads it: the waveform/deck split above keys
                     // on `active`, and a library kept but hidden left an empty band.
-                    active: roomy || heldBySearch
+                    // The search echo bar at the top, once tapped, holds it the same way.
+                    active: roomy || heldBySearch || echoInput.activeFocus
                     width: parent.width
 
                     sourceComponent: Component {
@@ -896,7 +897,7 @@ Item {
                         State {
                             // Not while someone is typing a search: hiding it would take
                             // the focus, and with it the keyboard that shortened the window.
-                            when: !library.roomy && !library.heldBySearch
+                            when: !library.roomy && !library.heldBySearch && !echoInput.activeFocus
 
                             PropertyChanges {
                                 target: library
@@ -1024,11 +1025,18 @@ Item {
     }
     // The library search echoed at the top of the window while it is typed by
     // touch: the on-screen keyboard can sit over the search box itself.
+    //
+    // A real text field, not a picture of one. It showed a cursor, so it got
+    // tapped, and Windows raises its touch keyboard only for a tap on an editable
+    // field: on a drawn bar the tap did nothing, and with the keyboard put away
+    // there was no way to bring it back short of finding the covered box. A tap
+    // now moves the focus here, so the keyboard comes up as it does for the box.
+    // Both edit the one search (edgeSurfaceWindow.librarySearch).
     Rectangle {
         id: searchEcho
 
         readonly property var libraryItem: library.item
-        readonly property string query: libraryItem ? libraryItem.searchText : ""
+        readonly property string query: edgeSurfaceWindow.librarySearch
 
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
@@ -1038,41 +1046,70 @@ Item {
         color: Theme.knobBackgroundColor
         height: 44
         radius: 4
-        visible: libraryItem !== null && libraryItem.searchFocused && libraryItem.searchByTouch
+        visible: echoInput.activeFocus || (libraryItem !== null && libraryItem.searchFocused && libraryItem.searchByTouch)
         width: Math.min(640, parent.width - 32)
         z: 30
 
-        Row {
+        TextInput {
+            id: echoInput
+
+            // As Enter in the library's own box: search now and hand focus to the
+            // results, which also puts the keyboard away.
+            function submit() {
+                if (searchEcho.libraryItem)
+                    searchEcho.libraryItem.submitSearch();
+                else
+                    echoInput.focus = false;
+            }
+
             anchors.left: parent.left
             anchors.leftMargin: 14
+            anchors.right: parent.right
+            anchors.rightMargin: 14
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 2
+            clip: true
+            color: Theme.deckTextColor
+            font.pixelSize: 20
+            selectionColor: Theme.blue
+            text: searchEcho.query
+
+            Keys.onEnterPressed: echoInput.submit()
+            Keys.onEscapePressed: edgeSurfaceWindow.librarySearch = ""
+            Keys.onReturnPressed: echoInput.submit()
+            // Mirroring the box, the end of the query is what was just typed.
+            onTextChanged: {
+                if (!echoInput.activeFocus)
+                    echoInput.cursorPosition = echoInput.length;
+            }
+            onTextEdited: edgeSurfaceWindow.librarySearch = echoInput.text
 
             Text {
-                color: searchEcho.query.length > 0 ? Theme.deckTextColor : Theme.midGray
-                elide: Text.ElideLeft
-                font.pixelSize: 20
-                text: searchEcho.query.length > 0 ? searchEcho.query : qsTranslate("WSearchLineEdit", "Search...")
-                width: Math.min(implicitWidth, searchEcho.width - 40)
+                color: Theme.midGray
+                font: echoInput.font
+                text: qsTranslate("WSearchLineEdit", "Search...")
+                visible: echoInput.length === 0
             }
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                color: Theme.blue
-                height: 24
-                width: 2
+        }
+        // While it only mirrors the library's box, which holds the real cursor.
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            color: Theme.blue
+            height: 24
+            visible: !echoInput.activeFocus
+            width: 2
+            x: echoInput.x + Math.min(echoInput.contentWidth, echoInput.width) + 2
 
-                SequentialAnimation on opacity {
-                    loops: Animation.Infinite
-                    running: searchEcho.visible
+            SequentialAnimation on opacity {
+                loops: Animation.Infinite
+                running: searchEcho.visible
 
-                    NumberAnimation {
-                        duration: 500
-                        to: 0
-                    }
-                    NumberAnimation {
-                        duration: 500
-                        to: 1
-                    }
+                NumberAnimation {
+                    duration: 500
+                    to: 0
+                }
+                NumberAnimation {
+                    duration: 500
+                    to: 1
                 }
             }
         }
