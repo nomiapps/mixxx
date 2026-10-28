@@ -8,6 +8,7 @@
 #include <QTest>
 #include <QUrl>
 
+#include "control/control.h"
 #include "control/controlobject.h"
 #include "controllers/defs_controllers.h"
 #include "controllers/legacycontrollermappingfilehandler.h"
@@ -606,6 +607,79 @@ TEST_F(MixtrackPlatinumFxMappingTest, ShiftAndAButtonMovesItToTheNextEffect) {
     // Only that button's slot moved.
     EXPECT_FALSE(slot(1, 1)->isLoaded());
 }
+
+#ifdef __STEM__
+namespace {
+/// What a stem file's load sets: stem_count is read-only to everyone else.
+void setStemCount(const QString& deckGroup, int stems) {
+    const auto pStemCount = ControlDoublePrivate::getControl(
+            ConfigKey(deckGroup, QStringLiteral("stem_count")));
+    ASSERT_TRUE(pStemCount);
+    pStemCount->setAndConfirm(stems, nullptr);
+}
+
+double stemVolume(const QString& deckGroup, int stem) {
+    return ControlObject::get(ConfigKey(
+            QStringLiteral("%1_Stem%2]").arg(deckGroup.chopped(1)).arg(stem),
+            QStringLiteral("volume")));
+}
+
+double trebleParameter(const QString& deckGroup) {
+    return ControlObject::getControl(
+            ConfigKey(QStringLiteral("[EqualizerRack1_%1_Effect1]").arg(deckGroup),
+                    QStringLiteral("parameter3")))
+            ->getParameter();
+}
+} // namespace
+
+/// Decks 3 and 4 layer over decks 1 and 2: with stems loaded there, the
+/// channel knobs turn the stems, so one stem can be brought in by hand.
+TEST_F(MixtrackPlatinumFxMappingTest, LayerDeckKnobsTurnTheStemsOfAStemTrack) {
+    ASSERT_NO_FATAL_FAILURE(loadMapping());
+    const QString deck3 = QStringLiteral("[Channel3]");
+    ASSERT_NO_FATAL_FAILURE(setStemCount(deck3, 4));
+    const double treble = trebleParameter(deck3);
+
+    runInMapping(QStringLiteral(
+            "MixtrackPlatinumFX.deck[2].treble.input(2, 0x17, 0, 0xB2, '');"
+            "MixtrackPlatinumFX.deck[2].mid.input(2, 0x18, 0, 0xB2, '');"
+            "MixtrackPlatinumFX.deck[2].bass.input(2, 0x19, 0, 0xB2, '');"));
+
+    EXPECT_DOUBLE_EQ(0.0, stemVolume(deck3, 4)); // treble: vocals
+    EXPECT_DOUBLE_EQ(0.0, stemVolume(deck3, 3)); // mid: music
+    EXPECT_DOUBLE_EQ(0.0, stemVolume(deck3, 2)); // bass: bass
+    EXPECT_DOUBLE_EQ(1.0, stemVolume(deck3, 1)); // drums, on the filter knob, untouched
+    EXPECT_DOUBLE_EQ(treble, trebleParameter(deck3));
+
+    runInMapping(QStringLiteral(
+            "MixtrackPlatinumFX.deck[2].filter.input(2, 0x1A, 0, 0xB2, '');"));
+    EXPECT_DOUBLE_EQ(0.0, stemVolume(deck3, 1));
+}
+
+TEST_F(MixtrackPlatinumFxMappingTest, LayerDeckKnobsAreTheEqWithoutStems) {
+    ASSERT_NO_FATAL_FAILURE(loadMapping());
+    const QString deck4 = QStringLiteral("[Channel4]");
+    ASSERT_NO_FATAL_FAILURE(setStemCount(deck4, 0));
+
+    runInMapping(QStringLiteral(
+            "MixtrackPlatinumFX.deck[3].treble.input(3, 0x17, 0, 0xB3, '');"));
+
+    EXPECT_DOUBLE_EQ(0.0, trebleParameter(deck4));
+    EXPECT_DOUBLE_EQ(1.0, stemVolume(deck4, 4));
+}
+
+TEST_F(MixtrackPlatinumFxMappingTest, MainDeckKnobsStayTheEqWithStems) {
+    ASSERT_NO_FATAL_FAILURE(loadMapping());
+    const QString deck1 = QStringLiteral("[Channel1]");
+    ASSERT_NO_FATAL_FAILURE(setStemCount(deck1, 4));
+
+    runInMapping(QStringLiteral(
+            "MixtrackPlatinumFX.deck[0].treble.input(0, 0x17, 0, 0xB0, '');"));
+
+    EXPECT_DOUBLE_EQ(0.0, trebleParameter(deck1));
+    EXPECT_DOUBLE_EQ(1.0, stemVolume(deck1, 4));
+}
+#endif
 #endif
 
 #ifdef __BULK__

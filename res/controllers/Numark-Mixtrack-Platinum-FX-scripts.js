@@ -578,6 +578,45 @@ MixtrackPlatinumFX.activeForTap = function(value) {
     return winner;
 };
 
+// Decks 3 and 4 are for layering over decks 1 and 2. With a stem track loaded
+// there, the three EQ knobs and the filter knob turn the four stem volumes
+// instead: treble the vocals, mid the music, bass the bass, filter the drums.
+// Stems are numbered as a stem file stores them: drums, bass, other, vocals.
+MixtrackPlatinumFX.layerDeckStems = {treble: 4, mid: 3, bass: 2, filter: 1};
+
+MixtrackPlatinumFX.StemOrEqPot = function(options) {
+    components.Pot.call(this, options);
+};
+MixtrackPlatinumFX.StemOrEqPot.prototype = new components.Pot({
+    // The knob's own control (an EQ band or the filter) is group/inKey;
+    // deckGroup and stem name the stem volume it turns instead.
+    stemGroup: function() {
+        return `${this.deckGroup.slice(0, -1)}_Stem${this.stem}]`;
+    },
+    onStem: function() {
+        return engine.getValue(this.deckGroup, "stem_count") >= this.stem;
+    },
+    inSetParameter: function(value) {
+        if (this.onStem()) {
+            engine.setParameter(this.stemGroup(), "volume", value);
+        } else {
+            engine.setParameter(this.group, this.inKey, value);
+        }
+    },
+    // Both controls pick up from where the knob is, so neither jumps when the
+    // knob moves from one to the other.
+    connect: function() {
+        if (this.firstValueReceived && this.softTakeover) {
+            engine.softTakeover(this.group, this.inKey, true);
+            engine.softTakeover(this.stemGroup(), "volume", true);
+        }
+    },
+    disconnect: function() {
+        engine.softTakeoverIgnoreNextValue(this.group, this.inKey);
+        engine.softTakeoverIgnoreNextValue(this.stemGroup(), "volume");
+    },
+});
+
 MixtrackPlatinumFX.Deck = function(number) {
     components.Deck.call(this, number);
 
@@ -794,22 +833,29 @@ MixtrackPlatinumFX.Deck = function(number) {
         inKey: "volume"
     });
 
-    this.treble = new components.Pot({
+    const ChannelPot = (number >= 3) ? MixtrackPlatinumFX.StemOrEqPot : components.Pot;
+    const channelPot = function(name, options) {
+        options.deckGroup = deck.currentDeck;
+        options.stem = MixtrackPlatinumFX.layerDeckStems[name];
+        return new ChannelPot(options);
+    };
+
+    this.treble = channelPot("treble", {
         group: `[EqualizerRack1_${  this.currentDeck  }_Effect1]`,
         inKey: "parameter3"
     });
 
-    this.mid = new components.Pot({
+    this.mid = channelPot("mid", {
         group: `[EqualizerRack1_${  this.currentDeck  }_Effect1]`,
         inKey: "parameter2"
     });
 
-    this.bass = new components.Pot({
+    this.bass = channelPot("bass", {
         group: `[EqualizerRack1_${  this.currentDeck  }_Effect1]`,
         inKey: "parameter1"
     });
 
-    this.filter = new components.Pot({
+    this.filter = channelPot("filter", {
         group: `[QuickEffectRack1_${  this.currentDeck  }]`,
         inKey: "super1"
     });
